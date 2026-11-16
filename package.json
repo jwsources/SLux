@@ -1,0 +1,51 @@
+{
+  "name": "x-snc-s-lux",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AIUX extension application: SLux",
+  "scripts": {
+    "build": "now-sdk build",
+    "doctor": "aiux doctor",
+    "dev": "now-sdk run dev",
+    "dev:refresh-extension-host": "now-sdk run dev --refresh-extension-host",
+    "deploy": "now-sdk install",
+    "deploy:reinstall": "now-sdk install --reinstall",
+    "lint": "eslint .",
+    "agent:skills": "node scripts/setup-agent-skills.mjs",
+    "postinstall": "node scripts/setup-agent-skills.mjs"
+  },
+  "dependencies": {
+    "@servicenow/aiux": "latest",
+    "lit": "^3.x"
+  },
+  "devDependencies": {
+    "@babel/eslint-parser": "^8.x",
+    "@babel/plugin-proposal-decorators": "^8.x",
+    "@eslint/js": "^10.x",
+    "@servicenow/eslint-plugin-aiux-a11y": "latest",
+    "@servicenow/eslint-plugin-aiux-app": "latest",
+    "@servicenow/eslint-plugin-aiux-i18n": "latest",
+    "@servicenow/eslint-plugin-aiux-ssr": "latest",
+    "@servicenow/eslint-plugin-aiux-style": "latest",
+    "@servicenow/agent-pack-aiux": "latest",
+    "@servicenow/agent-pack-horizon-design-knowledge": "latest",
+    "@servicenow/sdk": "latest",
+    "eslint": "^10.x",
+    "globals": "^17.x"
+  },
+  "engines": {
+    "node": ">=24.14.1"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "@parcel/watcher",
+      "@servicenow/aiux-components-condition-builder",
+      "@servicenow/aiux-document-viewer",
+      "@swc/core",
+      "core-js",
+      "isolated-vm",
+      "libxmljs2",
+      "sn-http-request"
+    ]
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "scope": "x_snc_slux",
+  "scopeId": "dfaf5b52876c97106b93106bbbbb35d6",
+  "name": "SLux",
+  "metadataDir": "src/plugin-xmls",
+  "appOutputDir": "dist-metadata/app",
+  "packageSourceCodeOnInstance": true
+}

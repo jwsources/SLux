@@ -1,0 +1,11 @@
+{
+  "name": "SLux",
+  "projectId": "",
+  "srcDir": "src/lux",
+  "development": {
+    "token": ""
+  },
+  "build": {
+    "exclude": ["**/*.test.js", "**/test/**"]
+  }
+}

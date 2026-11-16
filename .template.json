@@ -1,0 +1,12 @@
+{
+  "params": {
+    "parentProjectId": {
+      "label": "Host project id (e.g. sn_app_aict_ui)",
+      "default": ""
+    },
+    "parentRouteId": {
+      "label": "Host experience route id (e.g. aict)",
+      "default": ""
+    }
+  }
+}
