@@ -1,0 +1,1503 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><meta content="width=device-width,initial-scale=1,viewport-fit=cover" name="viewport"/><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!DOCTYPE html>
+
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1, viewport-fit=cover" name="viewport"/>
+<title>Dashboard Styles &amp; Visualizations · Field Guide</title>
+<style>
+@font-face{font-family:'ServiceNow Sans';src:url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Light.woff2') format('woff2');font-weight:300;font-display:swap}
+@font-face{font-family:'ServiceNow Sans';src:url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Regular.woff2') format('woff2');font-weight:400;font-display:swap}
+@font-face{font-family:'ServiceNow Sans';src:url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Medium.woff2') format('woff2');font-weight:500;font-display:swap}
+@font-face{font-family:'ServiceNow Sans';src:url('https://www.servicenow.com/etc.clientlibs/ds/clientlibs/clientlib-arc-commons/resources/fonts/ServiceNowSans-Bold.woff2') format('woff2');font-weight:700;font-display:swap}
+
+:root{
+  --blue:#032D42;--blue-2:#052436;
+  --panel:rgba(255,255,255,.045);--panel-2:rgba(255,255,255,.075);
+  --line:rgba(255,255,255,.10);
+  --green:#63DF4E;--cyan:#38BDF8;--amber:#FBBF24;--red:#F87171;
+  --white:#fff;--gray-2:#c7d3da;--gray-3:#8ba0ab;
+  --font:'ServiceNow Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;
+  --mono:'SFMono-Regular',ui-monospace,'Cascadia Code','JetBrains Mono',Menlo,Consolas,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;scroll-padding-top:2rem}
+body{font-family:var(--font);font-weight:300;color:var(--gray-2);background:var(--blue);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden;
+  padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+  background:
+    radial-gradient(60rem 40rem at 18% -8%,rgba(99,223,78,.16),transparent 60%),
+    radial-gradient(52rem 34rem at 92% 4%,rgba(56,189,248,.14),transparent 60%),
+    linear-gradient(180deg,var(--blue) 0%,var(--blue-2) 100%)}
+.container{max-width:74rem;margin:0 auto;padding:0 1.6rem}
+
+header{padding:1.5rem 0;display:flex;align-items:center;justify-content:space-between;gap:1rem}
+.pill{display:inline-flex;align-items:center;gap:.5rem;font-size:.72rem;font-weight:500;color:var(--cyan);background:rgba(56,189,248,.12);border:1.5px solid rgba(56,189,248,.35);border-radius:999px;padding:.4rem .85rem;white-space:nowrap}
+.dot{width:.45rem;height:.45rem;border-radius:50%;background:var(--cyan);animation:blink 1.8s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.35}}
+
+.hero{padding:2.4rem 0 1rem}
+.eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.28em;font-size:.72rem;color:var(--green);margin-bottom:1rem}
+h1{font-weight:700;color:var(--white);line-height:1.05;letter-spacing:-.01em;font-size:clamp(2.1rem,5.5vw,3.6rem);margin-bottom:1rem}
+h1 .accent{color:var(--green)}
+.lede{max-width:46rem;font-size:clamp(1rem,2vw,1.15rem)}
+.flow-chips{display:flex;flex-wrap:wrap;align-items:center;gap:.5rem;margin-top:1.6rem}
+.chip{font-family:var(--mono);font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-2);padding:.5rem .8rem;border:1.5px solid var(--line);border-radius:.6rem;background:var(--panel)}
+.chip b{color:var(--white);font-weight:500}
+.arrow{color:var(--green)}
+
+.section{padding:3rem 0}
+.sec-head{margin-bottom:1.8rem}
+.kicker{font-family:var(--mono);text-transform:uppercase;letter-spacing:.22em;font-size:.7rem;color:var(--cyan);margin-bottom:.6rem}
+h2{color:var(--white);font-weight:700;font-size:clamp(1.5rem,3.4vw,2rem);letter-spacing:-.01em}
+.sec-head p{margin-top:.6rem;max-width:44rem}
+h3{color:var(--white);font-weight:500;font-size:1rem}
+
+/* question cards */
+.qgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem}
+.qc{background:var(--panel);border:1.5px solid var(--line);border-radius:1rem;padding:1.2rem;transition:transform .2s,border-color .2s}
+.qc:hover{transform:translateY(-4px);border-color:rgba(99,223,78,.45)}
+.qc .q{font-style:italic;color:var(--white);font-size:.98rem;font-weight:400;margin-bottom:.9rem;line-height:1.4}
+.qc .arr{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--gray-3)}
+.qc .ans{margin-top:.3rem;font-size:.86rem;color:var(--green);font-weight:500;line-height:1.4}
+
+/* filter tabs */
+.ftabs{display:flex;flex-wrap:wrap;gap:.5rem;margin-bottom:1.6rem}
+.ftab{cursor:pointer;font-family:var(--mono);font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;padding:.5rem .9rem;border-radius:999px;border:1.5px solid var(--line);background:var(--panel);color:var(--gray-2);transition:all .2s;font-weight:400}
+.ftab:hover,.ftab.on{border-color:var(--green);color:var(--white)}
+.ftab.on{background:rgba(99,223,78,.14)}
+
+/* visualization gallery */
+.vgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));grid-auto-rows:1fr;gap:1.1rem}
+.vc{background:var(--panel);border:1.5px solid var(--line);border-radius:1rem;padding:1.1rem;display:flex;flex-direction:column;gap:.75rem;transition:transform .2s,border-color .2s;min-width:0;min-height:430px}
+.vc:hover{transform:translateY(-4px);border-color:rgba(56,189,248,.45)}
+.vc.hide{display:none}
+.vis{height:140px;width:100%;min-width:0;contain:inline-size;border-radius:.7rem;background:rgba(0,0,0,.22);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;padding:.8rem;overflow:hidden}
+.vis svg{width:100%;height:100%}
+.vc-head{display:flex;justify-content:space-between;align-items:baseline;gap:.5rem}
+.cat{font-family:var(--mono);font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);white-space:nowrap}
+dl{display:grid;grid-template-columns:auto 1fr;gap:.3rem .6rem;font-size:.8rem;line-height:1.45}
+dt{color:var(--green);font-weight:500}
+dt.no{color:var(--red)}
+dd{color:var(--gray-2)}
+.pr{margin-top:auto;background:rgba(0,0,0,.28);border:1px solid var(--line);border-radius:.6rem;padding:.6rem .7rem;display:flex;gap:.6rem;align-items:flex-start;justify-content:space-between}
+.pr p{flex:1;min-width:0;font-family:var(--mono);font-size:.72rem;line-height:1.5;color:#dfeef3}
+.cp{flex:none;font-family:var(--font);font-size:.7rem;font-weight:500;border:none;cursor:pointer;background:var(--green);color:var(--blue);padding:.3rem .6rem;border-radius:.45rem;transition:filter .15s}
+.cp:hover{filter:brightness(1.08)}
+.cp.done{background:var(--cyan)}
+
+/* mini visual helpers */
+.lab-s{font-family:var(--mono);font-size:.58rem;letter-spacing:.1em;color:var(--gray-3);text-transform:uppercase}
+.kval{font-size:1.7rem;font-weight:700;color:var(--white);line-height:1.1}
+.up{color:var(--green)}.down{color:var(--red)}
+.bars{width:100%;display:flex;flex-direction:column;gap:.5rem}
+.track{height:.55rem;background:rgba(255,255,255,.08);border-radius:99px;overflow:hidden}
+.fill{height:100%;border-radius:99px}
+.tm{display:grid;grid-template-columns:repeat(4,1fr);grid-template-rows:repeat(3,1fr);gap:3px;width:100%;height:100%}
+.tm i{display:block;border-radius:3px}
+.hm{display:grid;grid-template-columns:repeat(6,1fr);gap:3px;width:100%}
+.hm i{display:block;height:20px;border-radius:3px}
+.g{background:rgba(99,223,78,.72)}.g2{background:rgba(99,223,78,.38)}.am{background:rgba(251,191,36,.62)}.rd{background:rgba(248,113,113,.75)}
+.bl{width:100%;display:flex;flex-direction:column;gap:.55rem}
+.bb{position:relative;height:18px;border-radius:4px;background:linear-gradient(90deg,rgba(255,255,255,.10) 0 55%,rgba(255,255,255,.17) 55% 80%,rgba(255,255,255,.26) 80% 100%)}
+.bb .bar{position:absolute;left:0;top:6px;height:6px;border-radius:3px;background:var(--cyan)}
+.bb .tg{position:absolute;top:2px;height:14px;width:3px;background:var(--white);border-radius:2px}
+.fn{width:100%;display:flex;flex-direction:column;align-items:center;gap:4px}
+.fn i{display:flex;align-items:center;justify-content:center;height:22px;border-radius:4px;font-style:normal;font-size:.66rem;color:var(--blue);font-weight:500}
+.mini-q{width:100%;display:flex;flex-direction:column;gap:.35rem}
+.qr{display:flex;justify-content:space-between;align-items:center;font-size:.7rem;padding:.36rem .5rem;background:rgba(255,255,255,.04);border-radius:.4rem;color:var(--gray-2)}
+.bdg{font-size:.58rem;padding:.1rem .4rem;border-radius:.3rem;font-family:var(--mono)}
+.bdg.p1{background:rgba(248,113,113,.16);color:var(--red)}.bdg.p2{background:rgba(251,191,36,.16);color:var(--amber)}.bdg.ok{background:rgba(99,223,78,.16);color:var(--green)}
+.ai-mini{width:100%;font-size:.72rem;color:var(--gray-2);background:linear-gradient(135deg,rgba(56,189,248,.1),rgba(99,223,78,.06));border:1px solid rgba(56,189,248,.25);border-radius:.6rem;padding:.7rem;line-height:1.45}
+.ai-mini b{color:var(--cyan);font-weight:500;display:block;margin-bottom:.25rem;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase}
+
+/* dashboard styles */
+.sgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:1.2rem}
+.sc{background:var(--panel);border:1.5px solid var(--line);border-radius:1.1rem;padding:1.3rem;display:flex;flex-direction:column;gap:.9rem;transition:transform .2s,border-color .2s}
+.sc:hover{transform:translateY(-4px);border-color:rgba(99,223,78,.4)}
+.sc p{font-size:.88rem}
+.sc .best{font-size:.85rem}
+.sc .best b{color:var(--green);font-weight:500}
+.wf{display:grid;gap:5px;height:170px;padding:8px;border-radius:.6rem;background:rgba(0,0,0,.22);border:1px solid var(--line)}
+.wf i{display:block;border-radius:4px;background:rgba(255,255,255,.07)}
+.wf i.k{background:rgba(99,223,78,.35)}
+.wf i.c{background:rgba(56,189,248,.3)}
+.wf i.a{background:rgba(251,191,36,.3)}
+.wf i.t{background:rgba(255,255,255,.14)}
+.wf-exec{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 2fr}
+.wf-ops{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr 1fr}
+.wf-ana{grid-template-columns:repeat(4,1fr);grid-template-rows:1fr 2fr}
+.wf-diag{grid-template-columns:repeat(3,1fr);grid-template-rows:1fr 1fr}
+.wf-story{grid-template-columns:repeat(3,1fr);grid-template-rows:auto 1.6fr 1fr}
+.pr-wide{margin-top:0}
+
+/* anatomy */
+.anat{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1.6rem}
+.an{background:var(--panel);border:1.5px solid var(--line);border-radius:1rem;padding:1.2rem}
+.an .n{font-family:var(--mono);font-weight:700;color:var(--blue);background:var(--green);width:2.3rem;height:2.3rem;border-radius:.6rem;display:grid;place-items:center;margin-bottom:.8rem}
+.an h3{margin-bottom:.3rem}
+.an p{font-size:.84rem;color:var(--gray-3)}
+.ba{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.ba .box{border-radius:1rem;padding:1.2rem 1.3rem;border:1.5px solid var(--line);background:var(--panel)}
+.ba .vague{border-top:3px solid var(--red)}
+.ba .small{border-top:3px solid var(--green)}
+.ba .lbl2{font-family:var(--mono);font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;margin-bottom:.6rem}
+.ba .vague .lbl2{color:var(--red)}.ba .small .lbl2{color:var(--green)}
+.ba p{font-family:var(--mono);font-size:.8rem;line-height:1.6;color:#dfeef3}
+.ba .verdict{font-size:.82rem;margin-top:.7rem;color:var(--gray-3)}
+
+/* best practice */
+.bp{display:grid;grid-template-columns:repeat(2,1fr);gap:1rem;counter-reset:bp}
+.bpi{background:var(--panel);border:1.5px solid var(--line);border-radius:1rem;padding:1.15rem 1.25rem;display:flex;gap:1rem;transition:border-color .2s,transform .2s}
+.bpi:hover{border-color:rgba(56,189,248,.45);transform:translateY(-3px)}
+.bpi .num{flex:none;font-family:var(--mono);font-weight:700;color:var(--green);font-size:1rem}
+.bpi h4{color:var(--white);font-weight:500;font-size:.96rem;margin-bottom:.2rem}
+.bpi p{font-size:.84rem;color:var(--gray-3);line-height:1.5}
+
+/* new visual helpers */
+.anim-dash{stroke-dasharray:4 6;animation:dashmove 1.4s linear infinite}
+@keyframes dashmove{to{stroke-dashoffset:-20}}
+.tiles{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;width:100%}
+.tiles i{font-style:normal;height:30px;border-radius:5px;display:flex;align-items:center;justify-content:center;font-size:.6rem;color:var(--blue);font-weight:500}
+.cal{display:grid;grid-template-columns:repeat(14,1fr);gap:3px;width:100%}
+.cal i{display:block;aspect-ratio:1;border-radius:3px;background:#63DF4E;opacity:.18}
+.cal i:nth-child(3n+1){opacity:.55}
+.cal i:nth-child(5n){opacity:.92}
+.cal i:nth-child(7n){opacity:.35}
+.waffle{display:grid;grid-template-columns:repeat(10,1fr);gap:3px;width:100%}
+.waffle i{display:block;aspect-ratio:1;border-radius:2px;background:rgba(255,255,255,.09)}
+.waffle i.on{background:linear-gradient(135deg,#63DF4E,#38BDF8)}
+.sp-list{width:100%;display:flex;flex-direction:column;gap:.35rem}
+.sp-row{display:grid;grid-template-columns:1fr auto 64px;gap:.5rem;align-items:center;font-size:.7rem;padding:.35rem .5rem;background:rgba(255,255,255,.04);border-radius:.4rem;color:var(--gray-2)}
+.sp-row b{color:var(--white);font-weight:500}
+.lp{width:100%;display:flex;flex-direction:column;gap:.4rem}
+.lp-top{display:flex;align-items:center;gap:.5rem}
+.pulse-dot{width:8px;height:8px;border-radius:50%;background:var(--green);animation:ping 1.6s infinite}
+@keyframes ping{0%{box-shadow:0 0 0 0 rgba(99,223,78,.6)}70%{box-shadow:0 0 0 9px rgba(99,223,78,0)}100%{box-shadow:0 0 0 0 rgba(99,223,78,0)}}
+.lp-bars{display:flex;align-items:flex-end;gap:4px;height:46px;width:100%}
+.lp-bars i{flex:1;border-radius:3px;background:linear-gradient(180deg,#63DF4E,rgba(56,189,248,.45));height:40%;animation:barpulse 1.4s ease-in-out infinite}
+@keyframes barpulse{0%,100%{height:30%}50%{height:95%}}
+
+/* dynamic motion */
+.ring-pulse{transform-box:fill-box;transform-origin:center;animation:ringp 1.8s ease-out infinite}
+@keyframes ringp{from{transform:scale(1);opacity:.9}to{transform:scale(2.6);opacity:0}}
+.hp{animation:hpulse 2.6s ease-in-out infinite;animation-delay:var(--d,0s)}
+@keyframes hpulse{0%,100%{transform:scale(.86);opacity:.55}50%{transform:scale(1);opacity:1}}
+.draw{stroke-dasharray:1;stroke-dashoffset:1;animation:drawl 1.6s ease-out forwards;animation-delay:var(--d,0s)}
+@keyframes drawl{to{stroke-dashoffset:0}}
+.hfun{width:100%;display:flex;flex-direction:column;gap:5px}
+.hf-row{display:flex;justify-content:center}
+.hf-row i{display:flex;align-items:center;justify-content:center;height:22px;border-radius:4px;font-style:normal;font-size:.66rem;color:var(--blue);font-weight:500;transform-origin:center;animation:growx 1.3s ease-out both;animation-delay:var(--d,0s)}
+@keyframes growx{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.dga{stroke-dasharray:0 100;animation:dga 1.6s ease-out forwards}
+.dgb{stroke-dasharray:0 100;animation:dgb 1.6s ease-out .5s forwards}
+.dgc{stroke-dasharray:0 100;animation:dgc 1.6s ease-out 1s forwards}
+@keyframes dga{to{stroke-dasharray:45 55}}
+@keyframes dgb{to{stroke-dasharray:25 75}}
+@keyframes dgc{to{stroke-dasharray:18 82}}
+.race{width:100%;display:flex;flex-direction:column;gap:.45rem;font-size:.66rem}
+.rr{display:grid;grid-template-columns:52px 1fr;align-items:center;gap:.5rem;color:var(--gray-2)}
+.rt{height:12px;background:rgba(255,255,255,.07);border-radius:99px;overflow:hidden}
+.rt i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#63DF4E,#38BDF8);animation:racer 4.5s ease-in-out infinite alternate}
+@keyframes racer{from{width:var(--a)}to{width:var(--b)}}
+.sweep{transform-box:view-box;transform-origin:110px 55px;animation:spin 4s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.blip{animation:blinkb 2s ease-in-out infinite}
+@keyframes blinkb{0%,100%{opacity:.25}50%{opacity:1}}
+.sla{stroke-dasharray:62 38;animation:slaShrink 12s linear infinite}
+@keyframes slaShrink{from{stroke-dasharray:62 38}to{stroke-dasharray:10 90}}
+.kb{position:relative;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.kcol{background:rgba(255,255,255,.04);border-radius:.5rem;padding:.4rem;display:flex;flex-direction:column;gap:.35rem;min-height:96px}
+.kcol .lab-s{font-size:.5rem}
+.kc{height:16px;background:rgba(255,255,255,.14);border-radius:4px}
+.kmv{position:absolute;left:0;top:26px;width:calc((100% - 16px)/3);height:16px;border-radius:4px;background:linear-gradient(90deg,#63DF4E,#38BDF8);animation:kmove 6s ease-in-out infinite}
+@keyframes kmove{0%,15%{transform:translateX(0)}35%,50%{transform:translateX(calc(100% + 8px))}70%,85%{transform:translateX(calc(2 * (100% + 8px)))}100%{transform:translateX(0)}}
+.ldraw{stroke-dasharray:1;animation:ldraw 4s ease-in-out infinite}
+@keyframes ldraw{0%{stroke-dashoffset:1}60%,100%{stroke-dashoffset:0}}
+.tk{overflow:hidden;width:100%;-webkit-mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent);mask-image:linear-gradient(90deg,transparent,#000 10%,#000 90%,transparent)}
+.tk-track{display:flex;gap:1.6rem;width:max-content;animation:tick 14s linear infinite;white-space:nowrap;font-size:.7rem;color:var(--gray-2)}
+.tk-track span{display:inline-flex;align-items:center;gap:.4rem}
+.sv{width:7px;height:7px;border-radius:50%;display:inline-block}
+.sv.r{background:var(--red)}.sv.a{background:var(--amber)}.sv.g{background:var(--green)}
+@keyframes tick{to{transform:translateX(-50%)}}
+.tk:hover .tk-track{animation-play-state:paused}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+}
+
+.spec{background:var(--panel);border:1.5px solid var(--line);border-radius:1rem;padding:1.3rem;display:flex;flex-direction:column;align-items:flex-start;gap:.9rem}
+.spec pre{white-space:pre-wrap;font-family:var(--mono);font-size:.76rem;line-height:1.6;color:#dfeef3;font-weight:400}
+footer{padding:2.5rem 0 3rem;text-align:center;font-size:.75rem;color:var(--gray-3);font-weight:300;border-top:1px solid var(--line);margin-top:2rem}
+
+.js .reveal{opacity:0;transform:translateY(20px);transition:opacity .6s ease,transform .6s ease}
+.js .reveal.in{opacity:1;transform:none}
+
+@media(max-width:1000px){
+  .qgrid{grid-template-columns:1fr 1fr}
+  .vgrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .anat{grid-template-columns:1fr 1fr}
+}
+@media(max-width:720px){
+  .qgrid,.vgrid,.sgrid,.bp,.anat,.ba{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div class="container">
+<header>
+<svg height="23" viewbox="0 0 132 20" width="150" xmlns="http://www.w3.org/2000/svg"><path d="M32.022,6.391a5.626,5.626,0,0,0-3.61,1.3V6.523H25.119V19.35h3.425v-8.2a4.073,4.073,0,0,1,3.109-1.588,3.494,3.494,0,0,1,1.374.206V6.479a5.851,5.851,0,0,0-1.005-.088" fill="#ffffff" fill-rule="evenodd"></path><path d="M2.16,15.436a5.369,5.369,0,0,0,3.5,1.269c.922,0,1.633-.45,1.633-1.084,0-1.931-6.191-1.243-6.191-5.369,0-2.459,2.371-3.993,4.9-3.993a7.9,7.9,0,0,1,4.32,1.3L8.72,10.04a4.3,4.3,0,0,0-2.45-.872c-.948,0-1.739.37-1.739,1.031,0,1.666,6.192,1.005,6.192,5.448,0,2.46-2.4,3.967-5.085,3.967A8.815,8.815,0,0,1,.5,17.9Z" fill="#ffffff" fill-rule="evenodd"></path><path d="M23.657,12.817c0-3.57-2.5-6.558-6.034-6.558-3.794,0-6.218,3.12-6.218,6.691A6.4,6.4,0,0,0,18.1,19.614a6.919,6.919,0,0,0,5.243-2.3l-1.95-1.957a4.515,4.515,0,0,1-3.214,1.481A3.36,3.36,0,0,1,14.725,13.8h8.853A5.735,5.735,0,0,0,23.657,12.817Zm-8.774-1.533a2.775,2.775,0,0,1,2.74-2.248,2.552,2.552,0,0,1,2.53,2.248Z" fill="#ffffff" fill-rule="evenodd"></path><polygon fill="#ffffff" fill-rule="evenodd" points="41.19 14.351 44.694 6.523 48.252 6.523 42.376 19.35 40.005 19.35 34.129 6.523 37.686 6.523 41.19 14.351"></polygon><path d="M51.128.5A2.2,2.2,0,1,1,48.888,2.7,2.2,2.2,0,0,1,51.128.5" fill="#ffffff" fill-rule="evenodd"></path><rect fill="#ffffff" height="12.827" width="3.425" x="49.415" y="6.523"></rect><path d="M67,16.731a6.766,6.766,0,0,1-5.8,2.883,6.68,6.68,0,1,1,.026-13.355,6.808,6.808,0,0,1,5.375,2.565l-2.424,2.142a3.7,3.7,0,0,0-2.951-1.534A3.433,3.433,0,0,0,57.78,12.95a3.383,3.383,0,0,0,3.531,3.49,3.741,3.741,0,0,0,3.056-1.692Z" fill="#ffffff" fill-rule="evenodd"></path><path d="M79.442,17.313a6.918,6.918,0,0,1-5.243,2.3,6.4,6.4,0,0,1-6.692-6.664c0-3.571,2.424-6.691,6.218-6.691,3.53,0,6.033,2.988,6.033,6.558a5.635,5.635,0,0,1-.079.979H70.826a3.36,3.36,0,0,0,3.452,3.041,4.52,4.52,0,0,0,3.215-1.481Zm-3.188-6.029a2.551,2.551,0,0,0-2.529-2.248,2.774,2.774,0,0,0-2.74,2.248Z" fill="#ffffff" fill-rule="evenodd"></path><path d="M81.12,19.35V6.523h3.293V7.554a5.625,5.625,0,0,1,3.609-1.295,5.747,5.747,0,0,1,4.427,2.063,6.482,6.482,0,0,1,1.317,4.5V19.35H90.341v-6.8a3.11,3.11,0,0,0-.764-2.407,2.69,2.69,0,0,0-1.923-.714,4.076,4.076,0,0,0-3.109,1.587V19.35Z" fill="#ffffff" fill-rule="evenodd"></path><path d="M102.586,6.259A7.5,7.5,0,0,0,97.419,19.21a1.481,1.481,0,0,0,1.926.1,5.355,5.355,0,0,1,6.394,0,1.485,1.485,0,0,0,1.937-.113,7.5,7.5,0,0,0-5.09-12.94M102.542,17.5a3.637,3.637,0,0,1-3.734-3.733,3.734,3.734,0,1,1,7.468,0,3.637,3.637,0,0,1-3.734,3.733" fill="#62d84e" fill-rule="evenodd"></path><polygon fill="#ffffff" fill-rule="evenodd" points="116.788 19.35 114.237 19.35 109.15 6.523 112.57 6.523 115.359 13.853 118.094 6.523 120.952 6.523 123.662 13.853 126.475 6.523 129.896 6.523 124.809 19.35 122.258 19.35 119.523 12.046 116.788 19.35"></polygon><path d="M129.935,17.9h-.289v.543H129.4V16.957h.6a.476.476,0,0,1,.478.478.469.469,0,0,1-.295.432l.338.579h-.268Zm-.289-.219H130a.249.249,0,0,0,0-.5h-.351Z" fill="#ffffff"></path><path d="M129.9,16.348a1.379,1.379,0,1,1-1.378,1.379,1.381,1.381,0,0,1,1.378-1.379m0-.218a1.6,1.6,0,1,0,1.6,1.6,1.6,1.6,0,0,0-1.6-1.6Z" fill="#ffffff"></path></svg>
+<span class="pill"><span class="dot"></span>Internal · Field Guide</span>
+</header>
+<!-- HERO -->
+<section class="hero reveal">
+<div class="eyebrow">Build Agent · Dashboard design</div>
+<h1>Pick the right view.<br/><span class="accent">Get the result in one prompt.</span></h1>
+<p class="lede">A premium Build Agent prompt library: 42 interactive visualization recipes + five dashboard compositions. Every Copy action includes a detailed shared design system, technical acceptance criteria, and a tailored visualization specification. Replace the [brackets], copy, and build.</p>
+<div class="flow-chips">
+<span class="chip"><b>Question</b></span><span class="arrow">→</span>
+<span class="chip"><b>Visual</b></span><span class="arrow">→</span>
+<span class="chip"><b>Layout</b></span><span class="arrow">→</span>
+<span class="chip"><b>Prompt</b></span>
+</div>
+</section>
+<!-- QUESTION FIRST -->
+<section class="section reveal">
+<div class="sec-head">
+<div class="kicker">Start here</div>
+<h2>Start from the question, not the chart</h2>
+<p>Every good dashboard answers a question someone is actually asking. Find the question below, and the visual almost chooses itself.</p>
+</div>
+<div class="qgrid">
+<div class="qc"><div class="q">"How are we doing against target?"</div><div class="arr">Use</div><div class="ans">KPI scorecard · Gauge · Bullet</div></div>
+<div class="qc"><div class="q">"Which way is it moving?"</div><div class="arr">Use</div><div class="ans">Line trend · Area with target</div></div>
+<div class="qc"><div class="q">"Who is ahead, who is behind?"</div><div class="arr">Use</div><div class="ans">Ranked bars · Column bars</div></div>
+<div class="qc"><div class="q">"What makes up the total?"</div><div class="arr">Use</div><div class="ans">Donut (5 parts max) · Treemap</div></div>
+<div class="qc"><div class="q">"Where are the hotspots?"</div><div class="arr">Use</div><div class="ans">Heatmap</div></div>
+<div class="qc"><div class="q">"What matters most?"</div><div class="arr">Use</div><div class="ans">Pareto · Risk matrix</div></div>
+<div class="qc"><div class="q">"Where do we lose people or items?"</div><div class="arr">Use</div><div class="ans">Funnel · Timeline</div></div>
+<div class="qc"><div class="q">"What needs action today?"</div><div class="arr">Use</div><div class="ans">Work queue · AI insight panel</div></div>
+</div>
+</section>
+<!-- SHARED SPEC -->
+<section class="section reveal" style="padding-top:0">
+<div class="sec-head">
+<div class="kicker">Shared spec</div>
+<h2>Style spec for every prompt</h2>
+<p>Each Copy button adds this spec in front of its prompt. It sets colour, type, spacing and states, so the output matches the previews.</p>
+</div>
+<div class="spec">
+<pre id="spec-text">WOW FACTOR / EXECUTION CONTRACT — APPLY TO ALL GENERATED SCREENS
+Create a genuinely premium, production-quality, executive-grade interactive application, not a wireframe, generic admin template, static mockup or collection of oversized tiles. Visually comparable in attention to detail to a polished enterprise mission-control interface. Build the real HTML/CSS/JS/SVG experience, not an image of a dashboard.
+VISUAL SYSTEM: Use ServiceNow-inspired deep navy #032D42 / #052436 and restrained emerald #63DF4E, cyan #38BDF8, amber #FBBF24 and red #F87171. Background has layered subtle radial glow and quiet blueprint/grid texture. Semi-transparent graphite/navy cards with ultra-thin borders, restrained inner highlights and elegant depth; NO thick neon borders, noisy gradients, or excessive glass blur. Typography ServiceNow Sans when available, system fallback; near-white text on all dark surfaces, never black text on dark backgrounds. Aim for WCAG AA normal-text contrast. Headline 24–30px, section titles 15–18px, body 12–14px, metadata 11–12px, headline KPIs 26–34px; compact but legible, with clear hierarchy.
+LAYOUT: First viewport designed around 1440×900 desktop with useful content immediately visible. 12-column grid; 20–24px outside margins; 12–16px gaps; cards 14–18px padding, 12–16px corner radius; disciplined alignment, generous negative space, no huge empty areas, no giant charts or oversized typography. Limit headline metrics to 4–5; reserve ~45% of visual emphasis for the primary focal visualization, ~30% for insight and comparison, ~25% for action/context. At 1024px reflow to 2 columns, at 720px reflow to 1 column with no clipping/horizontal scroll. Maintain content density intelligently.
+WOW COMPOSITION: Add a polished application chrome with logo/product title, short contextual subtitle, last-updated label, working date/period controls, concise live/sample status, 1 focal hero visual, compact KPI band, and meaningful insight/action surface. Craft bespoke crisp SVG icons and refined chart paths; use small purposeful status pulses, count-up or path-draw entrances (200–700ms), smooth hover/selection and subtle alert motion. Motion must clarify change, never distract; respect prefers-reduced-motion. Do not treat every chart as a static image.
+FUNCTIONALITY: Every visible tab, filter, date selector, legend toggle, card selection, action button and drilldown must work with local state; cross-filter when appropriate. Tooltips must report accurate values and units. Include sample scenarios showing healthy, warning and critical states. Use deterministic, internally consistent, realistic sample data; clearly mark Sample/Demo and distinguish simulated streams from verified real integrations. No invented live feeds, data sources, AI results or operational claims. Handle zero data, empty results, loading, long labels, keyboard focus and responsive layouts.
+DELIVERABLE: Return a complete runnable, self-contained index.html with inline CSS and JavaScript and SVG-based visualizations (no external required libraries or assets). Ready for GitHub Pages deployment and iframe embedding. Keep all paths relative; avoid features blocked by iframe sandbox where possible. Add sane iframe height/overflow behavior, semantic controls, accessible labels, and a usable static fallback. No TODOs, placeholders, fake non-working controls, implementation essay, or blank sections. Deliver runnable code, not a textual description of the intended UI.
+FINAL QUALITY GATE: Before finishing, mentally review at 1440×900 and 390×844; confirm contrast, text legibility, chart accuracy, visual balance, no horizontal overflow, sample-data honesty and full interactivity. Refine design until it feels like a unified custom-designed executive experience rather than a default dashboard.
+</pre>
+<button class="cp" data-target="spec-text">Copy spec</button>
+</div>
+</section>
+<!-- VISUALIZATION GALLERY -->
+<section class="section reveal" style="padding-top:0">
+<div class="sec-head">
+<div class="kicker">Visualization types</div>
+<h2>The visuals, with when to use them</h2>
+<p>Each card shows the visual, when it works, when it fails, and the one-line prompt that builds it. Filter by what you are trying to show.</p>
+</div>
+<div class="ftabs" id="ftabs">
+<button class="ftab on" data-f="all">All</button>
+<button class="ftab" data-f="headline">Headline</button>
+<button class="ftab" data-f="trend">Trend</button>
+<button class="ftab" data-f="compare">Compare</button>
+<button class="ftab" data-f="composition">Composition</button>
+<button class="ftab" data-f="pattern">Pattern</button>
+<button class="ftab" data-f="process">Process</button>
+<button class="ftab" data-f="action">Action</button>
+<button class="ftab" data-f="network">Network</button>
+<button class="ftab" data-f="geo">Geographic</button>
+<button class="ftab" data-f="modern">Modern</button>
+<button class="ftab" data-f="dynamic">Dynamic</button>
+</div>
+<div class="vgrid" id="vgrid">
+<!-- HEADLINE -->
+<article class="vc" data-c="headline">
+<div class="vis"><div style="width:100%">
+<div class="lab-s">Metric name</div>
+<div class="kval">92<span style="font-size:.9rem;color:var(--gray-3)">%</span> <span class="up" style="font-size:.78rem">▲ 3 pts</span></div>
+<svg height="26" preserveaspectratio="xMidYMid meet" viewbox="0 0 120 26"><polyline fill="none" points="0,20 20,16 40,18 60,10 80,12 100,6 120,5" stroke="#63DF4E" stroke-width="2"></polyline></svg>
+</div></div>
+<div class="vc-head"><h3>KPI scorecard</h3><span class="cat">Headline</span></div>
+<dl><dt>Use</dt><dd>One number and whether it is good</dd><dt class="no">Avoid</dt><dd>When the reader needs full history</dd></dl>
+<div class="pr"><p>Build a KPI scorecard for [audience] answering: are we on track for [period]? Match the preview: a row of four equal cards, each with a small uppercase label, a large value, a change line with an arrow and percent, a target line, and a status badge at the top right. Below the row, add a 12-point sparkline inside each card, 36px tall. Sort cards by business priority. Expected result: overall health is clear in five seconds, and no card needs scrolling to read. UI only.
+
+VISUAL DIRECTION — KPI SCORECARD: Use a carefully balanced 4-column KPI ribbon; each card has icon, eyebrow, large numeric value, contextual delta, micro sparkline, target progress, and a discreet status pill. Add a selected-card drilldown that updates a larger trend pane below; clicking every KPI must do something meaningful. Animate count-up once, not repeatedly. Use realistic yet explicitly sample business values with consistent units.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv1">Copy WOW prompt</button></div>
+<span hidden="" id="pv1">Build a KPI scorecard for [audience] answering: are we on track for [period]? Match the preview: a row of four equal cards, each with a small uppercase label, a large value, a change line with an arrow and percent, a target line, and a status badge at the top right. Below the row, add a 12-point sparkline inside each card, 36px tall. Sort cards by business priority. Expected result: overall health is clear in five seconds, and no card needs scrolling to read. UI only.
+
+VISUAL DIRECTION — KPI SCORECARD: Use a carefully balanced 4-column KPI ribbon; each card has icon, eyebrow, large numeric value, contextual delta, micro sparkline, target progress, and a discreet status pill. Add a selected-card drilldown that updates a larger trend pane below; clicking every KPI must do something meaningful. Animate count-up once, not repeatedly. Use realistic yet explicitly sample business values with consistent units.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="headline">
+<div class="vis">
+<svg height="84" viewbox="0 0 140 84" width="140">
+<path d="M12 72 A58 58 0 0 1 128 72" fill="none" stroke="rgba(255,255,255,.1)" stroke-linecap="round" stroke-width="10"></path>
+<path d="M12 72 A58 58 0 0 1 128 72" fill="none" stroke="#38BDF8" stroke-dasharray="146 182" stroke-linecap="round" stroke-width="10"></path>
+<line stroke="#fff" stroke-width="2" x1="70" x2="70" y1="14" y2="22"></line>
+<text fill="#fff" font-size="18" font-weight="700" text-anchor="middle" x="70" y="62">80%</text>
+<text fill="#8ba0ab" font-size="7" letter-spacing="1" text-anchor="middle" x="70" y="78">OF TARGET</text>
+</svg>
+</div>
+<div class="vc-head"><h3>Gauge</h3><span class="cat">Headline</span></div>
+<dl><dt>Use</dt><dd>One metric against one clear target</dd><dt class="no">Avoid</dt><dd>Many metrics at once (wastes space)</dd></dl>
+<div class="pr"><p>Build a radial gauge for [audience] showing [metric] against [target] for [period]. Match the preview: a 180-degree arc, 10px stroke, grey track, coloured fill to the value, a white tick at the target. Centre: value in 32px bold, unit in grey, and percent of target in 11px label text beneath. Arc colour: green at or above target, amber up to 10% below, red beyond that, with the status word printed under the value. Show the prior period as small grey text under the arc. Single gauge. Expected result: one number, and whether it is good, readable at arm's length. UI only.
+
+VISUAL DIRECTION — GAUGE: Design the gauge as a precision instrument: graduated threshold bands, clear target tick, accessible numeric centre, variance statement, and subtle SVG needle or progress sweep. Add adjacent compact explanation of what is driving the value and a time selector. No dashboard-sized single gauge and no misleading threshold assumptions.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv2">Copy WOW prompt</button></div>
+<span hidden="" id="pv2">Build a radial gauge for [audience] showing [metric] against [target] for [period]. Match the preview: a 180-degree arc, 10px stroke, grey track, coloured fill to the value, a white tick at the target. Centre: value in 32px bold, unit in grey, and percent of target in 11px label text beneath. Arc colour: green at or above target, amber up to 10% below, red beyond that, with the status word printed under the value. Show the prior period as small grey text under the arc. Single gauge. Expected result: one number, and whether it is good, readable at arm's length. UI only.
+
+VISUAL DIRECTION — GAUGE: Design the gauge as a precision instrument: graduated threshold bands, clear target tick, accessible numeric centre, variance statement, and subtle SVG needle or progress sweep. Add adjacent compact explanation of what is driving the value and a time selector. No dashboard-sized single gauge and no misleading threshold assumptions.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="headline">
+<div class="vis"><div class="bl">
+<div class="bb"><div class="bar" style="width:72%"></div><div class="tg" style="left:84%"></div></div>
+<div class="bb"><div class="bar" style="width:91%"></div><div class="tg" style="left:85%"></div></div>
+<div class="bb"><div class="bar" style="width:48%"></div><div class="tg" style="left:80%"></div></div>
+<div class="lab-s" style="margin-top:.2rem">Actual · target marker · bands = ranges</div>
+</div></div>
+<div class="vc-head"><h3>Bullet chart</h3><span class="cat">Headline</span></div>
+<dl><dt>Use</dt><dd>Several actuals vs targets in a compact row</dd><dt class="no">Avoid</dt><dd>Audiences new to the format</dd></dl>
+<div class="pr"><p>Build a set of bullet charts for [audience], one row per [metric], for [period]. Match the preview: each row is a 18px tall band with three grey ranges (poor, fair, good) at 10%, 17% and 26% white, a cyan actual bar 6px tall centred in the band, and a white target marker 3px wide. Add a thin tick for the prior period. Left column: metric name. Right column: actual, target and variance as text. Sort rows by percent of target, lowest first. Add a one-line legend beneath. Expected result: a compact scan of which metrics fall short, and by how much. UI only.
+
+VISUAL DIRECTION — BULLET CHART: Create a clean performance benchmarking panel with horizontally aligned metric labels, qualitative bands, actual bars, target ticks and previous period markers. Use tooltip/click to expose detail and annotate the two worst variances with concise insights; keep comparison scale consistent.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv3">Copy WOW prompt</button></div>
+<span hidden="" id="pv3">Build a set of bullet charts for [audience], one row per [metric], for [period]. Match the preview: each row is a 18px tall band with three grey ranges (poor, fair, good) at 10%, 17% and 26% white, a cyan actual bar 6px tall centred in the band, and a white target marker 3px wide. Add a thin tick for the prior period. Left column: metric name. Right column: actual, target and variance as text. Sort rows by percent of target, lowest first. Add a one-line legend beneath. Expected result: a compact scan of which metrics fall short, and by how much. UI only.
+
+VISUAL DIRECTION — BULLET CHART: Create a clean performance benchmarking panel with horizontally aligned metric labels, qualitative bands, actual bars, target ticks and previous period markers. Use tooltip/click to expose detail and annotate the two worst variances with concise insights; keep comparison scale consistent.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- TREND -->
+<article class="vc" data-c="trend">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<g stroke="rgba(255,255,255,.07)"><line x1="0" x2="220" y1="20" y2="20"></line><line x1="0" x2="220" y1="50" y2="50"></line><line x1="0" x2="220" y1="80" y2="80"></line></g>
+<polyline fill="none" points="5,80 35,68 65,72 95,50 125,56 155,36 185,40 215,18" stroke="#38BDF8" stroke-width="2.5"></polyline>
+<g fill="#38BDF8"><circle cx="5" cy="80" r="2.5"></circle><circle cx="65" cy="72" r="2.5"></circle><circle cx="125" cy="56" r="2.5"></circle><circle cx="185" cy="40" r="2.5"></circle><circle cx="215" cy="18" r="3.5"></circle></g>
+</svg>
+</div>
+<div class="vc-head"><h3>Line trend</h3><span class="cat">Trend</span></div>
+<dl><dt>Use</dt><dd>How a metric moves over time</dd><dt class="no">Avoid</dt><dd>Unordered categories (use bars)</dd></dl>
+<div class="pr"><p>Build a line chart for [audience] of [metric] by month for the last 12 months, answering: is it improving? Match the preview: cyan line 2.5px wide with dot markers on each month, and a thin grey line for the same months last year. Gridlines at 8% white, four horizontal lines. Label the last point with its value in 14px bold, and show the change vs last year beside it in green or red with text. Y axis starts at zero, or the reason is written in the caption. Maximum two series. Expected result: direction and pace are obvious in five seconds. UI only.
+
+VISUAL DIRECTION — LINE TREND: Give the line a refined glowing endpoint, accessible tooltip crosshair, subtle area wash, contextual last-period comparison, dynamic period selection and event annotations on real change points. Use mathematically consistent time labels and preserve readable axis ticks.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv4">Copy WOW prompt</button></div>
+<span hidden="" id="pv4">Build a line chart for [audience] of [metric] by month for the last 12 months, answering: is it improving? Match the preview: cyan line 2.5px wide with dot markers on each month, and a thin grey line for the same months last year. Gridlines at 8% white, four horizontal lines. Label the last point with its value in 14px bold, and show the change vs last year beside it in green or red with text. Y axis starts at zero, or the reason is written in the caption. Maximum two series. Expected result: direction and pace are obvious in five seconds. UI only.
+
+VISUAL DIRECTION — LINE TREND: Give the line a refined glowing endpoint, accessible tooltip crosshair, subtle area wash, contextual last-period comparison, dynamic period selection and event annotations on real change points. Use mathematically consistent time labels and preserve readable axis ticks.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="trend">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<defs><lineargradient id="gA1" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#63DF4E" stop-opacity=".38"></stop><stop offset="1" stop-color="#63DF4E" stop-opacity="0"></stop></lineargradient></defs>
+<path d="M5,85 L35,70 L65,74 L95,52 L125,58 L155,38 L185,42 L215,22 L215,110 L5,110 Z" fill="url(#gA1)"></path>
+<path d="M5,85 L35,70 L65,74 L95,52 L125,58 L155,38 L185,42 L215,22" fill="none" stroke="#63DF4E" stroke-width="2.5"></path>
+<line stroke="#FBBF24" stroke-dasharray="5 4" stroke-width="1.5" x1="0" x2="220" y1="34" y2="34"></line>
+<text fill="#FBBF24" font-size="7" x="184" y="30">TARGET</text>
+</svg>
+</div>
+<div class="vc-head"><h3>Area with target</h3><span class="cat">Trend</span></div>
+<dl><dt>Use</dt><dd>Volume or cumulative totals vs a plan</dd><dt class="no">Avoid</dt><dd>Many overlapping series</dd></dl>
+<div class="pr"><p>Build an area chart for [audience] of weekly [metric] for [period] against plan. Match the preview: a soft green gradient fill from 38% opacity at the top to 0% at the base, a 2.5px green line on top, and a dashed 1.5px amber target line labelled TARGET at the right. Shade periods above target green and below target red, and state the count of weeks above target in the caption. Y axis starts at zero. Expected result: the reader sees whether cumulative volume is ahead or behind plan. One series plus the target line. UI only.
+
+VISUAL DIRECTION — AREA WITH TARGET: Add a luminous but restrained SVG fill gradient, a clearly differentiated target line, hover markers, threshold crossings, clickable period presets and concise variance annotation. Never let the gradient obscure the data or confuse actual and target.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv5">Copy WOW prompt</button></div>
+<span hidden="" id="pv5">Build an area chart for [audience] of weekly [metric] for [period] against plan. Match the preview: a soft green gradient fill from 38% opacity at the top to 0% at the base, a 2.5px green line on top, and a dashed 1.5px amber target line labelled TARGET at the right. Shade periods above target green and below target red, and state the count of weeks above target in the caption. Y axis starts at zero. Expected result: the reader sees whether cumulative volume is ahead or behind plan. One series plus the target line. UI only.
+
+VISUAL DIRECTION — AREA WITH TARGET: Add a luminous but restrained SVG fill gradient, a clearly differentiated target line, hover markers, threshold crossings, clickable period presets and concise variance annotation. Never let the gradient obscure the data or confuse actual and target.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- COMPARE -->
+<article class="vc" data-c="compare">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<line stroke="rgba(255,255,255,.2)" x1="0" x2="220" y1="100" y2="100"></line>
+<rect fill="rgba(56,189,248,.5)" height="40" rx="3" width="24" x="10" y="60"></rect>
+<rect fill="rgba(56,189,248,.5)" height="62" rx="3" width="24" x="45" y="38"></rect>
+<rect fill="rgba(56,189,248,.5)" height="35" rx="3" width="24" x="80" y="65"></rect>
+<rect fill="#63DF4E" height="78" rx="3" width="24" x="115" y="22"></rect>
+<rect fill="rgba(56,189,248,.5)" height="50" rx="3" width="24" x="150" y="50"></rect>
+<rect fill="rgba(56,189,248,.5)" height="70" rx="3" width="24" x="185" y="30"></rect>
+</svg>
+</div>
+<div class="vc-head"><h3>Column bars</h3><span class="cat">Compare</span></div>
+<dl><dt>Use</dt><dd>Comparing a few periods or categories</dd><dt class="no">Avoid</dt><dd>More than about 12 categories</dd></dl>
+<div class="pr"><p>Build a column chart for [audience] comparing [metric] across [periods]. Match the preview: up to 12 columns, 24px wide, 3px corner radius, in chronological order left to right. Current period in green, all others cyan at 50% opacity. Value label above each column in 11px. A dashed grey average line across the full width, labelled AVG. Baseline at zero, a solid line 1px at 20% white. Expected result: the current period's position against history is clear without reading the axis. UI only.
+
+VISUAL DIRECTION — COLUMN BARS: Make current category more prominent through saturation and a fine outer glow, with compact value labels and an interactive comparison tooltip. Click a column to update an adjacent insight panel. Add baseline and optional average reference with zero baseline.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv6">Copy WOW prompt</button></div>
+<span hidden="" id="pv6">Build a column chart for [audience] comparing [metric] across [periods]. Match the preview: up to 12 columns, 24px wide, 3px corner radius, in chronological order left to right. Current period in green, all others cyan at 50% opacity. Value label above each column in 11px. A dashed grey average line across the full width, labelled AVG. Baseline at zero, a solid line 1px at 20% white. Expected result: the current period's position against history is clear without reading the axis. UI only.
+
+VISUAL DIRECTION — COLUMN BARS: Make current category more prominent through saturation and a fine outer glow, with compact value labels and an interactive comparison tooltip. Click a column to update an adjacent insight panel. Add baseline and optional average reference with zero baseline.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="compare">
+<div class="vis"><div class="bars">
+<div class="track"><div class="fill" style="width:88%;background:#63DF4E"></div></div>
+<div class="track"><div class="fill" style="width:70%;background:#38BDF8"></div></div>
+<div class="track"><div class="fill" style="width:52%;background:#38BDF8"></div></div>
+<div class="track"><div class="fill" style="width:36%;background:#FBBF24"></div></div>
+<div class="track"><div class="fill" style="width:20%;background:rgba(255,255,255,.3)"></div></div>
+</div></div>
+<div class="vc-head"><h3>Ranked bars</h3><span class="cat">Compare</span></div>
+<dl><dt>Use</dt><dd>Top-N ranking of entities</dd><dt class="no">Avoid</dt><dd>Showing change over time</dd></dl>
+<div class="pr"><p>Build a horizontal ranked bar chart for [audience] of the top 10 [entities] by [metric] for [period]. Match the preview: bars 10px tall with 8px gaps. Entity name left in 12px, value right of each bar in 12px bold. Colour: green where above target, amber within 10% of target, red below, with a status word in the tooltip. Average shown as a vertical dashed line. Footer: total, and the count of entities below average in red text. Sort highest first. Expected result: top and bottom performers are identifiable in five seconds. UI only.
+
+VISUAL DIRECTION — RANKED BARS: Create staggered horizontal benchmark bars with entity labels, precise right-side values, contextual target markers, and a compact highlight of best/worst. Include top/bottom toggle and click-through detail; align labels perfectly.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv7">Copy WOW prompt</button></div>
+<span hidden="" id="pv7">Build a horizontal ranked bar chart for [audience] of the top 10 [entities] by [metric] for [period]. Match the preview: bars 10px tall with 8px gaps. Entity name left in 12px, value right of each bar in 12px bold. Colour: green where above target, amber within 10% of target, red below, with a status word in the tooltip. Average shown as a vertical dashed line. Footer: total, and the count of entities below average in red text. Sort highest first. Expected result: top and bottom performers are identifiable in five seconds. UI only.
+
+VISUAL DIRECTION — RANKED BARS: Create staggered horizontal benchmark bars with entity labels, precise right-side values, contextual target markers, and a compact highlight of best/worst. Include top/bottom toggle and click-through detail; align labels perfectly.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- COMPOSITION -->
+<article class="vc" data-c="composition">
+<div class="vis">
+<svg height="112" viewbox="0 0 42 42" width="112">
+<circle cx="21" cy="21" fill="none" r="15.9" stroke="rgba(255,255,255,.07)" stroke-width="6"></circle>
+<circle cx="21" cy="21" fill="none" r="15.9" stroke="#63DF4E" stroke-dasharray="45 55" stroke-width="6" transform="rotate(-90 21 21)"></circle>
+<circle cx="21" cy="21" fill="none" r="15.9" stroke="#38BDF8" stroke-dasharray="25 75" stroke-dashoffset="-45" stroke-width="6" transform="rotate(-90 21 21)"></circle>
+<circle cx="21" cy="21" fill="none" r="15.9" stroke="#FBBF24" stroke-dasharray="18 82" stroke-dashoffset="-70" stroke-width="6" transform="rotate(-90 21 21)"></circle>
+<text fill="#fff" font-size="5" font-weight="700" text-anchor="middle" x="21" y="23.5">TOTAL</text>
+</svg>
+</div>
+<div class="vc-head"><h3>Donut</h3><span class="cat">Composition</span></div>
+<dl><dt>Use</dt><dd>Part-to-whole with up to 5 parts</dd><dt class="no">Avoid</dt><dd>Six or more slices, or near-equal parts</dd></dl>
+<div class="pr"><p>Build a donut chart for [audience] showing how [metric] splits across [category] for [period]. Match the preview: a 112px donut with a 6px ring, 6px gaps between segments, total in the centre (TOTAL label above a 20px bold number). Max five segments: the largest four plus Other. Segment colours: green, cyan, amber, a muted grey, and a dim white for Other. Legend to the right: colour dot, label, value and percent, sorted by size. Expected result: the biggest share is named at a glance. UI only.
+
+VISUAL DIRECTION — DONUT: Build a highly legible compact ring with centre total, external sorted legend, SVG segment hover enlargement, percentage + value tooltips, and clickable legend filters. Ensure segment arithmetic sums to 100% and avoid more than five segments.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv8">Copy WOW prompt</button></div>
+<span hidden="" id="pv8">Build a donut chart for [audience] showing how [metric] splits across [category] for [period]. Match the preview: a 112px donut with a 6px ring, 6px gaps between segments, total in the centre (TOTAL label above a 20px bold number). Max five segments: the largest four plus Other. Segment colours: green, cyan, amber, a muted grey, and a dim white for Other. Legend to the right: colour dot, label, value and percent, sorted by size. Expected result: the biggest share is named at a glance. UI only.
+
+VISUAL DIRECTION — DONUT: Build a highly legible compact ring with centre total, external sorted legend, SVG segment hover enlargement, percentage + value tooltips, and clickable legend filters. Ensure segment arithmetic sums to 100% and avoid more than five segments.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="composition">
+<div class="vis"><div class="tm">
+<i style="grid-column:span 2;grid-row:span 2;background:rgba(99,223,78,.55)"></i>
+<i style="background:rgba(56,189,248,.5)"></i>
+<i style="background:rgba(56,189,248,.3)"></i>
+<i style="background:rgba(251,191,36,.5)"></i>
+<i style="background:rgba(255,255,255,.14)"></i>
+<i style="grid-column:span 2;background:rgba(56,189,248,.35)"></i>
+<i style="background:rgba(248,113,113,.45)"></i>
+<i style="background:rgba(255,255,255,.1)"></i>
+</div></div>
+<div class="vc-head"><h3>Treemap</h3><span class="cat">Composition</span></div>
+<dl><dt>Use</dt><dd>Many items grouped and sized by value</dd><dt class="no">Avoid</dt><dd>Precise comparison of similar sizes</dd></dl>
+<div class="pr"><p>Build a treemap for [audience] of [metric] grouped by [group] then [sub-group] for [period]. Match the preview: a block layout with a large lead tile at top left, two medium tiles, and small tiles filling the rest, 3px gaps and 5px radius. Tile fill by change vs last period: green 55% for growth, red 45% for decline, grey 20% for flat, with the thresholds printed in the legend. Each tile shows its name and value in 11px, and hides labels when the tile is too small. Tooltip shows the exact value and share of total. Expected result: largest groups and where they are growing or shrinking are visible at once. UI only.
+
+VISUAL DIRECTION — TREEMAP: Use nested glassy rectangle tiles sized proportionally to underlying values, clear group headers, subtle separators and hover details. Clicking a parent tile drills to subgroups with a visible breadcrumb; small tiles should reveal names by tooltip rather than tiny text.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv9">Copy WOW prompt</button></div>
+<span hidden="" id="pv9">Build a treemap for [audience] of [metric] grouped by [group] then [sub-group] for [period]. Match the preview: a block layout with a large lead tile at top left, two medium tiles, and small tiles filling the rest, 3px gaps and 5px radius. Tile fill by change vs last period: green 55% for growth, red 45% for decline, grey 20% for flat, with the thresholds printed in the legend. Each tile shows its name and value in 11px, and hides labels when the tile is too small. Tooltip shows the exact value and share of total. Expected result: largest groups and where they are growing or shrinking are visible at once. UI only.
+
+VISUAL DIRECTION — TREEMAP: Use nested glassy rectangle tiles sized proportionally to underlying values, clear group headers, subtle separators and hover details. Clicking a parent tile drills to subgroups with a visible breadcrumb; small tiles should reveal names by tooltip rather than tiny text.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- PATTERN -->
+<article class="vc" data-c="pattern">
+<div class="vis"><div class="hm" style="grid-template-columns:repeat(6,1fr)">
+<i class="g"></i><i class="g2"></i><i class="am"></i><i class="g"></i><i class="rd"></i><i class="g2"></i>
+<i class="g"></i><i class="am"></i><i class="g"></i><i class="g2"></i><i class="g"></i><i class="am"></i>
+<i class="rd"></i><i class="g"></i><i class="g2"></i><i class="g"></i><i class="am"></i><i class="g"></i>
+</div></div>
+<div class="vc-head"><h3>Heatmap</h3><span class="cat">Pattern</span></div>
+<dl><dt>Use</dt><dd>Intensity across two dimensions, like time by region</dd><dt class="no">Avoid</dt><dd>When exact values matter without labels</dd></dl>
+<div class="pr"><p>Build a heatmap for [audience] of [metric] with [dimension] as rows and [week] as columns, for [period]. Match the preview: a 6 by 3 grid of cells 20px tall with 3px gaps and 4px radius. Colours from a green-to-red scale: green 72% for good, green 38% for fair, amber 62% for watch, red 75% for poor. Print the value in each cell at 10px. Outline the three hottest cells with a 2px white border. Sort rows by total, highest first. Legend beside the grid. Expected result: hotspots and their timing are obvious, and exact values are readable. Maximum 12 by 12. UI only.
+
+VISUAL DIRECTION — HEATMAP: Build a dense but readable matrix with clearly named row/column axes, 5-step intensity legend, cell-level tooltip and cross-highlighting. Click a hotspot to open its contributing records; use visual intensity only for grounded quantities.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv10">Copy WOW prompt</button></div>
+<span hidden="" id="pv10">Build a heatmap for [audience] of [metric] with [dimension] as rows and [week] as columns, for [period]. Match the preview: a 6 by 3 grid of cells 20px tall with 3px gaps and 4px radius. Colours from a green-to-red scale: green 72% for good, green 38% for fair, amber 62% for watch, red 75% for poor. Print the value in each cell at 10px. Outline the three hottest cells with a 2px white border. Sort rows by total, highest first. Legend beside the grid. Expected result: hotspots and their timing are obvious, and exact values are readable. Maximum 12 by 12. UI only.
+
+VISUAL DIRECTION — HEATMAP: Build a dense but readable matrix with clearly named row/column axes, 5-step intensity legend, cell-level tooltip and cross-highlighting. Click a hotspot to open its contributing records; use visual intensity only for grounded quantities.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="pattern">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 200 120">
+<rect fill="rgba(251,191,36,.08)" height="60" width="100" x="0" y="0"></rect>
+<rect fill="rgba(248,113,113,.10)" height="60" width="100" x="100" y="0"></rect>
+<rect fill="rgba(99,223,78,.08)" height="60" width="100" x="0" y="60"></rect>
+<rect fill="rgba(251,191,36,.08)" height="60" width="100" x="100" y="60"></rect>
+<line stroke="rgba(255,255,255,.2)" x1="100" x2="100" y1="0" y2="120"></line>
+<line stroke="rgba(255,255,255,.2)" x1="0" x2="200" y1="60" y2="60"></line>
+<circle cx="40" cy="30" fill="#63DF4E" r="5"></circle>
+<circle cx="60" cy="88" fill="#63DF4E" r="7"></circle>
+<circle cx="150" cy="40" fill="#FBBF24" r="6"></circle>
+<circle cx="170" cy="100" fill="#F87171" r="8"></circle>
+<circle cx="120" cy="18" fill="#38BDF8" r="5"></circle>
+<text fill="#8ba0ab" font-size="7" x="4" y="116">LIKELIHOOD →</text>
+<text fill="#8ba0ab" font-size="7" x="4" y="8">IMPACT ↑</text>
+</svg>
+</div>
+<div class="vc-head"><h3>Risk matrix</h3><span class="cat">Pattern</span></div>
+<dl><dt>Use</dt><dd>Prioritizing items by likelihood and impact</dd><dt class="no">Avoid</dt><dd>Items with no comparable scoring</dd></dl>
+<div class="pr"><p>Build a risk matrix for [audience] plotting [items] with likelihood (1 to 5) on the X axis and impact (1 to 5) on the Y axis. Match the preview: a 200 by 120 plot with four tinted quadrants (amber top left, red top right, green bottom left, amber bottom right), a white divider at the centre, and axis labels in grey monospace: LIKELIHOOD across the bottom and IMPACT up the left. Quadrant names printed in the corners: Monitor, Plan, Act now, Accept. Items are dots of 5 to 8px coloured by owner, each with a short label. Top five items listed beside the grid. Expected result: the reader sees which items need action first. UI only.
+
+VISUAL DIRECTION — RISK MATRIX: Draw a 5×5 likelihood-impact grid with escalating labelled bands, incident bubbles sized by exposure, tooltip definitions and selectable risk list. Include threshold legend and a right-side action owner panel; a bubble click highlights its matching row.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv11">Copy WOW prompt</button></div>
+<span hidden="" id="pv11">Build a risk matrix for [audience] plotting [items] with likelihood (1 to 5) on the X axis and impact (1 to 5) on the Y axis. Match the preview: a 200 by 120 plot with four tinted quadrants (amber top left, red top right, green bottom left, amber bottom right), a white divider at the centre, and axis labels in grey monospace: LIKELIHOOD across the bottom and IMPACT up the left. Quadrant names printed in the corners: Monitor, Plan, Act now, Accept. Items are dots of 5 to 8px coloured by owner, each with a short label. Top five items listed beside the grid. Expected result: the reader sees which items need action first. UI only.
+
+VISUAL DIRECTION — RISK MATRIX: Draw a 5×5 likelihood-impact grid with escalating labelled bands, incident bubbles sized by exposure, tooltip definitions and selectable risk list. Include threshold legend and a right-side action owner panel; a bubble click highlights its matching row.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="pattern">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<rect fill="rgba(56,189,248,.5)" height="40" rx="2" width="26" x="17" y="60"></rect>
+<rect fill="rgba(56,189,248,.35)" height="28" rx="2" width="26" x="62" y="72"></rect>
+<rect fill="rgba(56,189,248,.3)" height="17" rx="2" width="26" x="107" y="83"></rect>
+<rect fill="rgba(56,189,248,.25)" height="9" rx="2" width="26" x="152" y="91"></rect>
+<rect fill="rgba(56,189,248,.2)" height="5" rx="2" width="16" x="197" y="95"></rect>
+<polyline fill="none" points="30,64 75,39 120,25 165,17 205,10" stroke="#FBBF24" stroke-width="2"></polyline>
+<line stroke="#F87171" stroke-dasharray="4 3" stroke-width="1" x1="0" x2="220" y1="28" y2="28"></line>
+<text fill="#F87171" font-size="6.5" x="150" y="24">80%</text>
+</svg>
+</div>
+<div class="vc-head"><h3>Pareto</h3><span class="cat">Pattern</span></div>
+<dl><dt>Use</dt><dd>Finding the few causes behind most of the result</dd><dt class="no">Avoid</dt><dd>Categories with no meaningful ranking</dd></dl>
+<div class="pr"><p>Build a Pareto chart for [audience] of [cause] by [count] for [period]. Match the preview: bars sorted high to low in cyan at 50% and falling opacity, 26px wide. A cumulative percent line in amber, 2px, with dots on each bar. A dashed red line at 80% labelled 80%. Left axis: count from zero. Right axis: 0 to 100% cumulative. Label the causes that make up the first 80% in white. Expected result: the reader names the top two or three causes in five seconds. UI only.
+
+VISUAL DIRECTION — PARETO: Use descending columns for contributors plus a correctly scaled cumulative percentage curve, 80% reference and emphasized threshold crossing. Add a small callout naming how many categories account for 80% and interactive item selection.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv12">Copy WOW prompt</button></div>
+<span hidden="" id="pv12">Build a Pareto chart for [audience] of [cause] by [count] for [period]. Match the preview: bars sorted high to low in cyan at 50% and falling opacity, 26px wide. A cumulative percent line in amber, 2px, with dots on each bar. A dashed red line at 80% labelled 80%. Left axis: count from zero. Right axis: 0 to 100% cumulative. Label the causes that make up the first 80% in white. Expected result: the reader names the top two or three causes in five seconds. UI only.
+
+VISUAL DIRECTION — PARETO: Use descending columns for contributors plus a correctly scaled cumulative percentage curve, 80% reference and emphasized threshold crossing. Add a small callout naming how many categories account for 80% and interactive item selection.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- PROCESS -->
+<article class="vc" data-c="process">
+<div class="vis"><div class="fn">
+<i style="width:100%;background:#63DF4E">Visits 100%</i>
+<i style="width:78%;background:#7CE46A">Sign-up 78%</i>
+<i style="width:55%;background:#38BDF8">Activated 55%</i>
+<i style="width:34%;background:#FBBF24">Paid 34%</i>
+</div></div>
+<div class="vc-head"><h3>Funnel</h3><span class="cat">Process</span></div>
+<dl><dt>Use</dt><dd>Stage-by-stage drop-off in a sequence</dd><dt class="no">Avoid</dt><dd>Stages that repeat or run in parallel</dd></dl>
+<div class="pr"><p>Build a funnel for [audience] of [stage] counts for [period]. Match the preview: centred horizontal bars, each 22px tall with 4px gaps, widths proportional to counts, colours from green at the top through cyan and amber to red at the bottom. Inside each bar, the stage name and percent of the first stage. Beside each bar, the count and the conversion percent from the previous stage. Highlight the stage with the largest drop-off with a red outline and a callout giving its drop-off percent. Expected result: the biggest leak is identified without reading the numbers closely. UI only.
+
+VISUAL DIRECTION — FUNNEL: Use proportionally sized connected stages, stage totals, conversion percentages between steps and a visually prominent biggest-loss marker. Click stages for cause analysis; keep consistent denominators and tooltip definitions.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv13">Copy WOW prompt</button></div>
+<span hidden="" id="pv13">Build a funnel for [audience] of [stage] counts for [period]. Match the preview: centred horizontal bars, each 22px tall with 4px gaps, widths proportional to counts, colours from green at the top through cyan and amber to red at the bottom. Inside each bar, the stage name and percent of the first stage. Beside each bar, the count and the conversion percent from the previous stage. Highlight the stage with the largest drop-off with a red outline and a callout giving its drop-off percent. Expected result: the biggest leak is identified without reading the numbers closely. UI only.
+
+VISUAL DIRECTION — FUNNEL: Use proportionally sized connected stages, stage totals, conversion percentages between steps and a visually prominent biggest-loss marker. Click stages for cause analysis; keep consistent denominators and tooltip definitions.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="process">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<g stroke="rgba(255,255,255,.12)"><line x1="10" x2="210" y1="25" y2="25"></line><line x1="10" x2="210" y1="55" y2="55"></line><line x1="10" x2="210" y1="85" y2="85"></line></g>
+<g fill="#63DF4E"><circle cx="25" cy="25" r="5"></circle><circle cx="80" cy="25" r="5"></circle></g>
+<polygon fill="#FBBF24" points="130,50 136,56 130,62 124,56"></polygon>
+<g fill="#38BDF8"><circle cx="60" cy="55" r="5"></circle><circle cx="170" cy="55" r="5"></circle></g>
+<g fill="#F87171"><circle cx="110" cy="85" r="5"></circle><circle cx="190" cy="85" r="5"></circle></g>
+<text fill="#8ba0ab" font-size="6.5" x="14" y="16">LANE A</text>
+<text fill="#8ba0ab" font-size="6.5" x="14" y="46">LANE B</text>
+<text fill="#8ba0ab" font-size="6.5" x="14" y="76">LANE C</text>
+</svg>
+</div>
+<div class="vc-head"><h3>Timeline</h3><span class="cat">Process</span></div>
+<dl><dt>Use</dt><dd>Events and milestones in order, across lanes</dd><dt class="no">Avoid</dt><dd>Pure numeric comparisons</dd></dl>
+<div class="pr"><p>Build a timeline for [audience] of [events] over [period], with one lane per [owner group]. Match the preview: lanes 30px apart, thin 1px lane lines at 15% white, lane labels in grey monospace at the left. Milestones are 10px diamonds in white, completed events are 6px filled green dots, planned events are 6px outlined cyan dots. A vertical 1px line for today labelled TODAY. Overdue items use red with the text OVERDUE. Labels stay short, with full detail on hover or click. Maximum six lanes. Expected result: the reader sees what is done, what is late and what is next, by owner. UI only.
+
+VISUAL DIRECTION — TIMELINE: Create an elegant horizontal event rail with grouped lanes, chronological labels, milestone nodes, dependency connectors and status iconography. Add day/week/month controls and an expandable milestone detail view with owner and notes.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv14">Copy WOW prompt</button></div>
+<span hidden="" id="pv14">Build a timeline for [audience] of [events] over [period], with one lane per [owner group]. Match the preview: lanes 30px apart, thin 1px lane lines at 15% white, lane labels in grey monospace at the left. Milestones are 10px diamonds in white, completed events are 6px filled green dots, planned events are 6px outlined cyan dots. A vertical 1px line for today labelled TODAY. Overdue items use red with the text OVERDUE. Labels stay short, with full detail on hover or click. Maximum six lanes. Expected result: the reader sees what is done, what is late and what is next, by owner. UI only.
+
+VISUAL DIRECTION — TIMELINE: Create an elegant horizontal event rail with grouped lanes, chronological labels, milestone nodes, dependency connectors and status iconography. Add day/week/month controls and an expandable milestone detail view with owner and notes.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- ACTION -->
+<article class="vc" data-c="action">
+<div class="vis"><div class="mini-q">
+<div class="qr"><span>[Item A] needs owner</span><span class="bdg p1">P1</span></div>
+<div class="qr"><span>[Item B] due in 2 days</span><span class="bdg p2">P2</span></div>
+<div class="qr"><span>[Item C] closed</span><span class="bdg ok">DONE</span></div>
+</div></div>
+<div class="vc-head"><h3>Work queue</h3><span class="cat">Action</span></div>
+<dl><dt>Use</dt><dd>Telling people what needs action now</dd><dt class="no">Avoid</dt><dd>Read-only summaries (keep top 5)</dd></dl>
+<div class="pr"><p>Build a work queue table for [audience] showing the top 10 open [items]. Match the preview: a table with rows 34px tall, 1px row dividers at 8% white, and a header in uppercase grey monospace. Columns: ID, title, owner, priority, due date, status. Priority and status are pill badges with a text label: P1 in red, P2 in amber, OK in green. Highlight rows more than two days overdue with a red left border. Sort by priority, then due date, soonest first. Owner filter above the table and an open-items count. Expected result: a team member knows what to do next in under 30 seconds. UI only.
+
+VISUAL DIRECTION — WORK QUEUE: Create an actionable operations list with severity tags, assignee avatar initials, SLA clock, aging indicator and row-expansion drawer. Filters for severity/status/owner and working buttons for Assign, Escalate and Resolve must modify local demo state.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv15">Copy WOW prompt</button></div>
+<span hidden="" id="pv15">Build a work queue table for [audience] showing the top 10 open [items]. Match the preview: a table with rows 34px tall, 1px row dividers at 8% white, and a header in uppercase grey monospace. Columns: ID, title, owner, priority, due date, status. Priority and status are pill badges with a text label: P1 in red, P2 in amber, OK in green. Highlight rows more than two days overdue with a red left border. Sort by priority, then due date, soonest first. Owner filter above the table and an open-items count. Expected result: a team member knows what to do next in under 30 seconds. UI only.
+
+VISUAL DIRECTION — WORK QUEUE: Create an actionable operations list with severity tags, assignee avatar initials, SLA clock, aging indicator and row-expansion drawer. Filters for severity/status/owner and working buttons for Assign, Escalate and Resolve must modify local demo state.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="action">
+<div class="vis"><div class="ai-mini"><b>AI insight</b>Three findings from [metric]: a rise in [segment], a concentration in [area], and a dip after [event]. Recommended next step: [action], with the supporting figure beside each.</div></div>
+<div class="vc-head"><h3>AI insight panel</h3><span class="cat">Action</span></div>
+<dl><dt>Use</dt><dd>Turning numbers into findings and next steps</dd><dt class="no">Avoid</dt><dd>Claims without the evidence figure beside them</dd></dl>
+<div class="pr"><p>Build an AI insight panel for [audience] on [metric] for [period]. Match the preview: a rounded panel with a cyan to green gradient at low opacity and a 1px cyan border at 25%, label AI INSIGHT in uppercase cyan at the top. Three findings, each a headline sentence in 14px white, then its evidence figure in 12px with value, change and comparison base, then one recommended next action with an owner in green. Each finding must cite a number from the data. Source note at the bottom with dataset and date range. Expected result: three specific, checkable findings with a next step for each. UI only.
+
+VISUAL DIRECTION — AI INSIGHT PANEL: Create an AI analyst sidebar featuring a concise insight headline, evidence chips, confidence/limitations label, contributing metrics, recommendation and clear action buttons. Each recommendation must link to visible underlying sample data and remain labelled simulated, never imply a live AI connection.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv16">Copy WOW prompt</button></div>
+<span hidden="" id="pv16">Build an AI insight panel for [audience] on [metric] for [period]. Match the preview: a rounded panel with a cyan to green gradient at low opacity and a 1px cyan border at 25%, label AI INSIGHT in uppercase cyan at the top. Three findings, each a headline sentence in 14px white, then its evidence figure in 12px with value, change and comparison base, then one recommended next action with an owner in green. Each finding must cite a number from the data. Source note at the bottom with dataset and date range. Expected result: three specific, checkable findings with a next step for each. UI only.
+
+VISUAL DIRECTION — AI INSIGHT PANEL: Create an AI analyst sidebar featuring a concise insight headline, evidence chips, confidence/limitations label, contributing metrics, recommendation and clear action buttons. Each recommendation must link to visible underlying sample data and remain labelled simulated, never imply a live AI connection.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- NETWORK & FLOW -->
+<article class="vc" data-c="network">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<g class="anim-dash" stroke="rgba(56,189,248,.6)" stroke-width="1.4">
+<line x1="110" x2="45" y1="55" y2="25"></line><line x1="110" x2="60" y1="55" y2="95"></line><line x1="110" x2="175" y1="55" y2="22"></line><line x1="110" x2="180" y1="55" y2="90"></line><line x1="110" x2="30" y1="55" y2="62"></line><line x1="175" x2="200" y1="22" y2="55"></line><line x1="60" x2="30" y1="95" y2="62"></line>
+</g>
+<circle cx="110" cy="55" fill="#63DF4E" r="12"></circle>
+<circle cx="45" cy="25" fill="#38BDF8" r="6"></circle><circle cx="60" cy="95" fill="#FBBF24" r="7"></circle><circle cx="175" cy="22" fill="#38BDF8" r="8"></circle><circle cx="180" cy="90" fill="#F87171" r="5"></circle><circle cx="30" cy="62" fill="#38BDF8" r="5"></circle><circle cx="200" cy="55" fill="#fff" r="4"></circle>
+</svg>
+</div>
+<div class="vc-head"><h3>Network graph</h3><span class="cat">Network</span></div>
+<dl><dt>Use</dt><dd>Relationships and dependencies between entities</dd><dt class="no">Avoid</dt><dd>Over about 100 nodes without filters</dd></dl>
+<div class="pr"><p>Build a network graph for [audience] of [entities] linked by [relationship], for [period]. Match the preview: nodes are circles sized by [metric] and coloured by [group] with a legend. Links are 1.4px cyan lines at 60% opacity with a slow dash animation. The top three hubs are green, larger, and labelled. Show only links above [threshold] by default, with a toggle for all links. Clicking a node focuses on its direct neighbours and dims the rest to 20% opacity. Expected result: the reader can name the most connected entities and the groups they bridge. Default view capped at 100 nodes. UI only.
+
+VISUAL DIRECTION — NETWORK GRAPH: Make a navigable force-layout dependency diagram with distinct node types, curved links, arrowheads, edge labels, zoom/pan, focus mode, and a side panel showing first- and second-order dependencies. Stable coordinates and a reset view are required.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv17">Copy WOW prompt</button></div>
+<span hidden="" id="pv17">Build a network graph for [audience] of [entities] linked by [relationship], for [period]. Match the preview: nodes are circles sized by [metric] and coloured by [group] with a legend. Links are 1.4px cyan lines at 60% opacity with a slow dash animation. The top three hubs are green, larger, and labelled. Show only links above [threshold] by default, with a toggle for all links. Clicking a node focuses on its direct neighbours and dims the rest to 20% opacity. Expected result: the reader can name the most connected entities and the groups they bridge. Default view capped at 100 nodes. UI only.
+
+VISUAL DIRECTION — NETWORK GRAPH: Make a navigable force-layout dependency diagram with distinct node types, curved links, arrowheads, edge labels, zoom/pan, focus mode, and a side panel showing first- and second-order dependencies. Stable coordinates and a reset view are required.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="network">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<path d="M26,22 C60,22 60,20 100,20" fill="none" opacity=".35" stroke="#63DF4E" stroke-width="14"></path>
+<path d="M26,40 C60,40 60,60 100,60" fill="none" opacity=".35" stroke="#38BDF8" stroke-width="8"></path>
+<path d="M26,72 C60,72 60,62 100,62" fill="none" opacity=".35" stroke="#FBBF24" stroke-width="12"></path>
+<path d="M118,20 C145,20 145,16 170,16" fill="none" opacity=".35" stroke="#63DF4E" stroke-width="10"></path>
+<path d="M118,60 C145,60 145,50 170,50" fill="none" opacity=".35" stroke="#38BDF8" stroke-width="12"></path>
+<path d="M118,64 C145,64 145,78 170,78" fill="none" opacity=".35" stroke="#FBBF24" stroke-width="8"></path>
+<rect fill="rgba(255,255,255,.7)" height="40" rx="2" width="8" x="18" y="12"></rect>
+<rect fill="rgba(255,255,255,.7)" height="28" rx="2" width="8" x="18" y="62"></rect>
+<rect fill="rgba(255,255,255,.7)" height="26" rx="2" width="8" x="110" y="8"></rect>
+<rect fill="rgba(255,255,255,.7)" height="26" rx="2" width="8" x="110" y="50"></rect>
+<rect fill="rgba(255,255,255,.7)" height="18" rx="2" width="8" x="170" y="8"></rect>
+<rect fill="rgba(255,255,255,.7)" height="32" rx="2" width="8" x="170" y="36"></rect>
+<rect fill="rgba(255,255,255,.7)" height="18" rx="2" width="8" x="170" y="74"></rect>
+</svg>
+</div>
+<div class="vc-head"><h3>Sankey flow</h3><span class="cat">Network</span></div>
+<dl><dt>Use</dt><dd>How a total splits and flows across stages</dd><dt class="no">Avoid</dt><dd>Many tiny flows that cannot be read</dd></dl>
+<div class="pr"><p>Build a Sankey diagram for [audience] of [metric] flowing from [sources] on the left to [outcomes] on the right, for [period]. Match the preview: node bars 10px wide in white at 70%, flows as curved bands in green, cyan, amber at 35% opacity, with width proportional to value. Each node labelled with its name and total. Each band labelled with its value and share on hover. Order nodes by size, largest at the top. Group flows below [threshold] into one Other node. Expected result: the reader sees where the total comes from and where it ends up. UI only.
+
+VISUAL DIRECTION — SANKEY FLOW: Render proportional luminous flow ribbons with flows accurately representing source-to-target totals, crisp left/right labels, hover highlighting of an entire route and a detail pane explaining leakage. Never use decorative strands unrelated to values.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv18">Copy WOW prompt</button></div>
+<span hidden="" id="pv18">Build a Sankey diagram for [audience] of [metric] flowing from [sources] on the left to [outcomes] on the right, for [period]. Match the preview: node bars 10px wide in white at 70%, flows as curved bands in green, cyan, amber at 35% opacity, with width proportional to value. Each node labelled with its name and total. Each band labelled with its value and share on hover. Order nodes by size, largest at the top. Group flows below [threshold] into one Other node. Expected result: the reader sees where the total comes from and where it ends up. UI only.
+
+VISUAL DIRECTION — SANKEY FLOW: Render proportional luminous flow ribbons with flows accurately representing source-to-target totals, crisp left/right labels, hover highlighting of an entire route and a detail pane explaining leakage. Never use decorative strands unrelated to values.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="network">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<g fill="none" opacity=".45" stroke-width="6">
+<path d="M135,16.7 Q110,60 85,103.3" stroke="#63DF4E"></path>
+<path d="M153.3,85 Q110,60 66.7,35" stroke="#38BDF8"></path>
+<path d="M135,16.7 Q150,50 153.3,85" stroke="#FBBF24"></path>
+<path d="M85,103.3 Q80,60 66.7,35" stroke="#F87171"></path>
+</g>
+<g fill="none" stroke="rgba(255,255,255,.1)" stroke-width="10"><circle cx="110" cy="60" r="50"></circle></g>
+<g fill="#63DF4E"><circle cx="135" cy="16.7" r="5"></circle></g>
+<g fill="#38BDF8"><circle cx="153.3" cy="85" r="5"></circle></g>
+<g fill="#FBBF24"><circle cx="85" cy="103.3" r="5"></circle></g>
+<g fill="#F87171"><circle cx="66.7" cy="35" r="5"></circle></g>
+</svg>
+</div>
+<div class="vc-head"><h3>Chord diagram</h3><span class="cat">Network</span></div>
+<dl><dt>Use</dt><dd>Two-way flows between a few groups</dd><dt class="no">Avoid</dt><dd>Sparse pairs with no real flow</dd></dl>
+<div class="pr"><p>Build a chord diagram for [audience] of flows between [groups] for [period]. Match the preview: a circle with arcs around the edge, arc width shows each group's total, ribbons between arcs at 45% opacity in the source group's colour, width shows the flow. Group labels outside the arcs. Hovering a group highlights only its ribbons and shows its in and out totals in a small card. Expected result: the reader can see which pairs exchange the most. Maximum eight groups. UI only.
+
+VISUAL DIRECTION — CHORD DIAGRAM: Build a compact circular relationship diagram with readable perimeter labels, arcs sized by aggregate volume, directional distinction if appropriate, and focused hover highlighting of one entity and its connections. Add an alternate accessible relation table.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv19">Copy WOW prompt</button></div>
+<span hidden="" id="pv19">Build a chord diagram for [audience] of flows between [groups] for [period]. Match the preview: a circle with arcs around the edge, arc width shows each group's total, ribbons between arcs at 45% opacity in the source group's colour, width shows the flow. Group labels outside the arcs. Hovering a group highlights only its ribbons and shows its in and out totals in a small card. Expected result: the reader can see which pairs exchange the most. Maximum eight groups. UI only.
+
+VISUAL DIRECTION — CHORD DIAGRAM: Build a compact circular relationship diagram with readable perimeter labels, arcs sized by aggregate volume, directional distinction if appropriate, and focused hover highlighting of one entity and its connections. Add an alternate accessible relation table.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- GEOGRAPHIC -->
+<article class="vc" data-c="geo">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<defs><pattern height="7" id="dotgrid" patternunits="userSpaceOnUse" width="7"><circle cx="3.5" cy="3.5" fill="rgba(255,255,255,.22)" r="1.1"></circle></pattern></defs>
+<rect fill="url(#dotgrid)" height="110" width="220" x="0" y="0"></rect>
+<circle cx="60" cy="40" fill="rgba(99,223,78,.45)" r="9" stroke="#63DF4E"></circle>
+<circle cx="120" cy="30" fill="rgba(56,189,248,.4)" r="13" stroke="#38BDF8"></circle>
+<circle cx="165" cy="72" fill="rgba(248,113,113,.45)" r="7" stroke="#F87171"></circle>
+<circle cx="90" cy="80" fill="rgba(251,191,36,.4)" r="10" stroke="#FBBF24"></circle>
+<circle cx="184" cy="26" fill="rgba(99,223,78,.45)" r="5" stroke="#63DF4E"></circle>
+</svg>
+</div>
+<div class="vc-head"><h3>Dot-grid map</h3><span class="cat">Geographic</span></div>
+<dl><dt>Use</dt><dd>Location-based performance at a glance</dd><dt class="no">Avoid</dt><dd>Small areas where bubbles overlap</dd></dl>
+<div class="pr"><p>Build a dot-grid map for [audience] of [regions] for [period]. Match the preview: a faint dot grid background at 22% white, one circle per region at its approximate position with a 1px outline. Size by [metric]. Colour by [status] (on track green, at risk amber, off track red), with a legend that also prints the status word. Callouts with a leader line for the top three regions by [metric]. Tooltip shows value and change on hover. Expected result: large regions and regions at risk are visible at a glance. No bubble overlap at default size. UI only.
+
+VISUAL DIRECTION — DOT-GRID MAP: Use a recognisable geographic outline built from an offline SVG or simplified vector, overlay proportional coloured location markers, zoom/focus controls, clear legend and contextual region details. State clearly when locations are illustrative rather than actual coordinates.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv20">Copy WOW prompt</button></div>
+<span hidden="" id="pv20">Build a dot-grid map for [audience] of [regions] for [period]. Match the preview: a faint dot grid background at 22% white, one circle per region at its approximate position with a 1px outline. Size by [metric]. Colour by [status] (on track green, at risk amber, off track red), with a legend that also prints the status word. Callouts with a leader line for the top three regions by [metric]. Tooltip shows value and change on hover. Expected result: large regions and regions at risk are visible at a glance. No bubble overlap at default size. UI only.
+
+VISUAL DIRECTION — DOT-GRID MAP: Use a recognisable geographic outline built from an offline SVG or simplified vector, overlay proportional coloured location markers, zoom/focus controls, clear legend and contextual region details. State clearly when locations are illustrative rather than actual coordinates.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="geo">
+<div class="vis"><div class="tiles">
+<i style="background:#63DF4E">R1</i><i style="background:#63DF4E;opacity:.7">R2</i><i style="background:#FBBF24">R3</i><i style="background:#38BDF8">R4</i><i style="background:#63DF4E;opacity:.5">R5</i><i style="background:#F87171">R6</i>
+<i style="background:#38BDF8;opacity:.6">R7</i><i style="background:#63DF4E">R8</i><i style="background:#FBBF24;opacity:.8">R9</i><i style="background:#63DF4E;opacity:.85">R10</i><i style="background:#38BDF8">R11</i><i style="background:#63DF4E;opacity:.6">R12</i>
+<i style="background:#F87171;opacity:.7">R13</i><i style="background:#FBBF24">R14</i><i style="background:#63DF4E;opacity:.9">R15</i><i style="background:#38BDF8;opacity:.5">R16</i><i style="background:#63DF4E">R17</i><i style="background:#F87171">R18</i>
+</div></div>
+<div class="vc-head"><h3>Tile map</h3><span class="cat">Geographic</span></div>
+<dl><dt>Use</dt><dd>Comparing regions equally when shape matters less</dd><dt class="no">Avoid</dt><dd>When exact geography drives the decision</dd></dl>
+<div class="pr"><p>Build a tile map for [audience] with one equal-sized tile per [region] for [period], arranged roughly by geography. Match the preview: a grid of 6 columns with 4px gaps, 5px radius tiles, each showing its region code in bold and value in 11px. Colour by [metric] on a diverging scale centred on target: red below, grey at target, green above, with the midpoint printed in the legend. Group tiles by [group] if there are more than 20. Expected result: regions above and below target are compared fairly, regardless of size. UI only.
+
+VISUAL DIRECTION — TILE MAP: Use consistent geographic tiles with label + measure, a sensible region arrangement, threshold bands and interactive region selection. Provide accompanying ranked table because tile positions are approximate, not true boundaries.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv21">Copy WOW prompt</button></div>
+<span hidden="" id="pv21">Build a tile map for [audience] with one equal-sized tile per [region] for [period], arranged roughly by geography. Match the preview: a grid of 6 columns with 4px gaps, 5px radius tiles, each showing its region code in bold and value in 11px. Colour by [metric] on a diverging scale centred on target: red below, grey at target, green above, with the midpoint printed in the legend. Group tiles by [group] if there are more than 20. Expected result: regions above and below target are compared fairly, regardless of size. UI only.
+
+VISUAL DIRECTION — TILE MAP: Use consistent geographic tiles with label + measure, a sensible region arrangement, threshold bands and interactive region selection. Provide accompanying ranked table because tile positions are approximate, not true boundaries.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- MODERN & WOW -->
+<article class="vc" data-c="modern">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<g fill="none" stroke-width="12" transform="rotate(-90 110 55)">
+<circle cx="110" cy="55" r="18" stroke="#63DF4E" stroke-dasharray="50.9 62.2" stroke-dashoffset="0"></circle>
+<circle cx="110" cy="55" r="18" stroke="#38BDF8" stroke-dasharray="33.9 79.2" stroke-dashoffset="-50.9"></circle>
+<circle cx="110" cy="55" r="18" stroke="#FBBF24" stroke-dasharray="28.3 84.8" stroke-dashoffset="-84.8"></circle>
+<circle cx="110" cy="55" opacity=".9" r="36" stroke="#63DF4E" stroke-dasharray="34.7 191.5" stroke-dashoffset="0"></circle>
+<circle cx="110" cy="55" opacity=".9" r="36" stroke="#38BDF8" stroke-dasharray="34.7 191.5" stroke-dashoffset="-37.7"></circle>
+<circle cx="110" cy="55" opacity=".9" r="36" stroke="#FBBF24" stroke-dasharray="34.7 191.5" stroke-dashoffset="-75.4"></circle>
+<circle cx="110" cy="55" opacity=".9" r="36" stroke="#F87171" stroke-dasharray="34.7 191.5" stroke-dashoffset="-113.1"></circle>
+<circle cx="110" cy="55" opacity=".9" r="36" stroke="#a78bfa" stroke-dasharray="34.7 191.5" stroke-dashoffset="-150.8"></circle>
+<circle cx="110" cy="55" opacity=".9" r="36" stroke="#f0abfc" stroke-dasharray="34.7 191.5" stroke-dashoffset="-188.5"></circle>
+</g>
+</svg>
+</div>
+<div class="vc-head"><h3>Sunburst</h3><span class="cat">Modern</span></div>
+<dl><dt>Use</dt><dd>Two-level hierarchy shown as share of a whole</dd><dt class="no">Avoid</dt><dd>Deep trees that need exact reading</dd></dl>
+<div class="pr"><p>Build a sunburst chart for [audience] of [metric] for [period], with [parent] as the inner ring and [child] as the outer ring. Match the preview: concentric rings with 6px strokes and 2px gaps, the inner ring in green, cyan, amber, red, and muted violet, the outer ring in the same hues at lower opacity. Size segments by value. Centre shows the hovered parent's share as a percent in 20px bold. Clicking a segment zooms in, with a breadcrumb to return. Limit to five parents and 30 children. Expected result: each parent's share is clear, and the children that drive it are identifiable. UI only.
+
+VISUAL DIRECTION — SUNBURST: Create interactive nested concentric segments with breadcrumbs, ring labels placed only where readable, central selection detail, drill-up button and a colour-by-parent scheme. Keep percentages and hierarchy internally consistent.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv22">Copy WOW prompt</button></div>
+<span hidden="" id="pv22">Build a sunburst chart for [audience] of [metric] for [period], with [parent] as the inner ring and [child] as the outer ring. Match the preview: concentric rings with 6px strokes and 2px gaps, the inner ring in green, cyan, amber, red, and muted violet, the outer ring in the same hues at lower opacity. Size segments by value. Centre shows the hovered parent's share as a percent in 20px bold. Clicking a segment zooms in, with a breadcrumb to return. Limit to five parents and 30 children. Expected result: each parent's share is clear, and the children that drive it are identifiable. UI only.
+
+VISUAL DIRECTION — SUNBURST: Create interactive nested concentric segments with breadcrumbs, ring labels placed only where readable, central selection detail, drill-up button and a colour-by-parent scheme. Keep percentages and hierarchy internally consistent.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="modern">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<line stroke="rgba(255,255,255,.2)" x1="0" x2="220" y1="100" y2="100"></line>
+<rect fill="rgba(56,189,248,.7)" height="60" rx="3" width="18" x="8" y="40"></rect>
+<rect fill="#63DF4E" height="20" rx="3" width="18" x="42" y="20"></rect>
+<rect fill="#F87171" height="15" rx="3" width="18" x="76" y="35"></rect>
+<rect fill="#63DF4E" height="25" rx="3" width="18" x="110" y="10"></rect>
+<rect fill="#F87171" height="10" rx="3" width="18" x="144" y="10"></rect>
+<rect fill="rgba(56,189,248,.7)" height="80" rx="3" width="18" x="178" y="20"></rect>
+<g stroke="rgba(255,255,255,.35)" stroke-dasharray="2 2"><line x1="26" x2="42" y1="40" y2="40"></line><line x1="60" x2="76" y1="20" y2="20"></line><line x1="94" x2="110" y1="35" y2="35"></line><line x1="128" x2="144" y1="10" y2="10"></line><line x1="162" x2="178" y1="10" y2="10"></line></g>
+</svg>
+</div>
+<div class="vc-head"><h3>Waterfall</h3><span class="cat">Modern</span></div>
+<dl><dt>Use</dt><dd>How a total builds up or falls back step by step</dd><dt class="no">Avoid</dt><dd>Steps that do not add up to the total</dd></dl>
+<div class="pr"><p>Build a waterfall chart for [audience] of [metric] from [start] to [end] for [period]. Match the preview: a baseline at zero, a full-height start bar in cyan, then floating steps for each [driver], green for increases and red for decreases, then a full-height end bar in cyan. Dashed 1px connectors between bars. Each step labelled with its signed value above it. Order drivers by absolute size, largest first, and group the rest as Other. Check that steps add up to the total, and print a warning if they do not. Expected result: the reader can explain how the total changed. UI only.
+
+VISUAL DIRECTION — WATERFALL: Build a mathematically correct starting value, positive and negative driver steps, connector lines and final total. Label delta signs clearly; clicking a driver shows contributing sample cases and the bridge must reconcile exactly.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv23">Copy WOW prompt</button></div>
+<span hidden="" id="pv23">Build a waterfall chart for [audience] of [metric] from [start] to [end] for [period]. Match the preview: a baseline at zero, a full-height start bar in cyan, then floating steps for each [driver], green for increases and red for decreases, then a full-height end bar in cyan. Dashed 1px connectors between bars. Each step labelled with its signed value above it. Order drivers by absolute size, largest first, and group the rest as Other. Check that steps add up to the total, and print a warning if they do not. Expected result: the reader can explain how the total changed. UI only.
+
+VISUAL DIRECTION — WATERFALL: Build a mathematically correct starting value, positive and negative driver steps, connector lines and final total. Label delta signs clearly; clicking a driver shows contributing sample cases and the bridge must reconcile exactly.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="modern">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<g fill="none" stroke="rgba(255,255,255,.15)"><polygon points="110,15 152.8,46.1 136.5,96.4 83.5,96.4 67.2,46.1"></polygon><polygon points="110,37.5 131.4,53 123.2,78.2 96.8,78.2 88.6,53"></polygon></g>
+<g stroke="rgba(255,255,255,.15)"><line x1="110" x2="110" y1="60" y2="15"></line><line x1="110" x2="152.8" y1="60" y2="46.1"></line><line x1="110" x2="136.5" y1="60" y2="96.4"></line><line x1="110" x2="83.5" y1="60" y2="96.4"></line><line x1="110" x2="67.2" y1="60" y2="46.1"></line></g>
+<polygon fill="rgba(99,223,78,.3)" points="110,23 142.3,49.5 133.5,92.4 93.6,82.6 79.6,50.1" stroke="#63DF4E" stroke-width="2"></polygon>
+<polygon fill="none" points="110,30 136,55 118,80 102,80 86,55" stroke="#FBBF24" stroke-dasharray="3 3" stroke-width="1.5"></polygon>
+</svg>
+</div>
+<div class="vc-head"><h3>Radar</h3><span class="cat">Modern</span></div>
+<dl><dt>Use</dt><dd>One entity against a benchmark across 5 to 6 dimensions</dd><dt class="no">Avoid</dt><dd>More than 6 axes, or many entities at once</dd></dl>
+<div class="pr"><p>Build a radar chart for [audience] comparing [entity] with [benchmark] across five dimensions: [dimension list]. Match the preview: five axes at equal angles, rings at 25, 50, 75 and 100 in 8% white, every axis scaled 0 to 100. Entity shape filled cyan at 30% with a 2px cyan outline. Benchmark as a dashed grey outline with no fill. Each axis labelled with its score. Beside the chart, a short list naming the strongest and weakest dimension. Expected result: the reader sees where the entity is above or below benchmark. Maximum six axes. UI only.
+
+VISUAL DIRECTION — RADAR: Draw a precise radar/spider comparison using no more than 6 dimensions, common normalized axes and fill at low opacity. Use labelled vertices, tooltips for raw scores, a selectable benchmark and an accessible comparison table.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv24">Copy WOW prompt</button></div>
+<span hidden="" id="pv24">Build a radar chart for [audience] comparing [entity] with [benchmark] across five dimensions: [dimension list]. Match the preview: five axes at equal angles, rings at 25, 50, 75 and 100 in 8% white, every axis scaled 0 to 100. Entity shape filled cyan at 30% with a 2px cyan outline. Benchmark as a dashed grey outline with no fill. Each axis labelled with its score. Beside the chart, a short list naming the strongest and weakest dimension. Expected result: the reader sees where the entity is above or below benchmark. Maximum six axes. UI only.
+
+VISUAL DIRECTION — RADAR: Draw a precise radar/spider comparison using no more than 6 dimensions, common normalized axes and fill at low opacity. Use labelled vertices, tooltips for raw scores, a selectable benchmark and an accessible comparison table.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="modern">
+<div class="vis"><div class="cal">
+<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+</div></div>
+<div class="vc-head"><h3>Calendar heatmap</h3><span class="cat">Modern</span></div>
+<dl><dt>Use</dt><dd>Daily rhythm and seasonality over weeks or months</dd><dt class="no">Avoid</dt><dd>Short periods with only a few data points</dd></dl>
+<div class="pr"><p>Build a calendar heatmap for [audience] of [metric] by day for [period]. Match the preview: a grid with weeks as columns and weekdays as rows, square cells 12px with 3px gaps and 3px radius. Intensity on a single green scale from 15% to 95% opacity, with the legend beside the grid. Days with no data in 8% white. Month labels across the top in grey monospace. Tooltip shows the date and the exact value. Label the best and worst day. Expected result: weekly and seasonal rhythm is visible, and outliers are named. UI only.
+
+VISUAL DIRECTION — CALENDAR HEATMAP: Provide a readable 12-month calendar matrix with weekday labels, month markers, colour intensity scale, detailed date tooltip and filters for metric/period. Clicking a day opens the underlying mock events and totals.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv25">Copy WOW prompt</button></div>
+<span hidden="" id="pv25">Build a calendar heatmap for [audience] of [metric] by day for [period]. Match the preview: a grid with weeks as columns and weekdays as rows, square cells 12px with 3px gaps and 3px radius. Intensity on a single green scale from 15% to 95% opacity, with the legend beside the grid. Days with no data in 8% white. Month labels across the top in grey monospace. Tooltip shows the date and the exact value. Label the best and worst day. Expected result: weekly and seasonal rhythm is visible, and outliers are named. UI only.
+
+VISUAL DIRECTION — CALENDAR HEATMAP: Provide a readable 12-month calendar matrix with weekday labels, month markers, colour intensity scale, detailed date tooltip and filters for metric/period. Clicking a day opens the underlying mock events and totals.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="modern">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<circle cx="40" cy="70" fill="rgba(99,223,78,.55)" r="14" stroke="#63DF4E"></circle>
+<circle cx="90" cy="40" fill="rgba(56,189,248,.5)" r="20" stroke="#38BDF8"></circle>
+<circle cx="140" cy="75" fill="rgba(251,191,36,.55)" r="10" stroke="#FBBF24"></circle>
+<circle cx="180" cy="35" fill="rgba(248,113,113,.5)" r="16" stroke="#F87171"></circle>
+<circle cx="120" cy="95" fill="rgba(255,255,255,.35)" r="7"></circle>
+</svg>
+</div>
+<div class="vc-head"><h3>Bubble chart</h3><span class="cat">Modern</span></div>
+<dl><dt>Use</dt><dd>Three variables at once: X, Y, and size</dd><dt class="no">Avoid</dt><dd>Tight clusters where bubbles overlap</dd></dl>
+<div class="pr"><p>Build a bubble chart for [audience] of [entities] for [period]. Match the preview: X axis is [metric A], Y axis is [metric B], bubble area is [metric C]. Bubbles in green, cyan, amber and red at 50% fill with a solid outline in the same colour. Dashed grey lines at the averages of X and Y form quadrants labelled in the corners. Name the top five outliers. Tooltip shows all three values on hover. Expected result: the reader spots entities high on both measures, and the outliers. Maximum 50 bubbles. UI only.
+
+VISUAL DIRECTION — BUBBLE CHART: Map x, y, area and category intentionally with a full legend for bubble size, crisp axes, light quadrant labels, hover data and a selectable bubble detail panel. Use realistic distributions and avoid colliding labels.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv26">Copy WOW prompt</button></div>
+<span hidden="" id="pv26">Build a bubble chart for [audience] of [entities] for [period]. Match the preview: X axis is [metric A], Y axis is [metric B], bubble area is [metric C]. Bubbles in green, cyan, amber and red at 50% fill with a solid outline in the same colour. Dashed grey lines at the averages of X and Y form quadrants labelled in the corners. Name the top five outliers. Tooltip shows all three values on hover. Expected result: the reader spots entities high on both measures, and the outliers. Maximum 50 bubbles. UI only.
+
+VISUAL DIRECTION — BUBBLE CHART: Map x, y, area and category intentionally with a full legend for bubble size, crisp axes, light quadrant labels, hover data and a selectable bubble detail panel. Use realistic distributions and avoid colliding labels.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="modern">
+<div class="vis"><div class="waffle">
+<i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+<i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+<i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i>
+<i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i><i></i><i></i><i></i>
+<i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+</div></div>
+<div class="vc-head"><h3>Waffle</h3><span class="cat">Modern</span></div>
+<dl><dt>Use</dt><dd>Share out of 100, easy to read at a glance</dd><dt class="no">Avoid</dt><dd>Precise differences between close shares</dd></dl>
+<div class="pr"><p>Build a waffle chart for [audience] showing [share] as [n] of 100 squares on a 10 by 10 grid, for [period]. Match the preview: squares with 3px gaps and 2px radius. Filled squares in a green to cyan gradient, empty squares at 9% white. Number and label in the centre, with the number at 28px bold. If there is more than one remaining category, a legend under the grid with each category's count. Expected result: the share is read as a proportion of 100 in under five seconds. UI only.
+
+VISUAL DIRECTION — WAFFLE: Show exactly 100 cells representing the stated percentages, with a strong left-to-right reading pattern and clear legend. Tooltips show counts and totals; provide an easy-to-read percent headline and compare toggle.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv27">Copy WOW prompt</button></div>
+<span hidden="" id="pv27">Build a waffle chart for [audience] showing [share] as [n] of 100 squares on a 10 by 10 grid, for [period]. Match the preview: squares with 3px gaps and 2px radius. Filled squares in a green to cyan gradient, empty squares at 9% white. Number and label in the centre, with the number at 28px bold. If there is more than one remaining category, a legend under the grid with each category's count. Expected result: the share is read as a proportion of 100 in under five seconds. UI only.
+
+VISUAL DIRECTION — WAFFLE: Show exactly 100 cells representing the stated percentages, with a strong left-to-right reading pattern and clear legend. Tooltips show counts and totals; provide an easy-to-read percent headline and compare toggle.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="modern">
+<div class="vis"><div class="sp-list">
+<div class="sp-row"><b>[Item A]</b><span class="up">▲ 6%</span>
+<svg height="18" viewbox="0 0 64 18" width="64"><polyline fill="none" points="0,14 8,11 16,12 24,8 32,9 40,6 48,7 56,3 64,2" stroke="#63DF4E" stroke-width="1.6"></polyline></svg></div>
+<div class="sp-row"><b>[Item B]</b><span class="down">▼ 2%</span>
+<svg height="18" viewbox="0 0 64 18" width="64"><polyline fill="none" points="0,4 8,6 16,5 24,9 32,8 40,11 48,10 56,13 64,14" stroke="#F87171" stroke-width="1.6"></polyline></svg></div>
+<div class="sp-row"><b>[Item C]</b><span class="up">▲ 1%</span>
+<svg height="18" viewbox="0 0 64 18" width="64"><polyline fill="none" points="0,10 8,9 16,11 24,10 32,12 40,10 48,11 56,9 64,10" stroke="#38BDF8" stroke-width="1.6"></polyline></svg></div>
+</div></div>
+<div class="vc-head"><h3>Sparkline table</h3><span class="cat">Modern</span></div>
+<dl><dt>Use</dt><dd>Many items, each with its own recent trend</dd><dt class="no">Avoid</dt><dd>Fewer than three items (use a chart)</dd></dl>
+<div class="pr"><p>Build a sparkline table for [audience] of [items] for [period]. Match the preview: rows 34px tall with 1px dividers. Columns: name, current value, change % with an arrow and a text sign, and a 64px by 18px sparkline per row. Up trends in green, down trends in red, flat in cyan. Sort by change, largest decline first. Highlight rows where change is worse than minus 10% with a red left border. Footer: count of items up and down. Expected result: each item's recent trend is visible without opening a chart. Maximum 20 rows per page. UI only.
+
+VISUAL DIRECTION — SPARKLINE TABLE: Create an executive comparison table combining a readable category column, current value, micro trend, change indicator, target, and status. Sort/search controls must work; microcharts should be consistent and not steal attention from values.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv28">Copy WOW prompt</button></div>
+<span hidden="" id="pv28">Build a sparkline table for [audience] of [items] for [period]. Match the preview: rows 34px tall with 1px dividers. Columns: name, current value, change % with an arrow and a text sign, and a 64px by 18px sparkline per row. Up trends in green, down trends in red, flat in cyan. Sort by change, largest decline first. Highlight rows where change is worse than minus 10% with a red left border. Footer: count of items up and down. Expected result: each item's recent trend is visible without opening a chart. Maximum 20 rows per page. UI only.
+
+VISUAL DIRECTION — SPARKLINE TABLE: Create an executive comparison table combining a readable category column, current value, micro trend, change indicator, target, and status. Sort/search controls must work; microcharts should be consistent and not steal attention from values.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="modern dynamic">
+<div class="vis"><div class="lp">
+<div class="lp-top"><span class="pulse-dot"></span><span class="lab-s">Live · [metric] per minute</span></div>
+<div class="kval" style="font-size:1.4rem">1,284</div>
+<div class="lp-bars">
+<i style="animation-delay:0s"></i><i style="animation-delay:.15s"></i><i style="animation-delay:.3s"></i><i style="animation-delay:.45s"></i><i style="animation-delay:.6s"></i><i style="animation-delay:.2s"></i><i style="animation-delay:.5s"></i><i style="animation-delay:.1s"></i><i style="animation-delay:.35s"></i><i style="animation-delay:.7s"></i><i style="animation-delay:.25s"></i><i style="animation-delay:.55s"></i>
+</div>
+</div></div>
+<div class="vc-head"><h3>Live pulse tile</h3><span class="cat">Modern</span></div>
+<dl><dt>Use</dt><dd>Showing that a metric is updating in real time</dd><dt class="no">Avoid</dt><dd>Slow-moving metrics where motion adds noise</dd></dl>
+<div class="pr"><p>Build a live tile for [audience] showing [metric] per minute, updated every [interval]. Match the preview: a card with a pulsing green dot and the word LIVE in mono, a last-updated timestamp, the current value at 24px bold, a change line vs the same time yesterday, and a strip of 12 bars, 46px tall, animated in green to cyan. If no update arrives within twice the interval, show a STALE label in amber and freeze the bars. Expected result: the reader sees the number is current and how fast it is moving. UI only.
+
+VISUAL DIRECTION — LIVE PULSE TILE: Design a compact near-real-time telemetry surface with a heartbeat strip, status glow, latest value, incident counter and last-updated clock. Simulate labelled updates with pause/play and predictable sample streams; never portray fake data as live systems.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv29">Copy WOW prompt</button></div>
+<span hidden="" id="pv29">Build a live tile for [audience] showing [metric] per minute, updated every [interval]. Match the preview: a card with a pulsing green dot and the word LIVE in mono, a last-updated timestamp, the current value at 24px bold, a change line vs the same time yesterday, and a strip of 12 bars, 46px tall, animated in green to cyan. If no update arrives within twice the interval, show a STALE label in amber and freeze the bars. Expected result: the reader sees the number is current and how fast it is moving. UI only.
+
+VISUAL DIRECTION — LIVE PULSE TILE: Design a compact near-real-time telemetry surface with a heartbeat strip, status glow, latest value, incident counter and last-updated clock. Simulate labelled updates with pause/play and predictable sample streams; never portray fake data as live systems.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<!-- DYNAMIC -->
+<article class="vc" data-c="network dynamic">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<g class="anim-dash" stroke="rgba(56,189,248,.7)" stroke-width="1.5">
+<line x1="30" x2="90" y1="55" y2="30"></line><line x1="30" x2="90" y1="55" y2="82"></line><line x1="90" x2="150" y1="30" y2="55"></line><line x1="90" x2="150" y1="82" y2="55"></line><line x1="150" x2="195" y1="55" y2="30"></line><line x1="150" x2="195" y1="55" y2="82"></line>
+</g>
+<circle class="ring-pulse" cx="150" cy="55" fill="none" r="12" stroke="#F87171"></circle>
+<circle cx="30" cy="55" fill="#63DF4E" r="7"></circle><circle cx="90" cy="30" fill="#63DF4E" r="7"></circle><circle cx="90" cy="82" fill="#FBBF24" r="7"></circle><circle cx="150" cy="55" fill="#F87171" r="9"></circle><circle cx="195" cy="30" fill="#38BDF8" r="6"></circle><circle cx="195" cy="82" fill="#38BDF8" r="6"></circle>
+<circle fill="#fff" r="2.8"><animatemotion dur="2.4s" path="M30,55 L90,30 L150,55 L195,30" repeatcount="indefinite"></animatemotion></circle>
+</svg>
+</div>
+<div class="vc-head"><h3>Dependency map</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>What depends on what, and where a block spreads</dd><dt class="no">Avoid</dt><dd>Large graphs with no filter or focus node</dd></dl>
+<div class="pr"><p>Build a dependency map for [audience] of [services] for the current release. Match the preview: nodes as 12px circles with a text label beside each, links as 1.5px cyan lines with flowing dashes on active links only. Node colour by health: green healthy, amber degraded, red blocked, each with a text label. A pulsing red ring on any blocked node. On click, highlight the upstream and downstream chain in full colour and dim the rest to 20%. Search box above the map. Default view capped at 50 nodes. Expected result: the reader finds what a blocked service affects in one click. UI only.
+
+VISUAL DIRECTION — DEPENDENCY MAP: Create a multi-tier interactive dependency topology with a visually emphasized critical path, directional connectors, expandable group nodes, a left scope filter and a detail drawer exposing impact propagation.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv30">Copy WOW prompt</button></div>
+<span hidden="" id="pv30">Build a dependency map for [audience] of [services] for the current release. Match the preview: nodes as 12px circles with a text label beside each, links as 1.5px cyan lines with flowing dashes on active links only. Node colour by health: green healthy, amber degraded, red blocked, each with a text label. A pulsing red ring on any blocked node. On click, highlight the upstream and downstream chain in full colour and dim the rest to 20%. Search box above the map. Default view capped at 50 nodes. Expected result: the reader finds what a blocked service affects in one click. UI only.
+
+VISUAL DIRECTION — DEPENDENCY MAP: Create a multi-tier interactive dependency topology with a visually emphasized critical path, directional connectors, expandable group nodes, a left scope filter and a detail drawer exposing impact propagation.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="pattern dynamic">
+<div class="vis"><div class="hm" style="width:100%">
+<i class="hp g" style="--d:0s"></i><i class="hp g2" style="--d:.3s"></i><i class="hp am" style="--d:.6s"></i><i class="hp g" style="--d:.9s"></i><i class="hp rd" style="--d:.2s"></i><i class="hp g2" style="--d:.5s"></i>
+<i class="hp g" style="--d:.8s"></i><i class="hp am" style="--d:.1s"></i><i class="hp g" style="--d:.4s"></i><i class="hp g2" style="--d:1s"></i><i class="hp g" style="--d:.7s"></i><i class="hp am" style="--d:.2s"></i>
+<i class="hp rd" style="--d:.6s"></i><i class="hp g" style="--d:.3s"></i><i class="hp g2" style="--d:.9s"></i><i class="hp g" style="--d:.5s"></i><i class="hp am" style="--d:.8s"></i><i class="hp g" style="--d:.1s"></i>
+</div></div>
+<div class="vc-head"><h3>Pulse heatmap</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Intensity that shifts as new data arrives</dd><dt class="no">Avoid</dt><dd>Reading exact values under constant motion</dd></dl>
+<div class="pr"><p>Build a live heatmap for [audience] of [metric] with [dimension] as rows and [hour] as columns. Match the preview: a grid of 6 by 3 cells, 20px tall, 3px gaps, 3px radius, in the same green, amber and red scale as the static heatmap. Cells gently pulse with a 2.6s cycle, and the pulse timing is staggered across cells. Update cell colour every [interval] as new data arrives. Hover shows the exact value. Pause control freezes the feed and prints values in each cell. Expected result: the reader sees which cells are heating up now, with exact values on demand. UI only.
+
+VISUAL DIRECTION — PULSE HEATMAP: Animate threshold-based hotspots with selective, subtle pulses only for new/critical events. Include a static legend, explicit event timestamp, paused-state switch, click-to-details and reduced-motion alternative.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv31">Copy WOW prompt</button></div>
+<span hidden="" id="pv31">Build a live heatmap for [audience] of [metric] with [dimension] as rows and [hour] as columns. Match the preview: a grid of 6 by 3 cells, 20px tall, 3px gaps, 3px radius, in the same green, amber and red scale as the static heatmap. Cells gently pulse with a 2.6s cycle, and the pulse timing is staggered across cells. Update cell colour every [interval] as new data arrives. Hover shows the exact value. Pause control freezes the feed and prints values in each cell. Expected result: the reader sees which cells are heating up now, with exact values on demand. UI only.
+
+VISUAL DIRECTION — PULSE HEATMAP: Animate threshold-based hotspots with selective, subtle pulses only for new/critical events. Include a static legend, explicit event timestamp, paused-state switch, click-to-details and reduced-motion alternative.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="pattern dynamic">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<line class="draw" pathlength="1" stroke="#fff" stroke-width="2" x1="14" x2="168" y1="55" y2="55"></line>
+<rect fill="rgba(99,223,78,.2)" height="34" rx="5" stroke="#63DF4E" width="46" x="168" y="38"></rect>
+<text fill="#fff" font-size="7" text-anchor="middle" x="191" y="59">EFFECT</text>
+<line class="draw" pathlength="1" stroke="#38BDF8" stroke-width="1.6" style="--d:.2s" x1="40" x2="66" y1="16" y2="55"></line>
+<line class="draw" pathlength="1" stroke="#38BDF8" stroke-width="1.6" style="--d:.4s" x1="92" x2="110" y1="16" y2="55"></line>
+<line class="draw" pathlength="1" stroke="#38BDF8" stroke-width="1.6" style="--d:.6s" x1="142" x2="154" y1="16" y2="55"></line>
+<line class="draw" pathlength="1" stroke="#38BDF8" stroke-width="1.6" style="--d:.3s" x1="40" x2="66" y1="94" y2="55"></line>
+<line class="draw" pathlength="1" stroke="#38BDF8" stroke-width="1.6" style="--d:.5s" x1="92" x2="110" y1="94" y2="55"></line>
+<line class="draw" pathlength="1" stroke="#38BDF8" stroke-width="1.6" style="--d:.7s" x1="142" x2="154" y1="94" y2="55"></line>
+<g fill="#8ba0ab" font-size="6.5" text-anchor="middle"><text x="40" y="10">PEOPLE</text><text x="92" y="10">PROCESS</text><text x="142" y="10">DATA</text><text x="40" y="106">TOOLS</text><text x="92" y="106">POLICY</text><text x="142" y="106">ENVIRONMENT</text></g>
+<circle class="ring-pulse" cx="53" cy="35" fill="#FBBF24" r="3"></circle>
+<circle cx="101" cy="75" fill="#38BDF8" r="2.5"></circle>
+</svg>
+</div>
+<div class="vc-head"><h3>Cause and effect</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Mapping root causes to one problem, by category</dd><dt class="no">Avoid</dt><dd>Problems with one clear, known cause</dd></dl>
+<div class="pr"><p>Build a fishbone (cause and effect) diagram for [audience] on the problem: [problem statement]. Match the preview: a horizontal spine into a red problem box at the right, six diagonal bones (three above, three below) labelled People, Process, Data, Tools, Policy, Environment in uppercase mono. Each cause is a short horizontal branch with its evidence figure beside it. Draw the bones on load. Highlight the top cause in green with a bold label and its evidence figure. Expected result: the team agrees on one root cause to test first. UI only.
+
+VISUAL DIRECTION — CAUSE AND EFFECT: Create a clear causal hypothesis map: central outcome, driver families, evidence-linked upstream nodes and visually distinct correlation versus verified causation. Clicking an edge shows supporting observations and uncertainty.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv32">Copy WOW prompt</button></div>
+<span hidden="" id="pv32">Build a fishbone (cause and effect) diagram for [audience] on the problem: [problem statement]. Match the preview: a horizontal spine into a red problem box at the right, six diagonal bones (three above, three below) labelled People, Process, Data, Tools, Policy, Environment in uppercase mono. Each cause is a short horizontal branch with its evidence figure beside it. Draw the bones on load. Highlight the top cause in green with a bold label and its evidence figure. Expected result: the team agrees on one root cause to test first. UI only.
+
+VISUAL DIRECTION — CAUSE AND EFFECT: Create a clear causal hypothesis map: central outcome, driver families, evidence-linked upstream nodes and visually distinct correlation versus verified causation. Clicking an edge shows supporting observations and uncertainty.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="process dynamic">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<polygon fill="rgba(99,223,78,.55)" points="30,4 190,4 176,26 44,26"></polygon>
+<polygon fill="rgba(56,189,248,.5)" points="44,30 176,30 160,52 60,52"></polygon>
+<polygon fill="rgba(251,191,36,.5)" points="60,56 160,56 144,78 76,78"></polygon>
+<polygon fill="rgba(248,113,113,.5)" points="76,82 144,82 130,104 90,104"></polygon>
+<circle fill="#fff" r="2.6"><animatemotion dur="2.2s" path="M110,0 L110,110" repeatcount="indefinite"></animatemotion></circle>
+<circle fill="#fff" r="2.6"><animatemotion begin="0.7s" dur="2.2s" path="M110,0 L110,110" repeatcount="indefinite"></animatemotion></circle>
+<circle fill="#fff" r="2.6"><animatemotion begin="1.4s" dur="2.2s" path="M110,0 L110,110" repeatcount="indefinite"></animatemotion></circle>
+</svg>
+</div>
+<div class="vc-head"><h3>Vertical funnel</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Stage-by-stage flow, with live movement down the stages</dd><dt class="no">Avoid</dt><dd>Non-sequential stages</dd></dl>
+<div class="pr"><p>Build a vertical funnel for [audience] of [stages] for [period]. Match the preview: stacked trapezoids with 4px gaps, widths proportional to counts, colours from green at the top through cyan and amber to red at the bottom, each stage labelled with its name and count inside. Conversion percent between stages printed on the side in mono. Small white dots move slowly down the centre line on a loop. The largest drop-off gets a red callout. Expected result: the reader sees where volume is lost and by how much. Maximum six stages. UI only.
+
+VISUAL DIRECTION — VERTICAL FUNNEL: Build a tall funnel of proportional stage blocks, animated stage emphasis on hover, conversion/attrition figures and biggest drop-off callout. Add accessible step-by-step summary and prevent tiny unreadable stage labels.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv33">Copy WOW prompt</button></div>
+<span hidden="" id="pv33">Build a vertical funnel for [audience] of [stages] for [period]. Match the preview: stacked trapezoids with 4px gaps, widths proportional to counts, colours from green at the top through cyan and amber to red at the bottom, each stage labelled with its name and count inside. Conversion percent between stages printed on the side in mono. Small white dots move slowly down the centre line on a loop. The largest drop-off gets a red callout. Expected result: the reader sees where volume is lost and by how much. Maximum six stages. UI only.
+
+VISUAL DIRECTION — VERTICAL FUNNEL: Build a tall funnel of proportional stage blocks, animated stage emphasis on hover, conversion/attrition figures and biggest drop-off callout. Add accessible step-by-step summary and prevent tiny unreadable stage labels.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="process dynamic">
+<div class="vis"><div class="hfun">
+<div class="hf-row"><i style="width:100%;background:#63DF4E;--d:0s">Visits 100%</i></div>
+<div class="hf-row"><i style="width:74%;background:#7CE46A;--d:.25s">Sign-up 74%</i></div>
+<div class="hf-row"><i style="width:52%;background:#38BDF8;--d:.5s">Activated 52%</i></div>
+<div class="hf-row"><i style="width:30%;background:#FBBF24;--d:.75s">Paid 30%</i></div>
+</div></div>
+<div class="vc-head"><h3>Horizontal funnel</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Sequential drop-off that reads left to right</dd><dt class="no">Avoid</dt><dd>Stages with very different units</dd></dl>
+<div class="pr"><p>Build a horizontal funnel for [audience] of [stages] for [period]. Match the preview: stacked bars, each 22px tall with 4px gaps, widths proportional to counts, colours from green at the top through cyan and amber to red at the bottom. Bars grow from left to right on load. Count inside each bar, and the drop-off percent between bars in mono. Largest drop-off highlighted in red with a callout. One unit for all stages, stated in the legend. Expected result: sequential drop-off reads left to right in under five seconds. UI only.
+
+VISUAL DIRECTION — HORIZONTAL FUNNEL: Design a left-to-right conversion journey with connected proportional steps, exact population counts, conversion % arrows, stage tooltips and a lower strip naming leakage reasons. Ensure responsive scrolling or stacking without overflow.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv34">Copy WOW prompt</button></div>
+<span hidden="" id="pv34">Build a horizontal funnel for [audience] of [stages] for [period]. Match the preview: stacked bars, each 22px tall with 4px gaps, widths proportional to counts, colours from green at the top through cyan and amber to red at the bottom. Bars grow from left to right on load. Count inside each bar, and the drop-off percent between bars in mono. Largest drop-off highlighted in red with a callout. One unit for all stages, stated in the legend. Expected result: sequential drop-off reads left to right in under five seconds. UI only.
+
+VISUAL DIRECTION — HORIZONTAL FUNNEL: Design a left-to-right conversion journey with connected proportional steps, exact population counts, conversion % arrows, stage tooltips and a lower strip naming leakage reasons. Ensure responsive scrolling or stacking without overflow.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="composition dynamic">
+<div class="vis">
+<svg height="112" viewbox="0 0 42 42" width="112">
+<circle cx="21" cy="21" fill="none" r="15.9" stroke="rgba(255,255,255,.07)" stroke-width="6"></circle>
+<circle class="dga" cx="21" cy="21" fill="none" pathlength="100" r="15.9" stroke="#63DF4E" stroke-width="6" transform="rotate(-90 21 21)"></circle>
+<circle class="dgb" cx="21" cy="21" fill="none" pathlength="100" r="15.9" stroke="#38BDF8" stroke-dashoffset="-45" stroke-width="6" transform="rotate(-90 21 21)"></circle>
+<circle class="dgc" cx="21" cy="21" fill="none" pathlength="100" r="15.9" stroke="#FBBF24" stroke-dashoffset="-70" stroke-width="6" transform="rotate(-90 21 21)"></circle>
+<text fill="#fff" font-size="5" font-weight="700" text-anchor="middle" x="21" y="23.5">TOTAL</text>
+</svg>
+</div>
+<div class="vc-head"><h3>Animated donut</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Part-to-whole that builds on load and reads at a glance</dd><dt class="no">Avoid</dt><dd>Six or more slices</dd></dl>
+<div class="pr"><p>Build an animated donut for [audience] of [metric] by [category] for [period]. Match the preview: a 112px donut with a 6px ring, segments drawn on load in sequence over 1.6s, total in the centre (TOTAL label, then a 20px bold number). Max five segments with the rest grouped as Other. Segment colours green, cyan, amber, and two muted tones. Hovering a segment brightens it and shows its value and share in the centre. Legend beside it with values sorted by size. Expected result: part-to-whole reads at a glance, with exact shares in the legend. UI only.
+
+VISUAL DIRECTION — ANIMATED DONUT: Animate three or four SVG stroke segments from zero to final proportions only on entry, showing a live-updating total and stable legend. Provide hover segment highlighting, pause and reduced-motion modes.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv35">Copy WOW prompt</button></div>
+<span hidden="" id="pv35">Build an animated donut for [audience] of [metric] by [category] for [period]. Match the preview: a 112px donut with a 6px ring, segments drawn on load in sequence over 1.6s, total in the centre (TOTAL label, then a 20px bold number). Max five segments with the rest grouped as Other. Segment colours green, cyan, amber, and two muted tones. Hovering a segment brightens it and shows its value and share in the centre. Legend beside it with values sorted by size. Expected result: part-to-whole reads at a glance, with exact shares in the legend. UI only.
+
+VISUAL DIRECTION — ANIMATED DONUT: Animate three or four SVG stroke segments from zero to final proportions only on entry, showing a live-updating total and stable legend. Provide hover segment highlighting, pause and reduced-motion modes.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="compare dynamic">
+<div class="vis"><div class="race">
+<div class="rr"><span>[Item A]</span><div class="rt"><i style="--a:30%;--b:92%"></i></div></div>
+<div class="rr"><span>[Item B]</span><div class="rt"><i style="--a:70%;--b:48%;animation-delay:.4s"></i></div></div>
+<div class="rr"><span>[Item C]</span><div class="rt"><i style="--a:52%;--b:64%;animation-delay:.8s"></i></div></div>
+<div class="rr"><span>[Item D]</span><div class="rt"><i style="--a:18%;--b:36%;animation-delay:1.2s"></i></div></div>
+</div></div>
+<div class="vc-head"><h3>Racing bars</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Showing how rankings shift over periods</dd><dt class="no">Avoid</dt><dd>Precise comparison mid-animation</dd></dl>
+<div class="pr"><p>Build a racing bar chart for [audience] ranking [entities] by [metric] across [periods]. Match the preview: horizontal bars 12px tall with 8px gaps, a green to cyan gradient, entity name on the left in 12px, the value at the end of each bar. Bars move to their new rank each period with a smooth 600ms transition. Period label large at the bottom right. Play, pause, and a period slider. Pause and step work with no animation. Top 10 entities only. Expected result: the reader sees who overtook whom, and when. UI only.
+
+VISUAL DIRECTION — RACING BARS: Create an interactive time-based category ranking with smoothly interpolated value changes, a readable timeline scrubber and play/pause. Maintain stable identity labels, highlight changes in rank and avoid misleading variable time intervals.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv36">Copy WOW prompt</button></div>
+<span hidden="" id="pv36">Build a racing bar chart for [audience] ranking [entities] by [metric] across [periods]. Match the preview: horizontal bars 12px tall with 8px gaps, a green to cyan gradient, entity name on the left in 12px, the value at the end of each bar. Bars move to their new rank each period with a smooth 600ms transition. Period label large at the bottom right. Play, pause, and a period slider. Pause and step work with no animation. Top 10 entities only. Expected result: the reader sees who overtook whom, and when. UI only.
+
+VISUAL DIRECTION — RACING BARS: Create an interactive time-based category ranking with smoothly interpolated value changes, a readable timeline scrubber and play/pause. Maintain stable identity labels, highlight changes in rank and avoid misleading variable time intervals.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="modern dynamic">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<g fill="none" stroke="rgba(255,255,255,.14)"><circle cx="110" cy="55" r="22"></circle><circle cx="110" cy="55" r="44"></circle></g>
+<line stroke="rgba(255,255,255,.08)" x1="66" x2="154" y1="55" y2="55"></line><line stroke="rgba(255,255,255,.08)" x1="110" x2="110" y1="11" y2="99"></line>
+<g class="sweep"><path d="M110,55 L110,11 A44,44 0 0 1 141,24 Z" fill="rgba(99,223,78,.28)"></path><line stroke="#63DF4E" stroke-width="1.5" x1="110" x2="110" y1="55" y2="11"></line></g>
+<circle class="blip" cx="130" cy="35" fill="#63DF4E" r="3"></circle>
+<circle class="blip" cx="84" cy="70" fill="#FBBF24" r="3" style="animation-delay:.7s"></circle>
+<circle class="blip" cx="150" cy="62" fill="#38BDF8" r="3" style="animation-delay:1.4s"></circle>
+</svg>
+</div>
+<div class="vc-head"><h3>Radar sweep</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Live detection of items that meet a condition</dd><dt class="no">Avoid</dt><dd>Exact positions or long lists</dd></dl>
+<div class="pr"><p>Build a radar sweep view for [audience] of [items] by [category]. Match the preview: concentric rings at 14% and 8% white, a green sweep wedge of about 45 degrees rotating every 4 seconds, and blips of 3px in green, amber and cyan that fade in and out at staggered times. Count of matching items in the top right corner in 20px bold. A legend for categories. Clicking a blip opens a small detail card with its name and value. Expected result: the reader sees how many items meet the condition and which to check. Maximum 50 blips. UI only.
+
+VISUAL DIRECTION — RADAR SWEEP: Build a restrained scanning visualization using a circular SVG grid, sweeping beam, stationary sensor markers, and event blips with text severity. Pair it with an actual event list; make explicit that radar is illustrative not real sensor connectivity.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv37">Copy WOW prompt</button></div>
+<span hidden="" id="pv37">Build a radar sweep view for [audience] of [items] by [category]. Match the preview: concentric rings at 14% and 8% white, a green sweep wedge of about 45 degrees rotating every 4 seconds, and blips of 3px in green, amber and cyan that fade in and out at staggered times. Count of matching items in the top right corner in 20px bold. A legend for categories. Clicking a blip opens a small detail card with its name and value. Expected result: the reader sees how many items meet the condition and which to check. Maximum 50 blips. UI only.
+
+VISUAL DIRECTION — RADAR SWEEP: Build a restrained scanning visualization using a circular SVG grid, sweeping beam, stationary sensor markers, and event blips with text severity. Pair it with an actual event list; make explicit that radar is illustrative not real sensor connectivity.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="headline dynamic">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<circle cx="110" cy="55" fill="none" r="40" stroke="rgba(255,255,255,.08)" stroke-width="10"></circle>
+<circle class="sla" cx="110" cy="55" fill="none" pathlength="100" r="40" stroke="#63DF4E" stroke-width="10" transform="rotate(-90 110 55)"></circle>
+<text fill="#fff" font-size="13" font-weight="700" text-anchor="middle" x="110" y="54">2h 14m</text>
+<text fill="#8ba0ab" font-size="6.5" text-anchor="middle" x="110" y="68">TIME LEFT</text>
+</svg>
+</div>
+<div class="vc-head"><h3>SLA countdown ring</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Time running out against a deadline</dd><dt class="no">Avoid</dt><dd>Targets with no time component</dd></dl>
+<div class="pr"><p>Build an SLA countdown ring for [item] with a deadline of [time]. Match the preview: a ring 80px across with a 10px stroke on a faint track. The arc shrinks clockwise in real time. Remaining time in 18px bold at the centre with the label TIME LEFT in mono beneath. Colour: green above 25% left, amber from 25% to 10%, red below 10%, with the status word also printed. When the deadline passes, show BREACHED in red and stop the arc. Expected result: the team sees how much time is left and when to act. UI only.
+
+VISUAL DIRECTION — SLA COUNTDOWN RING: Create a circular countdown with exact remaining time, clear risk thresholds, due timestamp, assignment info and action buttons. Simulated countdown must pause/resume safely, clamp at zero and change status to Breached at expiration.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv38">Copy WOW prompt</button></div>
+<span hidden="" id="pv38">Build an SLA countdown ring for [item] with a deadline of [time]. Match the preview: a ring 80px across with a 10px stroke on a faint track. The arc shrinks clockwise in real time. Remaining time in 18px bold at the centre with the label TIME LEFT in mono beneath. Colour: green above 25% left, amber from 25% to 10%, red below 10%, with the status word also printed. When the deadline passes, show BREACHED in red and stop the arc. Expected result: the team sees how much time is left and when to act. UI only.
+
+VISUAL DIRECTION — SLA COUNTDOWN RING: Create a circular countdown with exact remaining time, clear risk thresholds, due timestamp, assignment info and action buttons. Simulated countdown must pause/resume safely, clamp at zero and change status to Breached at expiration.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="network dynamic">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<defs><pattern height="7" id="dotgrid2" patternunits="userSpaceOnUse" width="7"><circle cx="3.5" cy="3.5" fill="rgba(255,255,255,.2)" r="1.1"></circle></pattern></defs>
+<rect fill="url(#dotgrid2)" height="110" width="220" x="0" y="0"></rect>
+<path d="M20,80 Q70,10 120,50 Q170,90 200,25" fill="none" stroke="rgba(56,189,248,.4)" stroke-width="1.5"></path>
+<path d="M30,25 Q90,70 150,30" fill="none" stroke="rgba(99,223,78,.4)" stroke-width="1.5"></path>
+<circle fill="#fff" r="3"><animatemotion dur="3.2s" path="M20,80 Q70,10 120,50 Q170,90 200,25" repeatcount="indefinite"></animatemotion></circle>
+<circle fill="#63DF4E" r="3"><animatemotion dur="2.4s" path="M200,25 Q170,90 120,50 Q70,10 20,80" repeatcount="indefinite"></animatemotion></circle>
+<circle fill="#FBBF24" r="2.5"><animatemotion dur="2s" path="M30,25 Q90,70 150,30" repeatcount="indefinite"></animatemotion></circle>
+<circle class="ring-pulse" cx="120" cy="50" fill="none" r="4" stroke="#38BDF8"></circle>
+<g fill="rgba(255,255,255,.85)"><circle cx="20" cy="80" r="3"></circle><circle cx="120" cy="50" r="3.5"></circle><circle cx="200" cy="25" r="3"></circle><circle cx="30" cy="25" r="3"></circle><circle cx="150" cy="30" r="3"></circle></g>
+</svg>
+</div>
+<div class="vc-head"><h3>Live flow map</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Volume moving along routes between locations</dd><dt class="no">Avoid</dt><dd>Static routes with no live volume</dd></dl>
+<div class="pr"><p>Build a live flow map for [audience] of [routes] between [locations] for [period]. Match the preview: a dot-grid background, cyan route lines with 1.5px width, white dots moving along each route at a speed relative to current volume, and green stations that pulse when active. Click a route to show its totals in a small card. Legend for volume bands. Last-updated timestamp top right. Expected result: the reader sees which routes carry the most volume right now. Maximum 20 routes. UI only.
+
+VISUAL DIRECTION — LIVE FLOW MAP: Create a directional multi-stage flow topology where animated particles travel along curved paths, with node throughput, highlighted bottlenecks, health colours and a clickable node inspection panel. Provide a paused/static mode and valid value conservation.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv39">Copy WOW prompt</button></div>
+<span hidden="" id="pv39">Build a live flow map for [audience] of [routes] between [locations] for [period]. Match the preview: a dot-grid background, cyan route lines with 1.5px width, white dots moving along each route at a speed relative to current volume, and green stations that pulse when active. Click a route to show its totals in a small card. Legend for volume bands. Last-updated timestamp top right. Expected result: the reader sees which routes carry the most volume right now. Maximum 20 routes. UI only.
+
+VISUAL DIRECTION — LIVE FLOW MAP: Create a directional multi-stage flow topology where animated particles travel along curved paths, with node throughput, highlighted bottlenecks, health colours and a clickable node inspection panel. Provide a paused/static mode and valid value conservation.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="action dynamic">
+<div class="vis"><div class="kb" style="width:100%">
+<div class="kcol"><span class="lab-s">To do</span><div class="kc"></div><div class="kc"></div></div>
+<div class="kcol"><span class="lab-s">In progress</span><div class="kc"></div></div>
+<div class="kcol"><span class="lab-s">Done</span><div class="kc"></div><div class="kc"></div></div>
+<div class="kmv"></div>
+</div></div>
+<div class="vc-head"><h3>Kanban flow</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Work moving between stages, with WIP visible</dd><dt class="no">Avoid</dt><dd>Work with no stages to move through</dd></dl>
+<div class="pr"><p>Build a kanban board for [audience] of [items] with columns [stages]. Match the preview: three columns, each with a mono header label, a WIP count, and stacked cards 16px tall with 8px gaps. Each card shows ID, title, owner and age in days. A column over its WIP limit of [limit] turns red with a text label OVER LIMIT. Animate a card moving between columns when its status changes. Expected result: bottlenecks are visible from the column counts and card ages. UI only.
+
+VISUAL DIRECTION — KANBAN FLOW: Create three to five elegant workflow columns with meaningful status headers, WIP counts, compact item cards and visible aging badges. Enable drag/drop (plus keyboard move control), update column counts and show detail on click.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv40">Copy WOW prompt</button></div>
+<span hidden="" id="pv40">Build a kanban board for [audience] of [items] with columns [stages]. Match the preview: three columns, each with a mono header label, a WIP count, and stacked cards 16px tall with 8px gaps. Each card shows ID, title, owner and age in days. A column over its WIP limit of [limit] turns red with a text label OVER LIMIT. Animate a card moving between columns when its status changes. Expected result: bottlenecks are visible from the column counts and card ages. UI only.
+
+VISUAL DIRECTION — KANBAN FLOW: Create three to five elegant workflow columns with meaningful status headers, WIP counts, compact item cards and visible aging badges. Enable drag/drop (plus keyboard move control), update column counts and show detail on click.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="trend dynamic">
+<div class="vis">
+<svg preserveaspectratio="xMidYMid meet" viewbox="0 0 220 110">
+<g stroke="rgba(255,255,255,.07)"><line x1="0" x2="220" y1="20" y2="20"></line><line x1="0" x2="220" y1="50" y2="50"></line><line x1="0" x2="220" y1="80" y2="80"></line></g>
+<polyline class="ldraw" fill="none" pathlength="1" points="5,80 35,68 65,74 95,50 125,56 155,36 185,40 215,18" stroke="#38BDF8" stroke-width="2.5"></polyline>
+<circle class="ring-pulse" cx="215" cy="18" fill="#63DF4E" r="4"></circle>
+</svg>
+</div>
+<div class="vc-head"><h3>Live line draw</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>A trend that updates as new points arrive</dd><dt class="no">Avoid</dt><dd>Historical reports that do not change</dd></dl>
+<div class="pr"><p>Build a live trend for [audience] of [metric]. Match the preview: a cyan line 2.5px wide that draws in as new points arrive every [interval], with grid lines at 8% white. A pulsing green ring on the latest point with its value labelled in 14px bold. Keep the last 60 points, and ease the axis range when it changes. Dashed amber reference line for [target], labelled TARGET. Expected result: the reader sees the current direction and whether the latest value is above or below target. UI only.
+
+VISUAL DIRECTION — LIVE LINE DRAW: Show a chart line revealing new time-series observations smoothly while maintaining stable axes, a real-value endpoint label, hover crosshair and zoomed historical view. Include clearly simulated data generation and pause/reset.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv41">Copy WOW prompt</button></div>
+<span hidden="" id="pv41">Build a live trend for [audience] of [metric]. Match the preview: a cyan line 2.5px wide that draws in as new points arrive every [interval], with grid lines at 8% white. A pulsing green ring on the latest point with its value labelled in 14px bold. Keep the last 60 points, and ease the axis range when it changes. Dashed amber reference line for [target], labelled TARGET. Expected result: the reader sees the current direction and whether the latest value is above or below target. UI only.
+
+VISUAL DIRECTION — LIVE LINE DRAW: Show a chart line revealing new time-series observations smoothly while maintaining stable axes, a real-value endpoint label, hover crosshair and zoomed historical view. Include clearly simulated data generation and pause/reset.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+<article class="vc" data-c="action dynamic">
+<div class="vis"><div class="tk"><div class="tk-track">
+<span><i class="sv r"></i>Site outage · Zone 4</span><span><i class="sv a"></i>Backlog above target</span><span><i class="sv g"></i>Recovery complete</span><span><i class="sv r"></i>Link degraded · Route 9</span><span><i class="sv a"></i>Queue rising</span><span><i class="sv g"></i>Handover done</span>
+<span><i class="sv r"></i>Site outage · Zone 4</span><span><i class="sv a"></i>Backlog above target</span><span><i class="sv g"></i>Recovery complete</span><span><i class="sv r"></i>Link degraded · Route 9</span><span><i class="sv a"></i>Queue rising</span><span><i class="sv g"></i>Handover done</span>
+</div></div></div>
+<div class="vc-head"><h3>Alert ticker</h3><span class="cat">Dynamic</span></div>
+<dl><dt>Use</dt><dd>Scrolling events, sorted by severity</dd><dt class="no">Avoid</dt><dd>Critical alerts only visible in motion</dd></dl>
+<div class="pr"><p>Build a scrolling alert ticker for [audience] of [events], sorted by severity with critical first. Match the preview: a single line of events separated by gaps, each with a 7px coloured dot and a text label (Critical in red, Warning in amber, Recovered in green). Fades at both edges. Pause on hover, and clicking an event opens its detail. Count per severity at the left edge in mono. Expected result: critical events are read first, and nothing is missed while paused. UI only.
+
+VISUAL DIRECTION — ALERT TICKER: Create a tasteful horizontally scrolling, severity-coloured alert tape with timestamp + short event descriptions, an accessible static list, hover-to-pause and click-to-open-details. Show most urgent events first and avoid duplicate alerts.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</p><button class="cp" data-target="pv42">Copy WOW prompt</button></div>
+<span hidden="" id="pv42">Build a scrolling alert ticker for [audience] of [events], sorted by severity with critical first. Match the preview: a single line of events separated by gaps, each with a 7px coloured dot and a text label (Critical in red, Warning in amber, Recovered in green). Fades at both edges. Pause on hover, and clicking an event opens its detail. Count per severity at the left edge in mono. Expected result: critical events are read first, and nothing is missed while paused. UI only.
+
+VISUAL DIRECTION — ALERT TICKER: Create a tasteful horizontally scrolling, severity-coloured alert tape with timestamp + short event descriptions, an accessible static list, hover-to-pause and click-to-open-details. Show most urgent events first and avoid duplicate alerts.
+
+INTERACTION ACCEPTANCE: Implement true hover, keyboard-focus, select/clear, and coherent detail state where appropriate. Preserve the exact visual grammar described above, deliver refined sizing and typography, and ensure the chart conveys a specific actionable business answer rather than a decorative graphic.</span>
+</article>
+</div>
+</section>
+<!-- DASHBOARD STYLES -->
+<section class="section reveal" style="padding-top:0">
+<div class="sec-head">
+<div class="kicker">Dashboard styles</div>
+<h2>Five layouts, and when each one fits</h2>
+<p>The style is the job the screen does. Pick the layout first, then fill it with the visuals above.</p>
+</div>
+<div class="sgrid">
+<div class="sc">
+<div class="wf wf-exec">
+<i class="k"></i><i class="k"></i><i class="k"></i><i class="k"></i>
+<i class="c" style="grid-column:span 3"></i><i class="t"></i>
+</div>
+<div><h3>Executive summary</h3></div>
+<p class="best"><b>Best for:</b> leaders who need a status in under a minute.</p>
+<p><b style="color:var(--white);font-weight:500">Layout:</b> four KPIs on top, one trend chart, one short ranked list. One screen, no scrolling.</p>
+<div class="pr pr-wide"><p>Build a one-page executive summary for [audience], answering: [question, for example: are we on track for the quarter?]. Match the preview: a top row of four KPI cards in a 4-column grid, each with value, change vs last period, and a status badge. Middle: a full-width trend line of [metric] for the last 12 months with a dashed target line, taking about 40% of the height. Bottom left: a ranked list of the top five [entities] with value bars. Open with a one-sentence headline stating the status at 20px bold. Fits one screen at 1440 by 900 with no scrolling. No filters and no navigation. UI only.
+
+ENHANCED COMPOSITION: Hero zone must have an exceptionally polished headline with business status, 4 compact KPI cards, a wide interactive trend and a supporting driver breakdown, ending with a three-item executive action strip. Use strong asymmetrical visual hierarchy rather than a grid of equal cards.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</p><button class="cp" data-target="ps1">Copy WOW prompt</button></div>
+<span hidden="" id="ps1">Build a one-page executive summary for [audience], answering: [question, for example: are we on track for the quarter?]. Match the preview: a top row of four KPI cards in a 4-column grid, each with value, change vs last period, and a status badge. Middle: a full-width trend line of [metric] for the last 12 months with a dashed target line, taking about 40% of the height. Bottom left: a ranked list of the top five [entities] with value bars. Open with a one-sentence headline stating the status at 20px bold. Fits one screen at 1440 by 900 with no scrolling. No filters and no navigation. UI only.
+
+ENHANCED COMPOSITION: Hero zone must have an exceptionally polished headline with business status, 4 compact KPI cards, a wide interactive trend and a supporting driver breakdown, ending with a three-item executive action strip. Use strong asymmetrical visual hierarchy rather than a grid of equal cards.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</span>
+</div>
+<div class="sc">
+<div class="wf wf-ops">
+<i class="k" style="grid-column:span 3"></i>
+<i class="a" style="grid-row:span 2"></i>
+<i class="c" style="grid-column:span 2"></i>
+<i class="t"></i><i class="a"></i>
+</div>
+<div><h3>Live operations monitor</h3></div>
+<p class="best"><b>Best for:</b> teams watching things happen right now.</p>
+<p><b style="color:var(--white);font-weight:500">Layout:</b> a status strip, a live queue on the left, a short trend, and alert cards. Dense, with a visible refresh indicator.</p>
+<div class="pr pr-wide"><p>Build a live operations view for [team], answering: what needs attention right now? Match the preview: a status strip across the top, one tile per service or queue, each with count, a text state (Healthy, Degraded, Down) and the age of the oldest item. Below it, a 3-column layout: a live queue table on the left, spanning two columns, with the top 15 open items sorted by severity then age; a 24-hour trend of [metric] with a threshold line on the right; alert cards along the bottom with owner and next action. Dense dark theme. Auto-refresh every [interval] with a visible last-updated timestamp and a pulsing dot. UI only.
+
+ENHANCED COMPOSITION: Design an operator cockpit with narrow health/status ribbon, a centre-left interactive topology or activity visualization, a right-side urgent work queue and a bottom timeline. Make alert acknowledgment and filtering functional in sample state.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</p><button class="cp" data-target="ps2">Copy WOW prompt</button></div>
+<span hidden="" id="ps2">Build a live operations view for [team], answering: what needs attention right now? Match the preview: a status strip across the top, one tile per service or queue, each with count, a text state (Healthy, Degraded, Down) and the age of the oldest item. Below it, a 3-column layout: a live queue table on the left, spanning two columns, with the top 15 open items sorted by severity then age; a 24-hour trend of [metric] with a threshold line on the right; alert cards along the bottom with owner and next action. Dense dark theme. Auto-refresh every [interval] with a visible last-updated timestamp and a pulsing dot. UI only.
+
+ENHANCED COMPOSITION: Design an operator cockpit with narrow health/status ribbon, a centre-left interactive topology or activity visualization, a right-side urgent work queue and a bottom timeline. Make alert acknowledgment and filtering functional in sample state.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</span>
+</div>
+<div class="sc">
+<div class="wf wf-ana">
+<i class="t" style="grid-column:span 4"></i>
+<i class="t"></i>
+<i class="c" style="grid-column:span 2"></i>
+<i class="a"></i>
+</div>
+<div><h3>Analytical explorer</h3></div>
+<p class="best"><b>Best for:</b> analysts who ask follow-up questions.</p>
+<p><b style="color:var(--white);font-weight:500">Layout:</b> a sticky filter bar, one main chart, and a breakdown that cross-filters it. Built for clicking, not just reading.</p>
+<div class="pr pr-wide"><p>Build an analyst explorer for [analysts] to ask follow-up questions of [metric]. Match the preview: a sticky filter bar across the top with date range, region and [dimension] selectors and a Reset button. Main area: one large time-series chart of the selected metric, spanning about two-thirds of the width. Side panel: a breakdown donut by [dimension] that cross-filters the main chart when a slice is clicked, with a removable filter chip showing the active slice. Below: a sortable detail table with export-ready columns. Always show the row count and active filters. One main chart only. UI only.
+
+ENHANCED COMPOSITION: Build a data exploration studio with an always-clear filter panel, a large linked chart, cohort/dimension breakdown, and a record-level table. Cross-filter charts and table; add reset and active filter chips.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</p><button class="cp" data-target="ps3">Copy WOW prompt</button></div>
+<span hidden="" id="ps3">Build an analyst explorer for [analysts] to ask follow-up questions of [metric]. Match the preview: a sticky filter bar across the top with date range, region and [dimension] selectors and a Reset button. Main area: one large time-series chart of the selected metric, spanning about two-thirds of the width. Side panel: a breakdown donut by [dimension] that cross-filters the main chart when a slice is clicked, with a removable filter chip showing the active slice. Below: a sortable detail table with export-ready columns. Always show the row count and active filters. One main chart only. UI only.
+
+ENHANCED COMPOSITION: Build a data exploration studio with an always-clear filter panel, a large linked chart, cohort/dimension breakdown, and a record-level table. Cross-filter charts and table; add reset and active filter chips.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</span>
+</div>
+<div class="sc">
+<div class="wf wf-diag">
+<i class="k"></i>
+<i class="c" style="grid-column:span 2"></i>
+<i class="a" style="grid-column:span 2"></i>
+<i class="t"></i>
+</div>
+<div><h3>Diagnostic (root cause)</h3></div>
+<p class="best"><b>Best for:</b> explaining why a number moved.</p>
+<p><b style="color:var(--white);font-weight:500">Layout:</b> a headline KPI, drivers ranked by contribution, a heatmap by segment, and a detail table to drill into.</p>
+<div class="pr pr-wide"><p>Build a root-cause view for a change in [metric] between [period A] and [period B], answering: why did it move? Match the preview: a headline KPI across the top with the change in value and percent. Middle left: a driver bridge or ranked bars showing each driver's contribution, sorted by absolute impact, with the total marked. Middle right: a heatmap of the change by [segment] and [dimension], with the largest negative cells outlined. Bottom: a detail table of the top 20 rows behind the largest driver, with values for both periods. Expected result: the reader names the top two drivers in under a minute. UI only.
+
+ENHANCED COMPOSITION: Make a diagnosis cockpit with big anomaly delta, waterfall of drivers, cause network and evidence/action rail. Clicking a suspected cause must update evidence and suggested next action.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</p><button class="cp" data-target="ps4">Copy WOW prompt</button></div>
+<span hidden="" id="ps4">Build a root-cause view for a change in [metric] between [period A] and [period B], answering: why did it move? Match the preview: a headline KPI across the top with the change in value and percent. Middle left: a driver bridge or ranked bars showing each driver's contribution, sorted by absolute impact, with the total marked. Middle right: a heatmap of the change by [segment] and [dimension], with the largest negative cells outlined. Bottom: a detail table of the top 20 rows behind the largest driver, with values for both periods. Expected result: the reader names the top two drivers in under a minute. UI only.
+
+ENHANCED COMPOSITION: Make a diagnosis cockpit with big anomaly delta, waterfall of drivers, cause network and evidence/action rail. Clicking a suspected cause must update evidence and suggested next action.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</span>
+</div>
+<div class="sc">
+<div class="wf wf-story">
+<i class="t" style="grid-column:span 3"></i>
+<i class="c" style="grid-column:span 2"></i>
+<i class="k"></i>
+<i class="t"></i><i class="t"></i><i class="t"></i>
+</div>
+<div><h3>Story &amp; narrative</h3></div>
+<p class="best"><b>Best for:</b> reviews, board updates, and sharing a single message.</p>
+<p><b style="color:var(--white);font-weight:500">Layout:</b> a headline sentence, one hero chart, and three callouts, each with one takeaway.</p>
+<div class="pr pr-wide"><p>Build a narrative dashboard for a [period] review for [audience]. Match the preview: a headline sentence across the top at 24px bold that states the single message, for example: Revenue is 6% below plan because of [driver]. A large hero chart of [metric] in the centre with the comparison that proves the headline, annotated at the key moment. Three callouts along the bottom, each with one takeaway, its supporting figure, and one recommended action. No filters and no navigation. Designed to be read top to bottom in two minutes. UI only.
+
+ENHANCED COMPOSITION: Build a storytelling canvas that starts with one powerful conclusion, follows with a flagship explanatory visual, then two supporting proof visuals, and finishes with recommended decisions and accountable owners.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</p><button class="cp" data-target="ps5">Copy WOW prompt</button></div>
+<span hidden="" id="ps5">Build a narrative dashboard for a [period] review for [audience]. Match the preview: a headline sentence across the top at 24px bold that states the single message, for example: Revenue is 6% below plan because of [driver]. A large hero chart of [metric] in the centre with the comparison that proves the headline, annotated at the key moment. Three callouts along the bottom, each with one takeaway, its supporting figure, and one recommended action. No filters and no navigation. Designed to be read top to bottom in two minutes. UI only.
+
+ENHANCED COMPOSITION: Build a storytelling canvas that starts with one powerful conclusion, follows with a flagship explanatory visual, then two supporting proof visuals, and finishes with recommended decisions and accountable owners.
+
+Deliver as one functioning, polished, responsive executive-ready HTML application, with realistic labelled sample data and interconnected interactive behavior.</span>
+</div>
+</div>
+</section>
+<!-- SMALL PROMPT RECIPE -->
+<section class="section reveal" style="padding-top:0">
+<div class="sec-head">
+<div class="kicker">Same result, small prompt</div>
+<h2>The four parts of a prompt that works</h2>
+<p>Most weak dashboards come from a prompt that names no audience, no question, and no visual. Give these four things in two or three lines and the output lands close to the first try.</p>
+</div>
+<div class="anat">
+<div class="an"><div class="n">1</div><h3>Audience</h3><p>Who looks at it: an executive, a team lead, an analyst.</p></div>
+<div class="an"><div class="n">2</div><h3>Question</h3><p>The one thing the screen must answer.</p></div>
+<div class="an"><div class="n">3</div><h3>Visuals</h3><p>Name the chart types, or the number of KPIs.</p></div>
+<div class="an"><div class="n">4</div><h3>Constraint</h3><p>Scope and size: one screen, UI only, max five slices.</p></div>
+</div>
+<div class="ba">
+<div class="box vague">
+<div class="lbl2">Vague</div>
+<p>"Make me a sales dashboard."</p>
+<div class="verdict">No audience, no question, no visuals. Expect generic charts and a lot of rework.</div>
+</div>
+<div class="box small">
+<div class="lbl2">Small, but specific</div>
+<p>"Executive sales dashboard for regional leads, answering: are we on track this quarter? Four KPIs (revenue vs target, win rate, pipeline coverage, average deal size). Monthly revenue trend with a target line. Top 10 regions as ranked bars. One screen, UI only."</p>
+<div class="verdict">Four parts present. Each visual answers a sub-question, so nothing is decorative.</div>
+</div>
+</div>
+</section>
+<!-- BEST PRACTICES -->
+<section class="section reveal" style="padding-top:0">
+<div class="sec-head">
+<div class="kicker">Before you ship it</div>
+<h2>Best practices</h2>
+<p>Ten checks that separate a dashboard people open from one they screenshot and forget.</p>
+</div>
+<div class="bp">
+<div class="bpi"><span class="num">01</span><div><h4>Start from the question</h4><p>Write the question the screen answers before choosing any chart.</p></div></div>
+<div class="bpi"><span class="num">02</span><div><h4>Title with the insight</h4><p>"Revenue is 6% below plan" beats "Revenue by month". Let the title carry the message.</p></div></div>
+<div class="bpi"><span class="num">03</span><div><h4>Cap the screen</h4><p>Four KPIs above the fold, and three to five visuals per view. More than that and nothing stands out.</p></div></div>
+<div class="bpi"><span class="num">04</span><div><h4>Match chart to data shape</h4><p>Compare with bars, trend with lines, part-to-whole with a donut, density with a heatmap.</p></div></div>
+<div class="bpi"><span class="num">05</span><div><h4>Always show a comparison</h4><p>A number alone means little. Show it against target, last period, or the average.</p></div></div>
+<div class="bpi"><span class="num">06</span><div><h4>Sort and start at zero</h4><p>Rank bars by value, and begin bar axes at zero so lengths stay honest.</p></div></div>
+<div class="bpi"><span class="num">07</span><div><h4>Colour means one thing</h4><p>Reserve green, amber, and red for status. Never use them for decoration.</p></div></div>
+<div class="bpi"><span class="num">08</span><div><h4>Never rely on colour alone</h4><p>Pair every status colour with a label or icon, so it still reads for colour-blind users.</p></div></div>
+<div class="bpi"><span class="num">09</span><div><h4>Label directly</h4><p>Put labels on the data rather than sending the eye to a legend. Avoid 3D and dual axes unless essential.</p></div></div>
+<div class="bpi"><span class="num">10</span><div><h4>Run the five-second test</h4><p>Show it to someone for five seconds. If they cannot say what it says, rebuild it.</p></div></div>
+</div>
+</section>
+<footer>ServiceNow · Build Agent · Internal field guide  ·  © 2026 ServiceNow, Inc. All rights reserved.</footer>
+</div>
+<script>
+// filter gallery
+document.querySelectorAll('#ftabs .ftab').forEach(function(tab){
+  tab.addEventListener('click', function(){
+    document.querySelectorAll('#ftabs .ftab').forEach(function(t){ t.classList.remove('on'); });
+    tab.classList.add('on');
+    var f = tab.dataset.f;
+    document.querySelectorAll('#vgrid .vc').forEach(function(card){
+      card.classList.toggle('hide', f !== 'all' && card.dataset.c.split(' ').indexOf(f) === -1);
+    });
+  });
+});
+
+// copy prompts
+document.querySelectorAll('.cp').forEach(function(btn){
+  btn.addEventListener('click', function(){
+    var text = document.getElementById(btn.dataset.target).textContent;
+    if (btn.dataset.target !== 'spec-text') text = document.getElementById('spec-text').textContent + '\n\n' + text;
+    var done = function(){
+      var originalLabel = btn.dataset.originalLabel || btn.textContent; btn.dataset.originalLabel = originalLabel; btn.textContent = 'Copied'; btn.classList.add('done');
+      setTimeout(function(){ btn.textContent = btn.dataset.originalLabel || 'Copy'; btn.classList.remove('done'); }, 1500);
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(done).catch(function(){ fallback(text); done(); });
+    } else { fallback(text); done(); }
+  });
+});
+function fallback(text){
+  var t = document.createElement('textarea');
+  t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+  document.body.appendChild(t); t.focus(); t.select();
+  try { document.execCommand('copy'); } catch(e) {}
+  document.body.removeChild(t);
+}
+
+// reveal on scroll (content stays visible if this script or IntersectionObserver is unavailable)
+if ('IntersectionObserver' in window) {
+  document.documentElement.classList.add('js');
+  var io = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); } });
+  }, { threshold: 0 });
+  document.querySelectorAll('.reveal').forEach(function(el){ io.observe(el); });
+}
+</script>
+</body>
+</html>
+</body></html>

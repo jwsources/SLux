@@ -1,97 +1,147 @@
 # AGENTS.md
 
-Guidance for AI coding agents working in **SLux** — an AIUX **extension** application.
+Canonical guidance for AI coding agents in an AIUX application
 
-## Start Here
+This is the only agent file in this repo; the agent that runs here is the ServiceNow **Build Agent**.
+`README.md` is for humans.
 
-Use `AGENTS.md` as the canonical guidance file for coding agents such as Claude Code, Gemini CLI, Codex, Cascade, and other repository-aware assistants. Tool-specific files such as `CLAUDE.md` and `GEMINI.md` should point back here instead of duplicating project rules.
+---
 
-## Mandatory UI Edit Checklist
+## Non-negotiables
 
-For any request that involves building or updating UI:
+1. **Build and install are ONE unit, and they are the user's to run.**
+   Prepare the change, `run_diagnostics`, delete dist and dist-metadata, then STOP and report it ready.
+   Do **not** call `build` — a build without the install that follows it is wasted, and a build left
+   behind an install is the stale-`dist` bug. Call either only when the user explicitly asks.
+   Never claim a change works because it "would build".
+2. **Never invent a shell step.** There is **no terminal** in this IDE — not for the agent, not for the
+   user. If the only documented route is a command, say the route is unavailable and name the tool instead.
+3. **A tool's success message is not evidence.** Read the returned diff after every write. Back any claim
+   about instance state with the query behind it **plus a control that must fire** — a filter on a field
+   that does not exist is silently *discarded* and returns every row.
+4. **A STALE SSR RENDER LOOKS EXACTLY LIKE A CODE BUG.** Twice now, source verified correct at every
+   layer while the page disagreed. Both times the server-rendered output was from older component code
+   than the client bundle.
+   - **Tell:** the page title stays the element name (`x-snc-…-page`), so `updated()` never ran; and the
+     SSR markup contains structure deleted installs ago while carrying CURRENT data.
+   - **Symptom that looks like a render bug:** slotted content reported as *hidden*. A `<div slot="x">`
+     whose matching `<slot name="x">` is absent from the server-rendered shadow root is NOT rendered.
+     So a page can supply hero content the stale shell has nowhere to put.
+   - 🔑 **THE REMEDY IS TO RELOAD ONCE.** The first load after an install serves the stale SSR shadow
+     root; the second is hydrated. This has cost four rounds of false "regression" reports. ALWAYS
+     navigate twice, or check the title first, before judging any page.
+   - `?uxpcb=1` does not help — that is browser-side, and the staleness is in the SSR output.
+   - Only escalate to a tenant-cache eviction if the title is STILL the element name after a reload.
 
-1. Invoke the `ui-discovery` skill first — before writing code or making a plan.
-2. Evaluate reusable components and instance widgets together. If a candidate exists, use the best match and proceed without asking for confirmation.
+`run_diagnostics` and `ui_diagnostics` are validation, not change — no approval needed. `ui_diagnostics`
+needs an install first.
 
-Use the ServiceNow AIUX skills before changing app code:
+## There is no terminal
 
-- `ui-discovery` — see Mandatory UI Edit Checklist above
-- `aiux:aiux-build` for pages, routes, layouts, widgets, server scripts, `AIUXElement` lifecycle/decorators/loaders/context patterns, and deploy pipeline work
-- `horizon-design-knowledge:design-knowledge` for UI generation and design standards
-- `accessibility:accessibility` for accessibility audits and fixes
+Every `pnpm` script in `package.json` is how this app builds *outside* this IDE. In here:
 
-The ServiceNow agent packs are declared in `package.json` dev dependencies, so they install with the project. A `postinstall` script copies the packs' skills from `node_modules/@servicenow/agent-pack-*` into `.claude/skills` automatically on every `pnpm install` — no manual step, and it works for any agent rather than relying on a Claude-specific hook. Run `pnpm agent:skills` to force a re-copy (e.g. after editing a skill, or if you installed with `--ignore-scripts`).
+| Script | Here |
+| --- | --- |
+| `pnpm build` | the **`build`** tool — SDK ACTION |
+| `pnpm deploy` | the **`install`** tool — SDK ACTION. Deploy **after** the host, then evict the tenant cache |
+| `pnpm lint` | no execution. Regex-detectable rules → `fs_grep`; type/syntax → `run_diagnostics` |
+| `pnpm dev` | no equivalent. No dev server, no hot reload. After install → `ui_diagnostics` |
 
-Keep `.claude/skills/` and the `.agents/skills` link out of `.gitignore`: some coding agents block reads of Git-ignored files, including skill references. Keep dependencies, caches, secrets, and build outputs ignored; do not enable blanket access to Git-ignored files just to read skills. Skill copies remain excluded from ESLint. Review changes after `pnpm install` or `pnpm agent:skills`, which refresh the copies and can overwrite local edits.
+The AIUX skills were written for offline agents **with** a shell. Every `pnpm`, `node`, `npx`, `curl`,
+`find` and `grep` instruction in them is void — the full translation table is in TOOLNOTES.md.
 
-## Extension Model
+## Searching: zeros are void by default
 
-This app **extends an existing host experience** rather than defining its own. Pages live under one of two directory conventions, rooted at `<srcDir>` — the value of `srcDir` in this app's `aiux.json` (scaffolded as `src/lux`):
 
-```
-# Convention 1 — host project id + route id (scaffolded default)
-<srcDir>/extensions/<host_project_id>/<host_route_id>/pages/<route>/page.js
-<srcDir>/extensions/<host_project_id>/<host_route_id>/application.js        # optional per-host lifecycle
+- ⚠ **A ZERO ON A SUBSTRING IS USUALLY CASE, NOT ANCHORING.** `href\(` returned zero while
+  `detailHref(` sat in the file — because `detailHref` has a capital H, so `href(` is genuinely
+  absent. I first blamed mixing a `^`-anchored branch with unanchored ones in one alternation;
+  that was wrong. Alternation works. Check camelCase boundaries before theorising, and prefer
+  `-i` or the fuller identifier.
+- ⚠ **NEVER `run_query` `sys_ux_lib_asset` without a highly specific `name`.** It returns the `content`
+  field, which holds whole minified bundles — one broad query returned 2.2 MB (100k chars after
+  truncation) of unrelated library source. `inspect_component_dom` is the safe wrapper, but it only
+  indexes `category=source_map`. Verified absent there: `sn-aiux-chat-wrapper` under the names
+  `chat-wrapper`, `aiex`, `aiel` (control `nameISNOTEMPTY` fired, so those zeros are real).
+- `fs_grep`: target one file via `glob`, never `path`. **Any zero is void** until a control pattern known
+  to exist fires under identical params, differing only in the pattern. Still void → `fs_read_file`.
+- ⚠ **`fs_grep`, `fs_glob` and `fs_tree` skip `node_modules` and dot-directories**, and `local_search`
+  returns nothing at all in this build. Every grep of `node_modules/` or `.build-agent/` is a **false
+  zero**. `fs_read_file` and `fs_read_directory` are not affected — use those.
 
-# Convention 2 — direct host experience sys_id
-<srcDir>/extensions/<experience_sys_id>/pages/<route>/page.js
-<srcDir>/extensions/<experience_sys_id>/application.js                 # optional per-host lifecycle
-```
+## Order of authority
 
-- `<host_project_id>` is the host project's `projectId` from its `aiux.json` (e.g. `sn_app_aict_ui`). A host created before `aiux.json` had a `projectId` uses its scope as its project id. Look a host's project id up rather than deriving it from the scope or package name, since its form depends on how the host was created. On the instance, it's the experience's `source_aix_project.project_id`.
-- `<host_route_id>` is the host experience's `url_suffix` route identifier (e.g. `aict`). It **must match the host** so these pages overlay the host's routes at `/aiux/<host_route_id>/…`.
-- **The template ships this as `<srcDir>/extensions/__parentProjectId__/__parentRouteId__/`**, and `now-sdk init` prompts for the host project id and route id to fill it in. If either prompt was left blank, the placeholder survives scaffolding verbatim. Rename that directory (its `pages/` and any `application.js` move with it, since the binding is the path itself, not anything inside those files) before running `pnpm dev`, which now resolves the host from this path automatically (see Commands below) and will fail against a real instance if the placeholder is still in place.
-- Convention 2 targets the host directly by its experience `sys_id`. Both conventions are discovered identically; a single project may mix them to target multiple hosts.
-- The directory path — not any `aiux.json#extends` field — is what links this extension to its host. There is no `extends`/`routeMap` in `aiux.json`.
-- `extension.js` is **not** read by the build. The lifecycle module is always named `application.js`.
-- Contribute host chrome from `setup()` using the nav helpers from `@servicenow/aiux/aiux-components-nav`: `addNavItem`, `removeNavItem`, `setL3Nav`, `appendL3Nav`. These have no ownership tracking — they key purely on path string, so colliding with a path the host or another extension already uses silently overwrites or removes it. `addNavItem`/`removeNavItem` (and their current names, `appendL1Nav`/`prependL1Nav`/`removeL1Nav`) also accept an array to add/remove several L1 items in one call. `appendL2Nav`/`prependL2Nav`/`removeL2Nav` do the same one level down, for items nested under a specific L1's `l2Nav`.
+1. **This file, then TOOLNOTES.md** — this repo, this IDE, this instance. Nothing outranks a fact
+   measured here.
+2. **The AIUX skills.** This is an AIUX project, so they own the framework: `ui-discovery` first for
+   any UI, then `aiux-build`, `accessibility`, `components`, `patterns`, `motion` and the rest.
+   Strong on Lit, components, tokens and ARIA — and they know nothing about this instance.
+3. **Equal footing, both general guidance:**
+   - `explain_fluent_doc` / `search_fluent_docs` — anything under `src/fluent/`.
+   - the **`hint-lookup`** skill — the curated hint library: facts missing from or disproven by the
+     public documentation, measured silent-failure modes, and practical guidance. It also carries a
+     hint on how to use the ServiceNow product documentation.
 
-### Lifecycle modules: root vs per-host
+   Activate `hint-lookup` before building anything that touches platform configuration, architecture
+   or SDK behaviour, and whenever capturing or correcting generic knowledge.
 
-There are two places a lifecycle module can live, and they are not interchangeable:
+   ⚠ **A hint is a measurement with a date.** Platform behaviour moves between ServiceNow releases,
+   so a hint can be stale. Where one contradicts something measured here, **the local measurement
+   wins** — and the hint is then the thing to correct. Never expect project specifics in a hint.
 
-| Module                                                                    | Binds to                                       | Needs pages? |
-| ------------------------------------------------------------------------- | ------------------------------------------------ | -------------- |
-| **Per-host** `<srcDir>/extensions/<host_project_id>/<host_route_id>/application.js` | Exactly that host                              | **No**       |
-| **Root** `<srcDir>/application.js`                                         | The one host this app's extension pages target | **Yes**      |
+   ⚠ The `find_hint` / `hint_retrieval` / `hint_triage` **MCP tools are absent** in this build; the
+   skill reaches the library over REST instead, so hints ARE available. Access path in TOOLNOTES.md.
+4. **Training-data recall** — last, and only when nothing above covers the question.
 
-- **This template scaffolds the per-host form**, at `<srcDir>/extensions/<host_project_id>/<host_route_id>/application.js`. It sits as a sibling of that host's `pages/` directory — not inside it — and is discovered, bundled, and registered on its own. `<srcDir>/extensions/<experience_sys_id>/application.js` is the convention-2 equivalent.
-- To extend a **second** host, add another `application.js` under that host's directory with its own `setup()`. Each emits its own `sys_aix_widget` + `sys_aix_experience_extension` row, so hosts never share lifecycle logic.
-- A **root** `application.js` (at `<srcDir>/application.js`) still works, but is the weaker option here: it is compiled only when the app has at least one page under `<srcDir>/extensions/`, and binds to a single host inferred from those pages. Prefer the per-host form. If both exist, the root module is **not** additionally registered against a host that has its own per-host module, so they never double-run.
-- `.ts` is preferred over `.js` when both exist in the same directory.
-
-### Which hooks actually run
-
-- `setup()` — runs server-side during SSR (after the host's own `setup()`), and re-runs client-side only as a CSR fallback.
-- `navigate(navCtx, ctx)` — **client-only**, on each in-app navigation, after the host's `navigate()`. An extension cannot return a redirect; only the host can.
-- `teardown(ctx)` — **client-only**, after the host's `teardown()` on app exit.
-- A throwing hook is caught and logged; it never breaks the host render or other extensions.
-- Under `pnpm dev` the dev server renders on the main thread and does not run the isolate, so `setup()` fires **client-side only**. Verify nav contributions against a deployed instance before concluding SSR is broken.
-
-## Do Not
-
-- Do **not** add this app's own `<srcDir>/pages/` directory or a `landing` to `aiux.json`. Combining a project's own pages with `<srcDir>/extensions/` **pages** in one project is unsafe, not merely unsupported (STRY64103259) — the own pages get silently wired into the host's experience. If you need an app that both extends another app _and_ has its own pages, that is a **separate** app. (This hazard is specific to extension _pages_; a `<srcDir>/extensions/` tree containing only per-host lifecycle modules does not trigger it.)
-- Do **not** add the host as a `package.json` dependency or import its page source. The project id/route id (or sys_id) in the file path is the entire coupling.
-- Deploy **after** the host — its experience must already exist — then evict the tenant cache after every deploy; the effect is not immediate.
-
-## Project Rules
+## Project rules
 
 - Components extend `AIUXElement` from `@servicenow/aiux/aiux-components-core`, never `LitElement`
 - Guard browser globals with `isServer` from `lit`
-- Use Tailwind + DaisyUI for styling; no `--now-*` CSS tokens
-- Custom element tags are prefixed with this app's scope (kebab-cased) to avoid colliding with host or other extensions' elements
+- Tailwind + DaisyUI for styling; **no `--now-*` CSS tokens**
+- **DaisyUI classes are `aiux-` prefixed.** Unprefixed component classes (`card`, `badge-success`) emit
+  nothing, and an unsafelisted utility is tree-shaken silently. See PLATFORM-NOTES.md before writing CSS.
+- Custom element tags carry the app's scope, kebab-cased (`x-snc-[SCOPE]]-…`)
 - Net-new pages the host doesn't own can be role-gated with `@roles(['admin'])`
-- Prefer `pnpm build` before deploy
 
-## Commands
+## Do not
 
-```bash
-pnpm dev
-pnpm build
-pnpm lint
-pnpm deploy
-```
+- **Do not add an app's own `pages/` directory or a `landing` to `aiux.json`.** Own pages plus
+  `src/extensions/` pages in one project is unsafe, not merely unsupported (STRY64103259) — the own pages
+  get silently wired into the host's experience. An app that both extends another app *and* has its own
+  pages must be a **separate** app. (Specific to extension *pages*; a `src/extensions/` tree holding only
+  per-host lifecycle modules does not trigger it.)
+- **Do not add the host as a `package.json` dependency** or import its page source. The scope/route-id in
+  the directory path is the entire coupling.
 
-`pnpm dev` resolves the host declared under `<srcDir>/extensions/` automatically — the dev server itself points `aiux.json#development.host` at it and pulls the host's source into `.aiux/source-cache/` if it isn't already there, prompting once to confirm. Once set, this is a silent no-op on every later `pnpm dev`.
+## Before building or updating UI
 
-`pnpm dev` also checks in the background whether the host's source has changed on the instance since it was last pulled, and prints a boxed `UPDATE AVAILABLE` notice — either mid-session, the moment it finds one, or on the next `pnpm dev` if that session's already stopped by then — telling you to run `pnpm dev:refresh-extension-host` (also the command to force a re-check/re-pull on demand, with or without a notice).
+1. Invoke the **`ui-discovery`** skill first — before writing code or making a plan.
+2. Evaluate reusable components and instance widgets together. If a candidate exists, use the best match
+   and proceed without asking for confirmation.
+
+`.build-agent/skills/` holds **17 skill folders, committed and hand-edited** — version-controlled
+content, not generated. Twelve are edited copies of the ServiceNow agent packs; the other five
+(`hint-lookup`, `aiux-instance-ops`, `aiux-agents`, `servicenow-interactive-report-writer`,
+`aiux-tailwind-vision-spec`) are authored here. There is no `postinstall` hook, no `.claude/skills`, no
+`.agents/skills` symlink and no `pnpm agent:skills`. Do not try to regenerate them.
+
+Two more skills — `atf-run-test` and `update-system-property` — are provided by the environment and are
+**not** on disk. TOOLNOTES.md → Skill inventory lists all of them, plus the two loader rules that make a
+skill silently invisible.
+
+---
+
+## Read TOOLNOTES.md when
+
+| Trigger | Section |
+| --- | --- |
+| A skill tells you to run any shell command | Command → tool |
+| You need instance data, or a widget/experience lookup | Instance tools · `sys_aix_widget` role filter |
+| Writing or debugging CSS, Tailwind or DaisyUI classes | Measured facts → DaisyUI safelist |
+| Writing a `css` or `html` tagged template | Measured facts → backtick trap |
+| Referencing an image | Measured facts → `db_image` URLs |
+| Touching `src/extensions/` structure or `application.js` | Extension model · hooks |
+| Something is blocked and you may need to ask the user | Genuinely unavailable |
+| A skill cites a path that does not exist | Dead links in the pack |
+| The pack version may have moved | Drift detection |
+| Choosing a skill | Skill inventory |
