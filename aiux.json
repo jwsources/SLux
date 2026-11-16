@@ -1,6 +1,6 @@
 {
   "name": "SLux",
-  "projectId": "",
+  "projectId": "x_snc_slux",
   "srcDir": "src/lux",
   "development": {
     "token": ""
