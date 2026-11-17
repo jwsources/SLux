@@ -1,0 +1,25 @@
+{
+  "table": "sn_customerservice_case",
+  "condition": "<condition that selects rich device-safety cases, to confirm>",
+  "header": {
+    "title": "short_description",
+    "chips": ["state", "assigned_to.empty", "regulatory_flag"]
+  },
+  "views": ["intelligent", "details", "activity", "related_lists"],
+  "grid": [
+    { "id": "brief",  "type": "OttoBrief",      "span": 12, "source": "otto.brief" },
+    { "id": "cause",  "type": "RootCauseCard",  "span": 7,  "source": "otto.cause" },
+    { "id": "party",  "type": "PartyCard",      "span": 5,  "source": "record.party" },
+    { "id": "chain",  "type": "RecordChain",    "span": 5,  "source": "record.chain" },
+    { "id": "remed",  "type": "SplitProgress",  "span": 7,  "source": "record.remediation", "children": ["TaskTable"] },
+    { "id": "story",  "type": "NarrativeSteps", "span": 12, "source": "otto.situation" }
+  ],
+  "dock": { "type": "OttoDock", "source": "otto.findings" },
+  "activity": {
+    "story": "otto.story",
+    "enrichment": "otto.activityEnrichment",
+    "journal": "record.activity",
+    "defaultFilter": "key",
+    "groupSystemUpdates": true
+  }
+}

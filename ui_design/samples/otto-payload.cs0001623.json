@@ -1,0 +1,84 @@
+{
+  "recordId": "CS0001623",
+  "_comment": "Example shape built from the case data. Task and work order states below are illustrative; at runtime they come from the real state fields.",
+  "brief": {
+    "summary": "VitalWatch firmware 3.8.0 has an alarm-annunciation timing defect that stops alarms reaching the nursing station. The fix is firmware 4.2.1. The case is open, unassigned and already linked under major case CS0001624.",
+    "alerts": [
+      {
+        "tone": "critical",
+        "text": "Regulatory assessment states the event meets MDR/FDA reportability criteria under REG0001002, currently in Draft.",
+        "refs": ["REG0001002"]
+      }
+    ],
+    "stats": [
+      { "label": "Devices in scope", "value": "14", "caption": "across 3 accounts, working scope" },
+      { "label": "Remote update eligible", "value": "11", "caption": "no site visit needed" },
+      { "label": "Dispatch required", "value": "3", "caption": "one device per site" },
+      { "label": "Target firmware", "value": "4.2.1", "caption": "resolves FW-2024-0847", "mono": true }
+    ]
+  },
+  "cause": {
+    "from": { "label": "Affected", "value": "3.8.0", "tone": "critical" },
+    "to": { "label": "Target", "value": "4.2.1", "tone": "success" },
+    "description": "VitalWatch alarm-annunciation timing defect. Case history notes the defect is resolved in 4.2.1.",
+    "facts": [
+      { "label": "Defect reference", "value": "FW-2024-0847", "mono": true },
+      { "label": "Trigger device", "value": "VitalWatch Monitor - Medical ICU 01" },
+      { "label": "Trigger firmware", "value": "3.8.0", "mono": true },
+      { "label": "Target firmware", "value": "4.2.1", "mono": true }
+    ]
+  },
+  "situation": {
+    "steps": [
+      { "text": "CS0001623 remains open and is linked as a child case under CS0001624.", "refs": ["CS0001624"] },
+      { "text": "Case history ties the issue to firmware 3.8.0. Defect FW-2024-0847 is resolved in 4.2.1." },
+      { "text": "The active remediation path runs through WO0010020, CHG0030002 and REG0001002.", "refs": ["WO0010020", "CHG0030002", "REG0001002"] },
+      { "text": "The regulatory assessment says the event meets MDR/FDA reportability criteria.", "refs": ["REG0001002"] }
+    ]
+  },
+  "findings": [
+    { "id": "f1", "title": "Likely cause identified", "detail": "Firmware 3.8.0 timing defect", "sources": ["case history"], "target": "cause", "severity": "info" },
+    { "id": "f2", "title": "Reportability flagged", "detail": "Meets MDR/FDA criteria", "sources": ["REG0001002"], "target": "brief", "severity": "critical" },
+    { "id": "f3", "title": "Linked under a major case", "detail": "Child of CS0001624", "sources": ["CS0001624"], "target": "chain", "severity": "info" },
+    { "id": "f4", "title": "No owner yet", "detail": "Assigned to is not set", "sources": ["case record"], "target": "party", "severity": "warning" }
+  ],
+  "suggestions": [
+    { "id": "s1", "label": "Assign to Alectri Clinical Engineering", "action": "assign", "params": { "group": "Alectri Clinical Engineering" } },
+    { "id": "s2", "label": "Review draft work order WO0010020", "action": "open_record", "params": { "number": "WO0010020" } },
+    { "id": "s3", "label": "Open regulatory report REG0001002", "action": "open_record", "params": { "number": "REG0001002" } }
+  ],
+  "story": [
+    { "stage": "LINKED", "title": "Child of CS0001624", "detail": "Case linked under the major case.", "tone": "info", "noteId": "<journal id>", "sources": ["CS0001624"] },
+    { "stage": "CAUSE", "title": "Firmware 3.8.0 defect", "detail": "FW-2024-0847, resolved in 4.2.1.", "tone": "info", "noteId": "<journal id>", "sources": ["case history"] },
+    { "stage": "SCOPE", "title": "14 devices, 3 accounts", "detail": "Working scope from the latest notes.", "tone": "info", "noteId": "<journal id>", "sources": ["case notes"] },
+    { "stage": "PLAN", "title": "11 remote, 3 dispatch", "detail": "WO0010020, CHG0030002.", "tone": "info", "noteId": "<journal id>", "sources": ["WO0010020", "CHG0030002"] },
+    { "stage": "REGULATORY", "title": "Reportable event", "detail": "MDR/FDA criteria met, REG0001002.", "tone": "critical", "noteId": "<journal id>", "sources": ["REG0001002"] }
+  ],
+  "activityEnrichment": [
+    {
+      "noteId": "<journal id>",
+      "title": "Remediation plan for the device fleet",
+      "summary": "11 of 14 devices can be updated remotely; 3 need a site visit.",
+      "topics": ["Remediation plan"],
+      "key": true,
+      "structured": [
+        { "label": "Total devices", "value": "14" },
+        { "label": "Remote eligible", "value": "11" },
+        { "label": "Dispatch required", "value": "3" },
+        { "label": "Target firmware", "value": "4.2.1" }
+      ]
+    },
+    {
+      "noteId": "<journal id>",
+      "title": "Regulatory assessment: reportable",
+      "summary": "The event meets MDR/FDA reportability criteria. Report REG0001002 is in Draft.",
+      "topics": ["Regulatory"],
+      "key": true
+    }
+  ],
+  "remediationTasks": [
+    { "site": "Medical ICU", "task": "WOT0010065", "devices": 1, "state": "<real task state>" },
+    { "site": "Surgical Ward A", "task": "WOT0010066", "devices": 1, "state": "<real task state>" },
+    { "site": "Pediatric ICU", "task": "WOT0010067", "devices": 1, "state": "<real task state>" }
+  ]
+}
