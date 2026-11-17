@@ -1,4 +1,11 @@
-# @servicenow/aiux-context
+# User preferences context
+
+> Source: `@servicenow/aiux-context@1.2.161` · `context/docs/usage/userPreferencesContext.md`
+
+`userPreferencesContext` is a global context holding `{[preferenceName]: value}`
+for the preferences the server pre-fetched for this page. It is seeded once in
+the browser and changes only when code writes to it. `@servicenow/aiux-context`
+and `@servicenow/aiux-services` re-export the same object.
 
 ## Import
 
@@ -6,265 +13,149 @@
 import {userPreferencesContext} from '@servicenow/aiux-components-core';
 ```
 
-
-Logical barrel exports for AIUX Lit contexts, including `routeContext` for the current navigation state, `experienceContext`/`experienceContextManager` for app/experience metadata, and `userPreferencesContext` for pre-fetched user preferences.
-
-## Installation
-
-```bash
-pnpm add @servicenow/aiux-context
-```
-
 ## Usage
 
-Import all contexts from a single package:
+### Minimal complete example
 
-```javascript
-import {
-  widgetRenderingContext,
-  mobileAppBridgeContext
-} from '@servicenow/aiux-context';
-
-// Or use shorter aliases
-import {widgetOrigin, mobileAppBridge} from '@servicenow/aiux-context';
-```
-
-## Available Exports
-
-| Export                     | Alias             | Description                                             | Source Package                               |
-| --------------------------- | ----------------- | ---------------------------------------------------------- | -------------------------------------------- |
-| `widgetRenderingContext`    | `widgetOrigin`    | Context for widget rendering origin                        | `@servicenow/aiux-context-widget-origin`     |
-| `mobileAppBridgeContext`    | `mobileAppBridge` | Context for mobile app bridge integration                   | `@servicenow/aiux-context-mobile-app-bridge` |
-| `routeContext`              | —                 | Reactive context exposing the current navigation state      | `./src/route-context.js` (this package)      |
-| `experienceContext`         | —                 | Reactive metadata for the current app/experience             | `./src/experience-context.js` (this package) |
-| `experienceContextManager`  | —                 | Imperative API for setting/reading `experienceContext`       | `./src/experience-context.js` (this package) |
-| `userPreferencesContext`    | —                 | Reactive context holding pre-fetched user preferences        | `@servicenow/aiux-components-core`           |
-
-## Examples
-
-### Consuming Contexts
-
-```javascript
-import {LitElement, html} from 'lit';
-import {consume} from '@lit/context';
-import {
-  widgetRenderingContext,
-  mobileAppBridgeContext
-} from '@servicenow/aiux-context';
-
-class MyWidget extends LitElement {
-  @consume({context: widgetRenderingContext})
-  origin;
-
-  @consume({context: mobileAppBridgeContext})
-  bridge;
-
-  render() {
-    return html`
-      <div>
-        <p>Rendering in: ${this.origin}</p>
-        <p>Platform: ${this.bridge ? 'Mobile App' : 'Web Browser'}</p>
-      </div>
-    `;
-  }
-}
-```
-
-### With ContextConsumer
-
-```javascript
-import {LitElement, html} from 'lit';
-import {ContextConsumer} from '@lit/context';
-import {widgetRenderingContext} from '@servicenow/aiux-context';
-
-class MyWidget extends LitElement {
-  constructor() {
-    super();
-    new ContextConsumer(this, {
-      context: widgetRenderingContext,
-      callback: value => {
-        this.origin = value;
-        this.requestUpdate();
-      }
-    });
-  }
-
-  render() {
-    return html`<div>Origin: ${this.origin}</div>`;
-  }
-}
-```
-
-### Conditional Rendering Based on Context
-
-```javascript
-import {LitElement, html} from 'lit';
-import {consume} from '@lit/context';
-import {
-  widgetRenderingContext,
-  mobileAppBridgeContext
-} from '@servicenow/aiux-context';
-
-class AdaptiveWidget extends LitElement {
-  @consume({context: widgetRenderingContext})
-  origin;
-
-  @consume({context: mobileAppBridgeContext})
-  bridge;
-
-  render() {
-    const isChatMode = this.origin === 'chat';
-    const isMobile = !!this.bridge;
-
-    return html`
-      <div
-        class="${isChatMode ? 'compact' : 'full'} ${isMobile
-          ? 'mobile'
-          : 'web'}"
-      >
-        ${isChatMode ? this.renderCompactView() : this.renderFullView()}
-      </div>
-    `;
-  }
-
-  renderCompactView() {
-    return html`<div class="compact">Compact chat view</div>`;
-  }
-
-  renderFullView() {
-    return html`<div class="full">Full page view</div>`;
-  }
-}
-```
-
-### Providing Context
-
-Use with `ContextProvider` or the `provideOrigin` directive:
-
-```javascript
-import {LitElement, html} from 'lit';
-import {ContextProvider} from '@lit/context';
-import {widgetRenderingContext} from '@servicenow/aiux-context';
-
-class ParentWidget extends LitElement {
-  constructor() {
-    super();
-    new ContextProvider(this, {
-      context: widgetRenderingContext,
-      initialValue: 'page'
-    });
-  }
-
-  render() {
-    return html`<child-widget></child-widget>`;
-  }
-}
-```
-
-Or use the `provideOrigin` directive:
-
-```javascript
+```js
 import {html} from 'lit';
-import {provideOrigin} from '@servicenow/aiux-directives';
+import {
+  AIUXElement,
+  userPreferencesContext,
+  getUserPreference,
+  setUserPreference
+} from '@servicenow/aiux-components-core';
 
-html`
-  <div ${provideOrigin('chat')}>
-    <child-widget></child-widget>
-  </div>
-`;
-```
-
-## Context Values
-
-### widgetRenderingContext (alias: widgetOrigin)
-
-Tracks where a widget is rendered:
-
-- `'page'` - Widget is rendered in a page context
-- `'chat'` - Widget is rendered in a chat/conversation context
-
-### mobileAppBridgeContext (alias: mobileAppBridge)
-
-Provides access to mobile app bridge functionality:
-
-- `undefined` - Running in web browser
-- `object` - Running in mobile app (provides native capabilities)
-
-### routeContext
-
-Exposes the current navigation state (`{path, matched, ...}`) as set by the app's router (`AIUXAppLayoutElement._initRouter` in `@servicenow/aiux-components-core`). Before the router initializes — very early module load, or on the server prior to routing — `get()` returns a frozen `{matched: false}` default rather than throwing.
-
-```javascript
-class MyWidget extends AIUXElement {
-  static contexts = [routeContext];
-  render() {
-    const route = routeContext.get();
-    return html`<div>${route.path}</div>`;
-  }
-}
-```
-
-### experienceContext / experienceContextManager
-
-`experienceContext` holds a frozen snapshot of the current app/experience metadata (`sysId`, `name`, `title`, `theme`, `properties`, `isLoaded`, etc.). Initially only `name` is populated (derived from the URL); the rest stay `null` and `isLoaded: false` until a layout loader calls `experienceContextManager.setExperienceConfig(config)` — Karuna does not auto-fetch this metadata the way aiux-kit does.
-
-```javascript
-class MyWidget extends AIUXElement {
-  static contexts = [experienceContext];
-  render() {
-    const experience = experienceContext.get();
-    return html`<div>${experience.title ?? experience.name}</div>`;
-  }
-}
-
-// From a layout loader, once the metadata is available:
-experienceContextManager.setExperienceConfig({sysId, title, theme});
-```
-
-`experienceContextManager` also exposes `get(key)`, `subscribe(callback)` (fires immediately with the current value, then on every update), and getters for `sysId`/`name`/`isLoaded`.
-
-### userPreferencesContext
-
-Re-exported from `@servicenow/aiux-components-core`. Holds all pre-fetched user preferences as a flat `Record<string, string>`, seeded at request time from build-time-extracted `getUserPreference()` call sites. Components that declare `static contexts = [userPreferencesContext]` re-render automatically when a preference changes.
-
-```javascript
-import {LitElement, html} from 'lit';
-import {userPreferencesContext} from '@servicenow/aiux-components-core';
-
-class MyWidget extends LitElement {
+export class DetailsToggle extends AIUXElement {
   static contexts = [userPreferencesContext];
+  static properties = {_error: {state: true}};
+
+  async _onChange(e) {
+    const input = e.target;
+    this._error = '';
+    try {
+      await setUserPreference('x_acme_app.show_details', String(input.checked));
+    } catch {
+      input.checked = !input.checked; // context is unchanged, so restore the control
+      this._error = 'Could not save the preference.';
+    }
+  }
 
   render() {
-    const prefs = userPreferencesContext.get();
-    return html`<div>${prefs['glide.ui.accessibility.voice_input']}</div>`;
+    // String literal: the build registers this name for pre-fetching.
+    const on = getUserPreference('x_acme_app.show_details') === 'true';
+    return html`
+      <label class="aiux-label cursor-pointer gap-2">
+        <span>Show details</span>
+        <input
+          type="checkbox"
+          class="aiux-toggle"
+          .checked=${on}
+          @change=${this._onChange}
+        />
+      </label>
+      ${this._error ? html`<p class="text-error text-sm">${this._error}</p>` : ''}
+    `;
   }
+}
+customElements.define('details-toggle', DetailsToggle);
+```
+
+**What happens:** `setUserPreference` saves to the instance, then writes the
+new value into the context, which re-renders every element that declares
+`static contexts = [userPreferencesContext]`. If the save fails it rejects and
+the context is unchanged, so the handler restores the checkbox.
+
+## API
+
+### Value
+
+A plain object `UserPreferences` (see Data shapes).
+
+| Field or method | Type | Meaning |
+| --- | --- | --- |
+| `[preferenceName]` | `string \| null` | Value of `sys_user_preference` `preferenceName` for the current user; `null` when the user has none or it could not be fetched. |
+
+Keys present in the browser:
+
+- Every name passed as a **string literal** to `getUserPreference(...)`
+  imported by name from `@servicenow/aiux-components-core`, in the app or the
+  platform components it uses. A variable or computed argument is not found.
+- Always: `user.language`, `glide.polaris.animation_disabled`,
+  `glide.aiux.theme_mode`, `glide.aiux.mobile_theme_mode`,
+  `glide.ui.accessibility.accessible.tooltips`,
+  `glide.ui.accessibility.voice_input`, `glide.ui.density_mode`,
+  `glide.ui.compact`, `glide.ui.polaris.theme.infodensity`.
+- Any key written later through `setUserPreference` or `set()`.
+- Names pre-fetched later during client navigation are available to
+  `getUserPreference` but are not added to this map.
+
+### Providing
+
+Provided automatically. `@servicenow/aiux-components-core` creates it at
+module load and seeds it from the page's pre-fetched requirements data. Do not
+provide it yourself.
+
+### Consuming
+
+```js
+// AIUXElement (Karuna)
+static contexts = [userPreferencesContext];
+render() {
+  const format = getUserPreference('glide.ui.date_format'); // or userPreferencesContext.get()['glide.ui.date_format']
 }
 ```
 
-## Benefits
+- **Updates when:** anything calls `userPreferencesContext.set()`, including
+  `setUserPreference` after a successful save. Every write notifies all
+  subscribers, whichever key changed. Not updated by navigation or by the
+  preference changing elsewhere (another tab, the server).
+- **Before a provider exists:** not applicable; `get()` never returns
+  `undefined`. With no pre-fetched data it returns `{}`.
+- There is no `@lit/context` bridge for this context; `ContextConsumer` and
+  `@consume` receive nothing. Use `static contexts`.
+- `userPreferencesContext.subscribe(callback)` receives the whole map on each
+  write, returns an unsubscribe function, and is not called with the current
+  value.
 
-- **Single dependency**: Install one package instead of two separate context packages
-- **Convenience**: Import multiple contexts from one location
-- **Tree-shaking**: Only imports what you use
-- **Discoverability**: Easy to find all available contexts
-- **Type safety**: Works with TypeScript decorators
+### Updating
 
-## Individual Packages
+- `setUserPreference(name, value)` (from `@servicenow/aiux-components-core`)
+  saves the preference for the current user on the instance, then sets
+  `{...current, [name]: value}`. It resolves once the save succeeds, and
+  rejects with an `Error` when the request fails or the response is not OK,
+  leaving the context unchanged. Saving `glide.polaris.animation_disabled` also updates reduced
+  motion for all `AIUXElement`s.
+- `userPreferencesContext.set(map)` replaces the whole map locally without
+  saving; spread the current value to keep other keys.
+- Set it in the browser only; do not set it from a loader or during server
+  render.
+- `userPreferencesService` from `@servicenow/aiux-services` writes the same
+  context: `setUserPreference` patches one key locally, `saveUserPreference`
+  saves and patches.
 
-If you prefer granular dependencies, you can still install individual packages:
+### Exported helpers
 
-- `@servicenow/aiux-context-widget-origin`
-- `@servicenow/aiux-context-mobile-app-bridge`
+| Export | Signature | Use |
+| --- | --- | --- |
+| `getUserPreference` | `(name: string) => string \| null` | Read one preference. Checks the context, then the pre-fetched data; `null` (with a console error) when not pre-fetched. Pass a string literal. |
+| `setUserPreference` | `(name: string, value: string) => Promise<void>` | Save a preference and update the context (see Updating). |
 
-## Related Packages
+Both are exported from `@servicenow/aiux-components-core`.
 
-- `@servicenow/aiux-directives` - Logical exports for AIUX directives
-- `@servicenow/aiux-directive-provider-origin` - Directive for providing widget origin context
+### Data shapes
 
-## SSR Compatibility
+```ts
+type UserPreferences = Record<string, string | null>;
+```
 
-✅ All contexts are SSR-safe and work in both server-side and client-side rendering environments.
+## Integration details
 
-## License
+### SSR
 
-See the main repository LICENSE file.
+- On the server the context is not filled per request. In server-rendered
+  output, read values with `getUserPreference(name)`, which reads the current
+  request's pre-fetched data.
+- `setUserPreference` only works in the browser.
+- Do not call `userPreferencesContext.set()` from a loader or during server
+  render.

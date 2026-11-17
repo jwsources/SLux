@@ -1,378 +1,672 @@
-# @servicenow/aiux-components-coe-node-map
+# Node map
+
+> Source: `@servicenow/aiux-components-coe-node-map@8.0.2` · `components/external/node-map/docs/usage/aiux-node-map.md`
+
+`<aiux-node-map>` draws `nodes` and `edges` on a Cytoscape canvas, lays them
+out, and reports user interaction through events. It never changes your data:
+context-menu actions, clicks, and drags are only reported; add, remove, or
+update nodes by assigning new `nodes` / `edges` arrays.
+
+Built in: seven layouts with animated first reveal and re-fit, drag, pan,
+Ctrl+wheel / pinch zoom, click and Tab selection, hover highlight of connected
+edges, status indicators, node and edge popovers, node tooltips, a per-node
+actions menu (chevron), keyboard pan/zoom, touch support, and an optional
+dot-grid background. Search, zoom toolbar, and minimap are companion elements
+placed in the map's slots. Do not build these yourself.
 
 ## Import
 
 ```js
 import '@servicenow/aiux-components-coe-node-map';
+// Helpers, if needed:
+import {extensions} from '@servicenow/aiux-components-coe-node-map';
 ```
 
+Importing the package registers every tag in this document.
 
-A Lit web component (extending `AIUXElement`) for visualizing graphs with nodes and edges using Cytoscape.js. Supports canvas rendering (1000+ nodes), DOM overlay nodes (rich interactive widgets), custom node renderers, popovers, keyboard accessibility, and multiple layout algorithms.
+## Usage
 
-## Installation
+### Minimal complete example
 
-```javascript
-import '@servicenow/aiux-components-coe-node-map';
-```
+```ts
+import {html} from 'lit';
+import {customElement, state} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
+import {extensions} from '@servicenow/aiux-components-coe-node-map';
 
-The custom element `<aiux-node-map>` is then available everywhere in the document.
+const ACTIONS = [
+  {
+    id: 'remove',
+    icon: 'circle-close-outline',
+    label: 'Remove',
+    action: 'remove',
+    status: 'error'
+  }
+];
 
-## Quick Start
+@customElement('my-service-map')
+export class MyServiceMap extends AIUXElement {
+  @state() private _nodes = [
+    {id: 'lb', label: 'Load balancer', icon: 'cloud'},
+    {
+      id: 'app',
+      label: 'App server',
+      icon: 'database',
+      status: 'warning',
+      indicators: [{icon: 'warning'}]
+    },
+    {id: 'db', label: 'Primary DB', sublabel: 'PostgreSQL', icon: 'database'}
+  ];
+  @state() private _edges = [
+    {id: 'e1', source: 'lb', target: 'app', label: 'HTTPS'},
+    {
+      id: 'e2',
+      source: 'app',
+      target: 'db',
+      status: 'error',
+      lineStyle: 'dotted'
+    }
+  ];
 
-```html
-<aiux-node-map
-  .nodes=${[
-    { id: '1', label: 'Server A', sublabel: 'Primary', icon: 'server', status: 'success' },
-    { id: '2', label: 'Server B', sublabel: 'Backup', icon: 'server', status: 'warning' },
-    { id: '3', label: 'Database', sublabel: 'PostgreSQL', icon: 'database', shape: 'round-rectangle' }
-  ]}
-  .edges=${[
-    { id: 'e1', source: '1', target: '3', label: 'queries' },
-    { id: 'e2', source: '2', target: '3', label: 'queries', lineStyle: 'dotted' }
-  ]}
-  layout="vertical"
-  popover-trigger="click"
-  height="85vh"
-></aiux-node-map>
-```
+  private _onAction(
+    e: CustomEvent<{item: {action: string}; elementId: string}>
+  ) {
+    const {item, elementId} = e.detail;
+    if (item.action === 'remove') {
+      // Assign new arrays; mutating in place does not update the map.
+      this._nodes = this._nodes.filter(n => n.id !== elementId);
+      this._edges = this._edges.filter(
+        ed => ed.source !== elementId && ed.target !== elementId
+      );
+    }
+  }
 
-## Properties
-
-| Property               | Attribute            | Type                                 | Default   | Description                                                 |
-| ---------------------- | -------------------- | ------------------------------------ | --------- | ----------------------------------------------------------- |
-| `nodes`                | —                    | `NodeData[]`                         | `[]`      | Array of nodes to display                                   |
-| `edges`                | —                    | `EdgeData[]`                         | `[]`      | Array of edges connecting nodes                             |
-| `layout`               | `layout`             | `LayoutType`                         | `'cose'`  | Layout algorithm                                            |
-| `edgeType`             | `edge-type`          | `EdgeType \| null`                   | `null`    | Edge routing: `'straight'`, `'joints'`, `'curved'`, or auto |
-| `width`                | `width`              | `string`                             | `'100%'`  | Component width (any CSS value)                             |
-| `height`               | `height`             | `string`                             | `'85vh'`  | Component height (any CSS value)                            |
-| `defaultIcon`          | `default-icon`       | `string`                             | `''`      | Fallback icon (name, URL, or data URI)                      |
-| `popoverTrigger`       | `popover-trigger`    | `PopoverTrigger`                     | `'hover'` | Popover trigger mode: `'hover'`, `'click'`, or `'none'`     |
-| `nodeTooltip`          | `node-tooltip`       | `boolean`                            | `true`    | Global toggle for node hover tooltips; auto-disabled when `popoverTrigger='hover'` |
-| `renderPopoverContent` | —                    | `(node: NodeData) => TemplateResult` | —         | Custom popover renderer callback                            |
-| `nodeRenderer`         | —                    | `NodeRendererContract \| null`       | `null`    | Custom canvas renderer instance                             |
-| `nodeRendererTag`      | `node-renderer-tag`  | `string`                             | `''`      | Custom canvas renderer tag (auto-loads)                     |
-| `asyncRenderer`        | `async-renderer`     | `boolean`                            | `false`   | Defer init until renderer is set                            |
-| `nodeActionItems`      | —                    | `ContextMenuEntry[]`                 | `[]`      | Context menu actions for all nodes                          |
-| `nodeComponentTag`     | `node-component-tag` | `string`                             | `''`      | DOM overlay component tag for all nodes                     |
-| `nodeComponentProps`   | —                    | `Record<string, unknown>`            | `{}`      | Shared props for all overlay components                     |
-| `focusElementId`       | `focus-element-id`   | `string`                             | `''`      | Smoothly pan to center on a node/edge                       |
-| `canvasColor`          | `canvas-color`       | `string`                             | `''`      | Custom canvas background color (CSS)                        |
-| `showEdgeArrows`       | `show-edge-arrows`   | `boolean`                            | `true`    | Global toggle for edge arrow visibility                     |
-| `dotBackground`        | `dot-background`     | `boolean`                            | `false`   | Show SVG dot grid overlay on the canvas                     |
-| `maxNodeScreenRatio`   | `max-node-screen-ratio` | `number`                          | `1`       | Max fraction (0–1) of container for node zoom cap           |
-
-## Config Properties
-
-Set via the platform Config Editor (`configSchema`), not as HTML attributes.
-
-`aiux-node-map`:
-
-| Property                   | Type      | Label                  | Default     | Description                                                                                         |
-| --------------------------- | --------- | ---------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
-| `configLayout`              | `String`  | Layout                 | `undefined` | Layout algorithm used to position nodes and edges.                                                  |
-| `configWidth`               | `String`  | Width                  | `undefined` | Width of the component (default: 100%).                                                             |
-| `configHeight`              | `String`  | Height                 | `undefined` | Height of the component (default: '85vh').                                                          |
-| `configDefaultIcon`         | `String`  | Default Icon           | `undefined` | Default icon to use for nodes without a specified icon.                                             |
-| `configPopoverTrigger`      | `String`  | Popover Trigger        | `undefined` | Controls how the node popover is triggered.                                                         |
-| `configEdgeType`            | `String`  | Edge Type              | `undefined` | Edge routing type controlling how edges are drawn between nodes.                                    |
-| `configCanvasColor`         | `String`  | Canvas Color           | `undefined` | Custom canvas background color (CSS color string); theme default used when empty.                   |
-| `configShowEdgeArrows`      | `Boolean` | Show edge arrows       | `undefined` | Global toggle for edge arrow visibility                                                             |
-| `configDotBackground`       | `Boolean` | Dot background         | `undefined` | Show a dot grid pattern on the canvas background                                                    |
-| `configMaxNodeScreenRatio`  | `Number`  | Max Node Screen Ratio  | `undefined` | Maximum fraction (0-1) of the container's smaller dimension a node may occupy after fit-to-screen. |
-| `configNodeTooltip`         | `Boolean` | Node Tooltip           | `undefined` | Allows a page admin to enable or disable node hover tooltips per-widget instance via the Config Editor, without a code change. Overrides `nodeTooltip`. |
-
-`aiux-node-map-minimap`:
-
-| Property                 | Type      | Label              | Default     | Description                                                                  |
-| ------------------------ | --------- | ------------------ | ----------- | ---------------------------------------------------------------------------- |
-| `configShowSizeDropdown` | `Boolean` | Show size dropdown | `undefined` | Whether to show the minimap container-size dropdown (Large / Medium / Small) |
-| `configShowZoomDropdown` | `Boolean` | Show zoom dropdown | `undefined` | Whether to show the minimap zoom-level dropdown (25% - 150%)                 |
-
-## Node Data Structure
-
-```typescript
-interface NodeData {
-  id: string;
-  label?: string;
-  sublabel?: string;
-  icon?: string; // Built-in name ('database', 'cloud', …), URL, or data URI
-  shape?: NodeShape; // 'ellipse' | 'round-rectangle' (default)
-  status?: NodeStatus; // 'info' | 'success' | 'warning' | 'error' — drives accent color
-  color?: string; // Custom CSS accent color; overrides status
-  selectedColor?: string; // Border color when selected; overrides default primary
-  labelBg?: string; // Label pill background color
-  labelColor?: string; // Label pill text color
-  hoverBg?: string; // Node background color on hover
-  indicators?: NodeIndicator[]; // Up to 2 badge indicators (canvas renderer only)
-  actionItems?: ContextMenuEntry[]; // Per-node context menu items; overrides global nodeActionItems
-  rendererTag?: string; // Per-node canvas renderer tag; overrides global node-renderer-tagHEAD
-  tooltip?: string; // Custom tooltip text on hover; falls back to label when omitted; set to '' to suppress
-  groupCount?: number; // Group count badge (for aiux-node-map-node-stack)
-  groupCount?: number; // Group count badge (for aiux-node-map-node-stack)
-  nodeWidth?: number; // Custom model-space width
-  nodeHeight?: number; // Custom model-space height
-  component?: string; // Custom element tag — triggers DOM overlay
-  componentProps?: Record<string, unknown>;
-  componentSize?: { width: number; height: number }; // Default: 200×60
-  componentStyle?: Record<string, string>;
-  [key: string]: unknown;
+  render() {
+    return html`
+      <aiux-node-map
+        .nodes=${this._nodes}
+        .edges=${this._edges}
+        layout="horizontal"
+        height="600px"
+        .nodeActionItems=${ACTIONS}
+        @aiux-node-map:context-action=${this._onAction}
+      >
+        <div slot="top-start">${extensions.search()}</div>
+        <div slot="top-end">${extensions.toolbar()}</div>
+        <div slot="bottom-end">${extensions.minimap()}</div>
+      </aiux-node-map>
+    `;
+  }
 }
 ```
 
-### Node Design
+**What happens:** adding or removing a node or edge id, or changing a node's
+size (`nodeWidth`/`nodeHeight`, `componentSize`, `component`, or a renderer's
+returned size), re-runs the layout over all nodes and animates a re-fit,
+resetting the user's pan and zoom. Status, label, and color changes on existing
+ids update in place with no relayout.
 
-- **Shape**: Round-rectangle (default) or ellipse, with a thin border (color from `--color-neutral`)
-- **Icon**: Centered, scaled to 50% of the node size. 867+ built-in icons available
-- **Label**: Displayed below the shape in a medium-weight font
-- **Selected**: Border color changes to `--color-primary`
+### Additional patterns
 
-All colors are theme-aware via DaisyUI CSS custom properties.
+Card nodes rendered as DOM elements (all nodes, or per node with `component`):
 
-## Edge Data Structure
-
-```typescript
-interface EdgeData {
-  id: string;
-  source: string;
-  target: string;
-  label?: string;
-  status?: EdgeStatus; // Semantic state — drives line color
-  lineStyle?: EdgeLineStyle; // 'solid' (default) | 'dotted'
-  selectedColor?: string; // Line color when selected
-  hoverColor?: string; // Line color on parent node hover
-  iconIndicator?: EdgeStatus; // Status icon badge at edge midpoint
-  thickness?: EdgeThickness; // Line thickness scale (default: 1)
-  opacity?: number; // Line opacity 0–1 (default: 1)
-  showArrow?: boolean; // Per-edge arrow visibility; overrides showEdgeArrows
-  [key: string]: unknown;
-}
-```
-
-## Supported Layouts
-
-| Layout       | Description                        | Best For                |
-| ------------ | ---------------------------------- | ----------------------- |
-| `cose`       | Force-directed layout (default)    | General purpose graphs  |
-| `vertical`   | Hierarchical top-to-bottom (dagre) | Trees, DAGs, org charts |
-| `horizontal` | Hierarchical left-to-right (dagre) | Pipelines, workflows    |
-
-Additional Cytoscape layouts (`grid`, `circle`, `concentric`, `breadthfirst`) are available but not optimized.
-
-## Edge Routing
-
-Controlled by `edge-type` attribute. When `null` (default), auto-selects: **vertical/horizontal** → `joints`, **cose and others** → `straight`.
-
-| Type       | Description                                                    |
-| ---------- | -------------------------------------------------------------- |
-| `straight` | Direct straight lines                                          |
-| `joints`   | Orthogonal (right-angle) routing, direction follows the layout |
-| `curved`   | Bezier curves with fan-out for edges sharing the same source   |
-
-## Events
-
-| Event                             | Detail                                                      | Description                         |
-| --------------------------------- | ----------------------------------------------------------- | ----------------------------------- |
-| `aiux-node-map:node-click`        | `{ node: NodeData }`                                        | User clicks a node                  |
-| `aiux-node-map:edge-click`        | `{ edge: EdgeData }`                                        | User clicks an edge                 |
-| `aiux-node-map:node-action`       | `{ node: NodeData, actionId: string, actionLabel: string }` | Click inside a renderer action zone |
-| `aiux-node-map:node-mouseover`    | `{ node: NodeData }`                                        | Mouse enters a node                 |
-| `aiux-node-map:node-mouseout`     | —                                                           | Mouse leaves a node                 |
-| `aiux-node-map:node-focused`      | `{ node: NodeData }`                                        | Node gains hover or keyboard focus  |
-| `aiux-node-map:node-unfocused`    | `{ node: NodeData }`                                        | Node loses hover or keyboard focus  |
-| `aiux-node-map:canvas-tap`        | —                                                           | User clicks the canvas background   |
-| `aiux-node-map:zoom-change`       | `{ zoom: number, baselineZoom: number }`                    | Zoom level changes                  |
-| `aiux-node-map:selection-changed` | `{ nodes: string[], edges: string[] }`                      | Selection state changes             |
-| `aiux-node-map:context-action`    | `{ item: ContextMenuItem, elementId, elementType }`         | Context menu item clicked           |
-
-## Methods
-
-| Method             | Description                                    |
-| ------------------ | ---------------------------------------------- |
-| `fit()`            | Fit the graph viewport to contain all elements |
-| `center()`         | Center the graph without changing zoom         |
-| `resetZoom()`      | Reset zoom to default level and center         |
-| `zoomIn()`         | Smoothly zoom in by one step (×1.2)            |
-| `zoomOut()`        | Smoothly zoom out by one step (÷1.2)           |
-| `clearSelection()` | Clear all selections, fires selection-changed  |
-
-## Extensions
-
-Built-in add-ons provided by the package. Each returns a Lit `TemplateResult` for placement in any slot.
-
-```typescript
-import { extensions } from '@servicenow/aiux-components-coe-node-map';
-
+```js
 html`
-  <aiux-node-map .nodes=${nodes} .edges=${edges}>
-    <div slot="top-end">${extensions.toolbar()}</div>
-    <div slot="bottom-end">${extensions.minimap()}</div>
-  </aiux-node-map>
+  <aiux-node-map
+    node-component-tag="aiux-node-map-card"
+    layout="vertical"
+    .nodes=${[
+      {
+        id: 'ai',
+        label: 'AI Cluster',
+        icon: 'bot-ai-sparkle',
+        component: 'aiux-node-map-card-header',
+        componentSize: {width: 490, height: 130}
+      },
+      {
+        id: 'req',
+        label: 'Generate Request',
+        sublabel: 'Agentic workflow',
+        icon: 'database',
+        componentSize: {width: 490, height: 130}
+      }
+    ]}
+    .edges=${[{id: 'e1', source: 'ai', target: 'req'}]}
+  ></aiux-node-map>
 `;
 ```
 
-| Extension              | Element                      | Description                                                     |
-| ---------------------- | ---------------------------- | --------------------------------------------------------------- |
-| `extensions.minimap()` | `<aiux-node-map-minimap>`    | Bird's-eye dot overview with draggable viewport                  |
-| `extensions.toolbar()` | `<aiux-node-map-toolbar>`    | Compact vertical toolbar (zoom in/out, fit)                      |
-| `extensions.search()`  | `<aiux-node-map-search>`     | Search input with auto-suggest; highlights matching nodes/edges  |
+Click-triggered node and edge popovers with your own content (edge popovers
+open only from an edge's `iconIndicator` badge):
 
-## Slots
-
-| Slot Name       | Position      |
-| --------------- | ------------- |
-| `top-start`     | Top-left      |
-| `top-center`    | Top-center    |
-| `top-end`       | Top-right     |
-| `bottom-start`  | Bottom-left   |
-| `bottom-center` | Bottom-center |
-| `bottom-end`    | Bottom-right  |
-
-## Exports
-
-```typescript
-import '@servicenow/aiux-components-coe-node-map';
-import type {
-  NodeData,
-  EdgeData,
-  GraphData,
-  LayoutType,
-  NodeShape,
-  NodeStatus,
-  NodeIndicator,
-  EdgeLineStyle,
-  EdgeType,
-  PopoverTrigger,
-  PopoverContentRenderer,
-  SelectionChangedDetail,
-  NodeRendererContract,
-  NodeRenderResult,
-  NodeRenderContext,
-  NodeAction,
-  ContextMenuItem,
-  ContextMenuDivider,
-  ContextMenuEntry,
-  ContextActionDetail,
-} from '@servicenow/aiux-components-coe-node-map';
-
-// Utilities
-import {
-  iconUri,
-  iconUriFromSvg,
-  resolveIconValue,
-  AVAILABLE_ICONS,
-  resolveComponentUrl,
-  ensureComponentLoaded,
-  prewarmIcons,
-  collectIconNames,
-  clearIconCache,
-  isIconName,
-  AiuxNodeMapNode,
-  NodeMapMinimap,
-  NodeMapToolbar,
-  extensions,
-} from '@servicenow/aiux-components-coe-node-map';
-import type {
-  ExtensionConnectDetail,
-  MinimapOptions,
-  SearchOptions,
-  NodeMapExtensions,
-} from '@servicenow/aiux-components-coe-node-map';
+```js
+html`
+  <aiux-node-map
+    popover-trigger="click"
+    .renderPopoverContent=${node =>
+      html` <div class="flex flex-col gap-1">
+        <span class="font-semibold">${node.label}</span>
+        <span class="text-sm">Owner: ${node.owner}</span>
+      </div>`}
+    .renderEdgePopoverContent=${edge => html`<span>${edge.label}: ${edge.status}</span>`}
+    .nodes=${nodes}
+    .edges=${[{id: 'e1', source: 'a', target: 'b', label: 'Sync', status: 'error', iconIndicator: 'error'}]}
+  ></aiux-node-map>
+`;
 ```
 
-## File Structure
+Custom canvas renderer (one instance renders every node that uses it):
 
-```
-src/
-  components/
-    aiux-node-map.ts              # Main component
-    aiux-node-map.styles.ts       # Shadow DOM styles
-    aiux-node-map.graph-styles.ts # Cytoscape stylesheet builder
-    aiux-node-map.layout-config.ts# Layout algorithm configs
-    aiux-node-map.keyboard-handlers.ts
-    aiux-node-map.context-menu.ts # Context menu render helpers & keyboard handlers
-  controllers/
-    graph-controller.ts           # Cytoscape lifecycle, diff, events
-    dom-overlay-controller.ts     # DOM overlay positioning & sync
-    minimap-controller.ts         # Minimap canvas rendering & viewport drag
-    context-menu-controller.ts    # Context menu: chevron, menu state, action dispatch
-    popover-controller.ts         # Node popover: open/close, positioning, hover debounce
-    indicator-manager.ts          # Indicator/sublabel positioning & reveal
-    graph-animations.ts           # First-load animation presets
-    graph-animations.raf.ts       # RAF-based burst animation
-    graph-animations-shared.ts    # BFS-depth + center/hide setup shared by both presets
-    hover-glow.ts                 # DOM-based glow effect for node hover state
-  extensions/
-    extensions.ts                 # Public extensions object (factory functions)
-    node-map-minimap.ts           # <aiux-node-map-minimap> self-wiring element
-    node-map-toolbar.ts           # <aiux-node-map-toolbar> self-wiring element
-    node-map-search.ts            # <aiux-node-map-search> self-wiring element
-  renderers/
-    node-renderer.types.ts        # NodeRendererContract, NodeAction
-    node-map-node.ts              # Built-in AiuxNodeMapNode element
-    default-render-node.ts        # Pure render function
-  types/
-    node-map.types.ts             # NodeData, EdgeData, LayoutType, etc.
-    graph-controller.types.ts     # GraphController options and internal types
-    extension.types.ts            # ExtensionConnectDetail interface
-    context-menu.types.ts         # ContextMenuItem, ContextMenuDivider, ContextActionDetail
-  controllers/
-    search-index.ts               # In-memory search index for nodes/edges
-  utils/
-    icon-uri.ts                   # Icon resolution & data URI generation
-    icon-cache.ts                 # Runtime sprite fetch & cache (prewarmIcons)
-    dynamic-loader.ts             # Component manifest loader
-  stories/                        # Storybook stories
-  index.ts                        # Public exports
+```ts
+import {customElement, property} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
+
+@customElement('my-ring-node')
+export class MyRingNode extends AIUXElement {
+  @property({attribute: false}) node: Record<string, unknown> = {id: ''};
+  @property() accentColor = '#4b5563';
+  @property({attribute: false}) renderContext: unknown = null;
+
+  renderNode() {
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100" height="100">
+      <circle cx="50" cy="50" r="40" fill="none" stroke="${this.accentColor}" stroke-width="8"/></svg>`;
+    return {
+      backgroundImage: `data:image/svg+xml,${encodeURIComponent(svg)}`,
+      backgroundPositionX: '50%',
+      backgroundPositionY: '50%',
+      backgroundWidth: '80%',
+      backgroundHeight: '80%',
+      shape: 'ellipse'
+    };
+  }
+}
+
+// In the page (the module above must already be imported):
+html`<aiux-node-map
+  node-renderer-tag="my-ring-node"
+  .nodes=${nodes}
+  .edges=${edges}
+></aiux-node-map>`;
 ```
 
-## Accessibility
+## API
 
-- **`role="application"`** on the graph container with a summary label (node/edge count, zoom level)
-- **Tab / Shift+Tab** cycles through nodes → edges → toolbar
-- **Enter / Space** on a focused node opens the popover (hover and click modes)
-- **Arrow keys** pan the viewport; **Ctrl+Shift+arrows** zoom in/out
-- **Context menu keyboard**: Tab to chevron → Enter/Space opens menu → Arrow Up/Down navigates items → Escape closes
-- **`aria-live="polite"`** region announces focused node, loading state, and errors
-- **Screen-reader-only** summary of the graph is always present
+### aiux-node-map
 
-## SSR Compatibility
+#### Properties and attributes
 
-The component guards against server-side rendering with `typeof globalThis.window !== 'undefined'` checks. `render()` returns only static HTML/slots — no browser APIs are called during rendering. Safe for use with `@lit-labs/ssr`.
+Set arrays, objects, and functions with property bindings. Booleans that
+default to `true` can only be turned off with a property binding.
 
-## Dependencies
+| Property                   | Attribute                    | Type                                         | Default   | Update behavior                                                                                 | Description                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------- | ---------------------------- | -------------------------------------------- | --------- | ----------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `nodes`                    | `nodes`                      | `NodeData[]`                                 | `[]`      | On new array                                                                                    | Nodes. Duplicate ids: first kept. See "What happens" for relayout rules.                                                                                                                                                                                                                                                                                                          |
+| `edges`                    | `edges`                      | `EdgeData[]`                                 | `[]`      | On new array                                                                                    | Edges. Duplicate ids: first kept. Edges whose `source` or `target` is not a node id are dropped (console warning only).                                                                                                                                                                                                                                                           |
+| `layout`                   | `layout`                     | `LayoutType`                                 | `'cose'`  | Re-runs layout, animated                                                                        | `cose` (force-directed), `grid`, `circle`, `concentric`, `breadthfirst`, `vertical` (top-down tree), `horizontal` (left-right tree).                                                                                                                                                                                                                                              |
+| `edgeType`                 | `edge-type`                  | `'straight' \| 'joints' \| 'curved' \| null` | `null`    | Updates immediately                                                                             | Edge routing. `null`: `joints` (right-angle) for `vertical`/`horizontal`, `straight` otherwise. `curved` fans out sibling edges.                                                                                                                                                                                                                                                  |
+| `width`                    | `width`                      | `string` (CSS length)                        | `'100%'`  | Updates immediately                                                                             | Map width. Resizing does not re-fit; call `fit()`.                                                                                                                                                                                                                                                                                                                                |
+| `height`                   | `height`                     | `string` (CSS length)                        | `'85vh'`  | Updates immediately                                                                             | Map height.                                                                                                                                                                                                                                                                                                                                                                       |
+| `defaultIcon`              | `defaulticon`                | `string`                                     | `''`      | Next `nodes`/`edges`/`layout` change                                                            | Icon (same formats as `NodeData.icon`) for nodes without `icon`.                                                                                                                                                                                                                                                                                                                  |
+| `popoverTrigger`           | `popover-trigger` (reflects) | `'hover' \| 'click' \| 'none'`               | `'hover'` | Updates immediately                                                                             | Shared by node and edge popovers. `hover`: opens on hover or Tab focus, closes ~150 ms after the pointer leaves the node (or edge badge) and popover. `click`: opens on click/Enter, closes on second click, canvas click, or Escape. In both modes clicking the open node or badge closes it. `none`: no popovers. On touch (coarse-pointer) devices `hover` behaves as `click`. |
+| `renderPopoverContent`     | property only                | `(node: NodeData) => TemplateResult`         | —         | Next popover render                                                                             | Node popover body. Receives your original node object. Default shows label (or id), sublabel, and a status badge.                                                                                                                                                                                                                                                                 |
+| `renderEdgePopoverContent` | property only                | `(edge: EdgeData) => TemplateResult`         | —         | Next popover render                                                                             | Edge popover body. Opens only from the edge's `iconIndicator` badge (hover, click, or Tab/Enter per `popoverTrigger`), never from the line. Receives your original edge object. Default shows label (or id) and a status badge.                                                                                                                                                   |
+| `nodeTooltip`              | `node-tooltip`               | `boolean`                                    | `true`    | Updates immediately                                                                             | Tooltip on node hover showing `tooltip` or `label`. Never shown while `popoverTrigger` is `'hover'` (the default).                                                                                                                                                                                                                                                                |
+| `nodeActionItems`          | property only                | `ContextMenuEntry[]`                         | `[]`      | Next hover                                                                                      | Actions menu for every node. A chevron appears beside a hovered or Tab-focused node that has at least one non-divider item; hidden below 50% zoom. Overridden per node by `NodeData.actionItems`.                                                                                                                                                                                 |
+| `showEdgeArrows`           | `show-edge-arrows`           | `boolean`                                    | `true`    | Updates immediately                                                                             | Target arrows on all edges; `EdgeData.showArrow` overrides per edge.                                                                                                                                                                                                                                                                                                              |
+| `canvasColor`              | `canvas-color`               | `string`                                     | `''`      | Updates immediately                                                                             | Canvas background: a CSS color or `var(--token)`. Invalid values fall back to `--color-base-200`. Cleared when the platform theme changes; stays cleared until set to a different value.                                                                                                                                                                                          |
+| `dotBackground`            | `dot-background`             | `boolean`                                    | `false`   | Updates immediately                                                                             | Dot grid that pans and zooms with the graph.                                                                                                                                                                                                                                                                                                                                      |
+| `alwaysShowLabels`         | `always-show-labels`         | `boolean`                                    | `true`    | Canvas: immediately; card overlays: next zoom change                                            | `false`: node labels, sublabels, edge labels, and `aiux-node-map-card` text hide once zoomed out below a legible size.                                                                                                                                                                                                                                                            |
+| `maxNodeScreenRatio`       | `max-node-screen-ratio`      | `number` (0–1)                               | `0.18`    | Updates immediately (zooms out to the cap, or re-fits)                                          | Caps fit zoom so each node occupies at most this fraction of the container's width and height. `1` = no cap.                                                                                                                                                                                                                                                                      |
+| `focusElementId`           | `focus-element-id`           | `string`                                     | `''`      | On change after the map has initialized                                                         | Pans (no zoom change) to center this node or edge id. A value present at first render is not applied. Changed in the same update as `nodes`/`edges`/`layout`, it waits for the next relayout animation to finish. Unknown ids are ignored.                                                                                                                                        |
+| `nodeRendererTag`          | `node-renderer-tag`          | `string`                                     | `''`      | Initialization only                                                                             | Tag of a canvas renderer (`NodeRendererContract`) used for all nodes, e.g. `aiux-node-map-node-ellipse`. Shows "Loading graph..." until created; an error message on failure. The tag must be registered, or resolvable through the Karuna component manifest; the map does not wait for later registration.                                                                      |
+| `nodeRenderer`             | property only                | `NodeRendererContract \| null`               | `null`    | Updates immediately (re-renders all nodes)                                                      | Renderer instance for all nodes. Takes precedence over `nodeRendererTag`; a node's `rendererTag` takes precedence over both.                                                                                                                                                                                                                                                      |
+| `asyncRenderer`            | `async-renderer`             | `boolean`                                    | `false`   | Initialization only                                                                             | With no `nodeRenderer` at first render, shows "Loading graph..." and waits for `nodeRenderer` before drawing. Ignored when `nodeRendererTag` is set.                                                                                                                                                                                                                              |
+| `nodeComponentTag`         | `node-component-tag`         | `string`                                     | `''`      | Initialization only (tag loading); applied to nodes on the next `nodes`/`edges`/`layout` change | Custom element rendered as a DOM overlay for every node without its own `component`, e.g. `aiux-node-map-card`. Suppresses node indicators.                                                                                                                                                                                                                                       |
+| `nodeComponentProps`       | property only                | `Record<string, unknown>`                    | `{}`      | Next `nodes`/`edges`/`layout` change                                                            | Properties set on every `nodeComponentTag` overlay; a node's `componentProps` are merged on top.                                                                                                                                                                                                                                                                                  |
 
-| Package                                   | Purpose                       |
-| ----------------------------------------- | ----------------------------- |
-| `cytoscape` (3.33.1)                      | Graph rendering engine        |
-| `cytoscape-dagre` (2.5.0)                 | Hierarchical layout algorithm |
-| `@servicenow/aiux-components-core`        | AIUXElement base class        |
-| `@servicenow/aiux-directive-icon`         | Icon rendering (chevron, context menu action icons, minimap toggle) |
-| `@servicenow/aiux-directive-tooltip`      | Tooltip directive (node hover tooltips, minimap toggle)             |
-| `@servicenow/aiux-sn-popover`             | Node popover                  |
-| `lit` (peer, ^3.0.0)                      | Web component framework       |
+When the page's Config Editor sets Layout, Width, Height, Default Icon,
+Popover Trigger, Node Tooltip, Edge Type, Canvas Color, Show edge arrows,
+Always show labels, Dot background, or Max Node Screen Ratio, reading that
+property returns the admin value and your assignments have no effect until it
+is cleared. Read-only getters `effectiveNodeRenderer`, `effectiveCanvasColor`,
+`effectiveShowEdgeArrows`, `effectiveAlwaysShowLabels`, and
+`effectiveDotBackground` return the values in use.
 
-## Known Limitations
+#### Events
 
-- **Indicators** only work with the default canvas renderer — ignored for DOM overlays and custom renderers
-- **DOM overlay scale** — recommended max ~50–100 nodes; use canvas renderer for larger graphs
-- **Canvas rendering** — custom renderers must be synchronous (SVG-only, no HTML)
+Use the literal event names; they are not exported as constants. All bubble,
+are composed, and are not cancelable.
 
-## Documentation
+| Event                             | `detail`                                                          | Fires when                                                                                                        | Notes                                                                                                                                         |
+| --------------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aiux-node-map:node-click`        | `{node: RenderedNodeData}`                                        | A node, its indicator, or its DOM overlay is clicked, or Enter/Space is pressed on the Tab-selected node.         | Always fires, including when `node-action` also fires.                                                                                        |
+| `aiux-node-map:node-action`       | `{node: RenderedNodeData, actionId: string, actionLabel: string}` | A pointer click lands in a zone from the renderer's `actions`, right after `node-click`.                          | `actionLabel` falls back to `actionId`. Not fired by Enter/Space.                                                                             |
+| `aiux-node-map:edge-click`        | `{edge: RenderedEdgeData, viaIndicator?: true}`                   | An edge line or its `iconIndicator` badge is clicked, or Enter/Space on the Tab-selected edge.                    | `viaIndicator: true` for a badge click, and for Enter/Space on an edge that has `iconIndicator`; absent for a line click.                     |
+| `aiux-node-map:edge-focused`      | `{edge: RenderedEdgeData}`                                        | Pointer enters an edge's `iconIndicator` badge, or Tab selects an edge that has `iconIndicator`.                  | Not fired for edges without `iconIndicator`.                                                                                                  |
+| `aiux-node-map:edge-unfocused`    | `{edge: RenderedEdgeData \| undefined}`                           | Pointer leaves the badge, or Tab/Escape moves keyboard focus off that edge.                                       | `edge` is `undefined` if that edge was removed.                                                                                               |
+| `aiux-node-map:node-mouseover`    | `{node: RenderedNodeData}`                                        | Pointer enters a node, its sublabel, or its DOM overlay.                                                          | Not fired during layout animation or while dragging. Not fired by keyboard focus.                                                             |
+| `aiux-node-map:node-mouseout`     | `null`                                                            | Pointer leaves the node's area, which includes its label and chevron.                                             | One animation frame late.                                                                                                                     |
+| `aiux-node-map:node-focused`      | `{node: RenderedNodeData}`                                        | With every `node-mouseover`, and when Tab selects a node.                                                         |                                                                                                                                               |
+| `aiux-node-map:node-unfocused`    | `{node: RenderedNodeData \| undefined}`                           | With every `node-mouseout`, when Tab/Escape moves keyboard focus off a node, and on a node's first drag movement. | `node` is `undefined` if that node was removed.                                                                                               |
+| `aiux-node-map:canvas-tap`        | `null`                                                            | The empty canvas is clicked.                                                                                      | Clicking the canvas also deselects everything.                                                                                                |
+| `aiux-node-map:selection-changed` | `SelectionChangedDetail`                                          | Selection changes: click, Shift/Ctrl/Cmd-click, Tab, Escape, canvas click, `clearSelection()`.                    | Coalesced to one event per microtask.                                                                                                         |
+| `aiux-node-map:zoom-change`       | `{zoom: number, baselineZoom: number}`                            | Every zoom step, including each frame of animated zooms and fits.                                                 | Display percent = `Math.round(zoom / baselineZoom * 100)`; the fit level is 100%.                                                             |
+| `aiux-node-map:context-action`    | `ContextActionDetail`                                             | The user activates an item in the actions menu.                                                                   | The menu and chevron close. `elementType` is always `'node'`. Disabled items do not fire. On touch devices, tapping a node shows its chevron. |
 
-- [**Architecture**](./docs/architecture.md) — Component structure, rendering modes, and internal design
-- [**API Reference**](./docs/api-reference.md) — Complete property, event, and method documentation
-- [**User Guide**](./docs/user-guide.md) — Installation, usage examples, and configuration
+#### Slots
 
-## Development
+Position slots, each absolutely placed 1rem from the map's edges:
+`top-start`, `top-center`, `top-end`, `bottom-start`, `bottom-center`,
+`bottom-end`. Slotted elements get `pointer-events: none`; the companion
+elements below restore it, but your own interactive content needs
+`pointer-events: auto` (e.g. `class="pointer-events-auto"`). Companion
+elements must be light-DOM descendants of the map.
 
-```bash
-pnpm install
-pnpm dev
-pnpm build
-pnpm test
+#### Methods
+
+All are no-ops until the graph has initialized.
+
+| Method                   | Effect                                                                                                                                                        |
+| ------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fit()`                  | Animates (800 ms) to fit all elements, applying `maxNodeScreenRatio`; the result becomes the new 100% zoom.                                                   |
+| `center()`               | Centers the elements immediately, keeping zoom.                                                                                                               |
+| `resetZoom()`            | Sets raw zoom to 1 and centers, immediately.                                                                                                                  |
+| `zoomIn()` / `zoomOut()` | Animates zoom ×1.1 / ×0.9 around the viewport center, within the map's zoom limits.                                                                           |
+| `clearSelection()`       | Deselects all; fires `selection-changed` with empty arrays.                                                                                                   |
+| `refreshTheme()`         | Re-reads theme CSS variables and redraws. Runs automatically on platform theme changes; call it only after changing `data-theme` or theme variables directly. |
+
+**Package exports** (functions, not element methods):
+
+| Export                                                                                             | Effect                                                                                                                                        |
+| -------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `extensions.toolbar()` / `.search(options?: SearchOptions)` / `.minimap(options?: MinimapOptions)` | Return Lit templates of the companion elements below.                                                                                         |
+| `iconUri(name, color = 'currentColor')`                                                            | `data:` SVG URI for a built-in icon or an already-fetched sprite icon; `'none'` otherwise.                                                    |
+| `iconUriFromSvg(svgInner, viewBox = '0 0 20 20', color = 'currentColor')`                          | Wraps SVG elements in an `<svg>` and returns a `data:` URI; `currentColor` is replaced by `color`.                                            |
+| `resolveIconValue(value)`                                                                          | Icon name to `data:` URI (via `iconUri`); URLs and `data:` URIs unchanged; empty to `'none'`.                                                 |
+| `AVAILABLE_ICONS`                                                                                  | `['info', 'warning', 'error', 'success']`: the icons available without fetching.                                                              |
+| `prewarmIcons(names)`                                                                              | Fetches sprite icons into the cache; `Promise<void>`, or `undefined` if nothing to fetch. The map does this itself for node and action icons. |
+| `collectIconNames(nodes, defaultIcon?)`                                                            | Icon names in `nodes` that need fetching (excludes built-ins, URLs, `data:` URIs).                                                            |
+| `clearIconCache()`                                                                                 | Empties the fetched-icon cache.                                                                                                               |
+| `isIconName(value)`                                                                                | `true` if `value` is treated as an icon name (non-empty, not `'none'`, no `/`, `:`, or `.`).                                                  |
+| `resolveComponentUrl(tag)`                                                                         | Bundle URL for `tag` from the Karuna component manifest, or `null`.                                                                           |
+| `ensureComponentLoaded(tag)`                                                                       | Imports the tag's bundle via the manifest unless already registered; resolves immediately without a manifest.                                 |
+| `isDivider(entry)`                                                                                 | `true` if a `ContextMenuEntry` is a `ContextMenuDivider`.                                                                                     |
+| `resolveItemColor(item)`                                                                           | A `ContextMenuItem`'s label color: `color`, else `var(--color-<status>)`, else `''`.                                                          |
+
+The element classes `AiuxNodeMap` (also the default export), `AiuxNodeMapNode`,
+`AiuxNodeMapNodeEllipse`, `AiuxNodeMapNodeStack`, `AiuxNodeMapCard`, and
+`AiuxNodeMapCardHeader` are exported too. The toolbar, search, and minimap
+classes are not; use their tags or `extensions`.
+
+### aiux-node-map-toolbar
+
+Vertical toolbar with Zoom in, Zoom out, and Fit to screen, calling the map's
+`zoomIn()`, `zoomOut()`, and `fit()`. `extensions.toolbar()` renders
+`<aiux-node-map-toolbar></aiux-node-map-toolbar>`.
+
+Properties, events, slots, methods: none.
+
+### aiux-node-map-search
+
+220px search input with suggestions. Matches a case-insensitive substring
+against every top-level string field of nodes and edges (including `id`,
+`label`, `sublabel`, `status`, `tooltip`, and your own fields), excluding
+`icon`, `component`, `rendererTag`, `source`, `target`, and `_`-prefixed keys.
+Typing (150 ms debounce) highlights all matches and dims everything else;
+choosing a suggestion keeps only that element highlighted and pans to it.
+Suggestions are grouped Nodes / Edges, up to 50 each. Arrow keys and Enter pick
+suggestions; Escape closes the list, a second Escape clears. The clear button
+removes highlights. Assigning a new `nodes` or `edges` array clears the search.
+Searching never selects elements or fires map events. When the map is narrower
+than 400px, the search collapses to an icon button (the open field then has a
+close button) and re-expands when the map widens, unless the user closed it.
+
+`extensions.search(options)` maps `SearchOptions` to the properties below;
+`panToResult: false` has no effect through the helper.
+
+#### Properties and attributes
+
+| Property             | Attribute            | Type      | Default | Update behavior     | Description                                                        |
+| -------------------- | -------------------- | --------- | ------- | ------------------- | ------------------------------------------------------------------ |
+| `highlightNodeColor` | `highlightnodecolor` | `string`  | `''`    | Next highlight      | Node outline color. Empty: `#1565C0`, or `#42A5F5` on dark themes. |
+| `highlightEdgeColor` | `highlightedgecolor` | `string`  | `''`    | Next highlight      | Edge color. Empty: `#0D47A1`, or `#1565C0` on dark themes.         |
+| `panToResult`        | `pantoresult`        | `boolean` | `true`  | Updates immediately | Pan to the chosen suggestion. Set `false` with a property binding. |
+| `placeholder`        | `placeholder`        | `string`  | `''`    | Updates immediately | Input placeholder. Empty: localized "Find on map".                 |
+
+Events, slots, methods: none.
+
+### aiux-node-map-minimap
+
+Overview of node positions (dots) with the current viewport as a rectangle:
+drag it, or click elsewhere to jump. Includes a size menu (Large 220×130,
+Medium 170×100 (default), Small 130×76), a zoom menu (25–150% of raw zoom,
+where 100% is the `resetZoom()` level, not the fit level), and a button that
+shows or hides the minimap. When the map is narrower than 400px it collapses,
+and re-expands when the map widens unless the user closed it.
+
+`extensions.minimap(options)` maps `visible: false` to `collapsed`;
+`showSizeDropdown: false` and `showZoomDropdown: false` have no effect through
+the helper.
+
+#### Properties and attributes
+
+| Property           | Attribute          | Type      | Default | Update behavior                                                                      | Description                                                                                           |
+| ------------------ | ------------------ | --------- | ------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------- |
+| `collapsed`        | `collapsed`        | `boolean` | `false` | Read when the minimap connects to the map; later changes only show or hide the panel | Start hidden, showing only the toggle button.                                                         |
+| `showSizeDropdown` | `showsizedropdown` | `boolean` | `true`  | Updates immediately                                                                  | Size menu. Set `false` with a property binding. Overridden by the Config Editor's Show Size Dropdown. |
+| `showZoomDropdown` | `showzoomdropdown` | `boolean` | `true`  | Updates immediately                                                                  | Zoom menu. Set `false` with a property binding. Overridden by the Config Editor's Show Zoom Dropdown. |
+
+Events, slots, methods: none.
+
+### aiux-node-map-node
+
+Default canvas renderer: the node's icon, recolored to the accent color, on a
+rounded rectangle. Nodes use this look when no other
+renderer is selected. The map creates and drives renderer elements; do not
+place them in the DOM.
+
+Select a canvas renderer for all nodes with `node-renderer-tag="<tag>"` (or
+`.nodeRenderer`), or for one node with `rendererTag: '<tag>'`. Canvas renderers
+implement `NodeRendererContract`: the map keeps one instance per tag, sets
+`node`, `accentColor`, and `renderContext`, then calls `renderNode()`
+synchronously for each node on every update. The map always draws the label,
+sublabel, selection, and indicators. Accent color resolves from `color`, then
+`status`, then `--color-base-content`.
+
+#### Properties and attributes
+
+| Property        | Attribute     | Type                        | Default     | Update behavior | Description                     |
+| --------------- | ------------- | --------------------------- | ----------- | --------------- | ------------------------------- |
+| `node`          | property only | `NodeData`                  | `{id: ''}`  | Set by the map  | Node being rendered.            |
+| `accentColor`   | `accentcolor` | `string`                    | `'#4b5563'` | Set by the map  | Resolved accent color.          |
+| `renderContext` | property only | `NodeRenderContext \| null` | `null`      | Set by the map  | Theme colors and `defaultIcon`. |
+
+#### Methods
+
+| Method                           | Effect                   |
+| -------------------------------- | ------------------------ |
+| `renderNode(): NodeRenderResult` | Returns the node visual. |
+
+Events, slots: none.
+
+### aiux-node-map-node-ellipse
+
+Canvas renderer extending `aiux-node-map-node`: ellipse with a theme-base fill
+(no accent tint) and a larger label. Replaces `isParent: true` on canvas nodes.
+
+Properties and `renderNode()`: same as `aiux-node-map-node`. Events, slots: none.
+
+### aiux-node-map-node-stack
+
+Canvas renderer extending `aiux-node-map-node`: three stacked cards with the
+icon on the front card and a blue count badge (1–99, then "99+") from
+`NodeData.groupCount`. No badge when the count is 0 or unset.
+
+#### Properties and attributes
+
+Same as `aiux-node-map-node`, plus:
+
+| Property     | Attribute     | Type     | Default | Update behavior | Description                                                              |
+| ------------ | ------------- | -------- | ------- | --------------- | ------------------------------------------------------------------------ |
+| `groupCount` | property only | `number` | `0`     | Next render     | Badge count used when `node.groupCount` is unset. The map never sets it. |
+
+Methods: same as `aiux-node-map-node`. Events, slots: none.
+
+### aiux-node-map-card
+
+DOM overlay card: accent border, tinted background, icon on the left, label
+(truncated to 20 characters) and sublabel (ellipsized at the card width).
+Select it for all nodes with
+`node-component-tag="aiux-node-map-card"` or per node with
+`component: 'aiux-node-map-card'`; it is not a canvas renderer, so do not pass
+it to `node-renderer-tag` or `rendererTag`. Reads `label` (falls back to `id`),
+`sublabel`, `icon` (icon names only; URLs and `data:` URIs show no icon and
+`defaultIcon` is not used), accent from `color`/`status`, and `isParent`.
+Size it with `componentSize`; `{width: 490, height: 130}` fits the design.
+
+Any other custom element can be an overlay too (see `component` in Data
+shapes). Overlays receive `node` (a copy of the rendered node data) plus
+`componentProps` as properties, and `zoom` and `alwaysShowLabels` when the
+element declares those properties. They scale with zoom, drag the node on
+mouse or one-finger touch drag,
+select and fire `node-click` on click, and get a `selected` attribute when
+selected and a `hover` attribute while the node's hover-mode popover or actions
+menu is open. Mouse-down on an overlay prevents default focus, so inputs inside it do
+not focus on click. Overlay nodes have no canvas label, sublabel, or
+indicators; render your own.
+
+#### Properties and attributes
+
+| Property           | Attribute              | Type                 | Default | Update behavior        | Description                           |
+| ------------------ | ---------------------- | -------------------- | ------- | ---------------------- | ------------------------------------- |
+| `node`             | property only          | `RenderedNodeData`   | —       | Set by the map         | Node data.                            |
+| `selected`         | `selected` (reflects)  | `boolean`            | `false` | Set by the map         | Selected styling.                     |
+| `zoom`             | property only          | `number`             | `1`     | Set by the map on zoom | Current zoom, used for label hiding.  |
+| `alwaysShowLabels` | property only          | `boolean`            | `true`  | Set by the map on zoom | Mirrors the map's `alwaysShowLabels`. |
+| `parent`           | `parent` (set on host) | `boolean`, read-only | `false` | —                      | `true` when `node.isParent` is set.   |
+
+Events, slots, methods: none.
+
+### aiux-node-map-card-header
+
+`aiux-node-map-card` with the parent style always on: thick top accent bar,
+base background, drop shadow; selected shows a solid dark fill with white text.
+Replaces `isParent: true` on card nodes.
+
+Properties: same as `aiux-node-map-card`; `parent` is always `true`. Events,
+slots, methods: none.
+
+### Data shapes
+
+```ts
+type Status = 'info' | 'success' | 'warning' | 'error'; // colors from --color-{status}
+type LayoutType =
+  | 'cose'
+  | 'grid'
+  | 'circle'
+  | 'concentric'
+  | 'breadthfirst'
+  | 'vertical'
+  | 'horizontal';
+
+interface NodeData {
+  id: string;
+  label?: string; // defaults to id; truncated to 20 chars on canvas
+  sublabel?: string; // second line below the label; truncated to 20 chars
+  icon?: string; // icon name, image URL, or data: URI (data: SVGs are recolored to the accent).
+  // Names other than info/warning/error/success are fetched from
+  // /aiux/assets/core/icons/<name>.svg (requires the page to be served by an instance);
+  // unknown names show no icon.
+  shape?: 'round-rectangle' | 'ellipse'; // default 'round-rectangle'; a renderer's shape wins
+  status?: Status; // accent (border, icon) color
+  color?: string; // accent color; overrides status
+  selectedColor?: string; // Not currently used; selected nodes use the accent color
+  labelBg?: string; // label pill background; default --color-secondary
+  labelColor?: string; // label text; default --color-secondary-content
+  hoverBg?: string; // Not currently used
+  indicators?: NodeIndicator[]; // up to 2 badges on the node border; not shown on overlay nodes
+  tooltip?: string; // tooltip text; '' suppresses; default label
+  actionItems?: ContextMenuEntry[]; // replaces nodeActionItems for this node; [] = no chevron
+  rendererTag?: string; // canvas renderer tag for this node
+  component?: string; // custom element tag: render this node as a DOM overlay
+  componentProps?: Record<string, unknown>; // properties set on the overlay element
+  componentSize?: {width: number; height: number}; // overlay size in model px; default 200×60
+  componentStyle?: Record<string, string>; // inline CSS on the overlay element
+  isParent?: boolean; // deprecated: canvas → ellipse with primary accent; card → header style
+  x?: number; // initial position before layout; layouts reposition every node
+  y?: number;
+  nodeWidth?: number; // canvas node size in model px; default 144
+  nodeHeight?: number;
+  groupCount?: number; // badge count for aiux-node-map-node-stack
+  [key: string]: unknown; // extra fields are kept, searchable, and returned in events
+}
+
+type NodeIndicator =
+  | {status: Status} // solid colored dot
+  | {icon: Status}; // colored dot with the status icon
+
+interface EdgeData {
+  id: string;
+  source: string; // node id
+  target: string; // node id
+  label?: string; // truncated to 20 chars
+  status?: Status; // line color
+  lineStyle?: 'solid' | 'dotted'; // default 'solid'
+  selectedColor?: string; // line color when selected; default status color, then primary
+  hoverColor?: string; // line color while a connected node is hovered
+  iconIndicator?: Status; // status badge at the edge midpoint; the only edge popover trigger
+  thickness?: 0.5 | 1 | 2 | 3 | 4 | 5; // default 1
+  opacity?: number; // 0–1, default 1
+  showArrow?: boolean; // overrides showEdgeArrows
+  [key: string]: unknown;
+}
+
+// Node and edge data as stored by the map and delivered in event details:
+// your fields (nodes lose `indicators`), `label` defaulted (to id for nodes,
+// '' for edges), plus internal `_`-prefixed and style fields. Look up your
+// own object by `id` if you need it unchanged.
+type RenderedNodeData = NodeData;
+type RenderedEdgeData = EdgeData;
+
+interface SelectionChangedDetail {
+  nodes: string[]; // selected node ids
+  edges: string[]; // selected edge ids
+}
+
+type ContextMenuEntry = ContextMenuItem | ContextMenuDivider; // rendered in array order
+
+interface ContextMenuItem {
+  id: string;
+  label: string;
+  action: string; // returned in context-action; you perform it
+  icon?: string; // platform icon name, or info/warning/error/success
+  status?: Status; // label and icon color
+  color?: string; // label and icon color; overrides status
+  disabled?: boolean;
+  tooltip?: string;
+  ariaLabel?: string; // default label
+}
+
+interface ContextMenuDivider {
+  type: 'divider';
+  id?: string;
+}
+
+interface ContextActionDetail {
+  item: ContextMenuItem; // the object you supplied
+  elementId: string;
+  elementType: 'node' | 'edge';
+}
+
+interface NodeRendererContract {
+  node: NodeData;
+  accentColor: string;
+  renderContext: NodeRenderContext | null;
+  renderNode(): NodeRenderResult; // synchronous
+}
+
+interface NodeRenderContext {
+  theme: {
+    neutral: string;
+    primary: string;
+    primary100: string;
+    base: string;
+    secondaryBg: string;
+    secondaryContent: string;
+    status: Record<string, string>; // info/success/warning/error
+  };
+  defaultIcon: string;
+}
+
+interface NodeRenderResult {
+  backgroundImage: string; // data: URI, URL, or 'none'
+  backgroundPositionX: string; // e.g. '50%'
+  backgroundPositionY: string;
+  backgroundWidth: string;
+  backgroundHeight: string;
+  actions?: NodeAction[]; // click zones that fire node-action
+  // Optional overrides; numbers are design px (the map scales them ~3.43×):
+  shape?: 'round-rectangle' | 'ellipse';
+  bgFill?: string; // default theme base
+  bgOpacity?: number; // 0 hides the node body
+  borderWidth?: number; // default 2 (ellipse 3)
+  fontSize?: number; // default 12 (ellipse 14)
+  textMaxWidth?: number; // default 160 (ellipse 200)
+  hoverInnerSvg?: string; // data: URI for the hover visual
+  hoverBorderWidth?: number;
+  nodeWidth?: number; // default 42
+  nodeHeight?: number;
+  glowInsetLeft?: number; // left inset of the hover glow
+  selectedSvg?: string; // data: URI used when selected instead of recoloring backgroundImage
+  textValignCorrectionModelPx?: number; // model px (not scaled): vertical offset of the label pill; default -8.7
+}
+
+interface NodeAction {
+  id: string;
+  label?: string;
+  zone: {x: number; y: number; width: number; height: number}; // percent of the node box, 0–100, from top-left
+}
+
+interface SearchOptions {
+  highlightNodeColor?: string;
+  highlightEdgeColor?: string;
+  panToResult?: boolean;
+  placeholder?: string;
+}
+
+interface MinimapOptions {
+  visible?: boolean; // false → collapsed
+  showSizeDropdown?: boolean;
+  showZoomDropdown?: boolean;
+}
 ```
 
-## License
+The package's declared `types` path (`./src/index.ts`) does not exist in this
+build, so these names cannot be imported as types; declare local types where
+needed.
 
-ISC
+## Integration details
+
+### SSR
+
+The server renders the empty bordered container and slot wrappers. The graph
+initializes in the browser one animation frame after first render, once web
+fonts have loaded.
+
+### Lifecycle
+
+Removing the element destroys its graph and overlays. Re-inserting the same
+instance does not rebuild them and leaves an empty canvas; render a new
+element instead.
+
+### Sizing and layout
+
+- Host is `display: block; width: 100%; height: 100%; overflow: hidden`. The
+  map box inside takes `width` and `height`, with a 350px minimum height,
+  a `--color-base-300` border, and rounded corners.
+- Plain mouse wheel scrolls the page; Ctrl+wheel or pinch (trackpad or
+  two-finger touch) zooms at the pointer.
+
+## Accessibility, localization, and customization
+
+- **Accessibility:** the canvas is a focusable `role="application"` region
+  whose label states node and edge counts, zoom, and keys. Keys: Tab /
+  Shift+Tab step through nodes and edges (leaving the map after the last); Tab from
+  a node with actions moves to its chevron; Enter/Space clicks the selected
+  element (on an edge with `iconIndicator`, its badge) or opens the chevron
+  menu; Arrow keys in the menu; Escape closes the
+  popover or menu, then deselects; arrow keys pan; Ctrl+Shift+Up/Down zoom;
+  Ctrl+Shift+0 resets zoom; Ctrl+Shift+1 fits. Focus changes are announced.
+  Provide a visible heading for the map. DOM overlay components must supply
+  their own accessible content.
+- **Localization:** built-in strings (loading, error, region label, menus,
+  toolbar, search, minimap, status badges) are localized; the region label's
+  plural suffix is English. Node, edge, and action text is yours to translate.
+- **Customization:** `canvasColor`, `dotBackground`, per-node and per-edge
+  colors, and renderers. Colors come from theme tokens `--color-base-100`,
+  `--color-base-200`, `--color-base-300`, `--color-base-content`,
+  `--color-primary`, `--color-primary-100`, `--color-secondary`,
+  `--color-secondary-content`,
+  `--color-text-secondary`, and `--color-info` / `-success` / `-warning` /
+  `-error`, read at initialization and on theme refresh. No CSS parts or
+  component custom properties.

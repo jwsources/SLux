@@ -307,6 +307,24 @@ export default function server(data, _options, input) {
 
 ---
 
+
+## Scope Restrictions
+
+AIUX widgets can deploy into either the **Global** scope or a **scoped application** — check which one before using scope-restricted APIs. Certain APIs only work in Global and fail (throw an error) when called from a scoped widget.
+
+### `GlideTableDescriptor` — avoid; use `GlideRecordSecure` instead
+
+`GlideTableDescriptor` is legacy and only available in the Global scope — it throws when called from a scoped application. Prefer `GlideRecordSecure`, which works in both scoped and Global, to check table existence.
+
+```js
+// Avoid — legacy, Global scope only; throws error in a scoped application
+var isValid = GlideTableDescriptor.isValid(input.table);
+
+// Preferred — works in both scoped and Global
+var isValid = new GlideRecordSecure(input.table).isValid();
+```
+---
+
 ## Security Rules
 
 1. **Always `GlideRecordSecure`** — not plain `GlideRecord`

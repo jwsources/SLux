@@ -1,6 +1,8 @@
 # Navigation Patterns
 
-## `application.js` — The Preferred App Shell Pattern
+## `<srcDir>/application.js` — The Preferred App Shell Pattern
+
+`<srcDir>` is the value of `srcDir` in `aiux.json` (scaffolded as `src/lux`). Falls back to project root if `srcDir` is not set in `aiux.json`.
 
 Production apps (e.g. AICT) use `application.js` as the lifecycle module instead of a custom `NavLayout` class. The framework calls `setup()` once per SSR request before loaders run. Nav items, features, and app title are set via `navLayoutContext` inside `setup()`. The app shell is `aiux-nav-layout` (declared via `applicationLayout` in `application.js`).
 
@@ -31,12 +33,9 @@ export default {
 
     const features = {
       menus: false,
-      logo: true,
       userSession: false,
-      profile: true,
       chat: ctx.chat?.enabled === true,
-      announcements: true,
-      helpPanel: true
+      announcements: true
     };
 
     const items = [
@@ -201,8 +200,6 @@ export default class MyAppLayout extends NavLayout {
       appName: 'My App',
       features: {
         menus: false,
-        logo: true,
-        userSession: true,
         concoursePicker: false
       }
     });
@@ -220,13 +217,17 @@ export default class MyAppLayout extends NavLayout {
 
 ### Features Object
 
-| Feature           | Type    | Description                                  |
-| ----------------- | ------- | -------------------------------------------- |
-| `appName`         | string  | Display name in header                       |
-| `menus`           | boolean | Show app menus (default: false)              |
-| `logo`            | boolean | Show ServiceNow logo (default: true)         |
-| `userSession`     | boolean | Show user avatar/session (default: true)     |
-| `concoursePicker` | boolean | Show concourse scope picker (default: false) |
+Most nav features are **default-on** — only add a flag to `features` when explicitly turning something off. Do not list default-on flags like `userSession`, `notifications`, `themeToggle`, `profile`, `helpPanel`, `menus` with value `true`; they are implicit. `logo` is the exception — it **defaults to `false`**, so add `logo: true` explicitly when you want the instance-configured logo click URL.
+
+| Feature              | Type    | Description                                        |
+| -------------------- | ------- | -------------------------------------------------- |
+| `appName`            | string  | Display name in header                             |
+| `logo`               | boolean | Fetch instance logo click URL (default: **false**; set `true` to enable) |
+| `unifiedExperience`  | boolean | Unified sidebar + user menu shell (default: true; set `false` for legacy shell) |
+| `menus`              | boolean | Show global nav menus (default: true; set `false` to disable) |
+| `concoursePicker`    | boolean | Show concourse scope picker (default: true; set `false` to disable) |
+| `chat`               | boolean | Show chat entry point (default: true) — gate on instance config with `ctx.chat?.enabled === true` |
+| `announcements`      | boolean | Show announcement banners (default: false; opt-in) |
 
 ### CSS Custom Properties
 
@@ -252,14 +253,14 @@ navLayoutContext.set({
 
 ## File-Based Routing
 
-Pages live in `pages/`. Folders map directly to URL segments. `[param]` brackets create dynamic segments.
+Pages live in `<srcDir>/pages/`. Folders map directly to URL segments. `[param]` brackets create dynamic segments.
 
 | File path                           | Route                | Params                              |
 | ----------------------------------- | -------------------- | ----------------------------------- |
-| `pages/home/page.js`                | `/home`              | —                                   |
-| `pages/list/[table]/page.js`        | `/list/:table`       | `ctx.params.table`                  |
-| `pages/record/[table]/[id]/page.js` | `/record/:table/:id` | `ctx.params.table`, `ctx.params.id` |
-| `pages/[...slug]/page.js`           | `/:slug*`            | `ctx.params.slug` (catch-all)       |
+| `<srcDir>/pages/home/page.js`                | `/home`              | —                                   |
+| `<srcDir>/pages/list/[table]/page.js`        | `/list/:table`       | `ctx.params.table`                  |
+| `<srcDir>/pages/record/[table]/[id]/page.js` | `/record/:table/:id` | `ctx.params.table`, `ctx.params.id` |
+| `<srcDir>/pages/[...slug]/page.js`           | `/:slug*`            | `ctx.params.slug` (catch-all)       |
 
 Catch-all segments use `[...name]` to match the remainder of the path.
 
@@ -365,9 +366,9 @@ static async loader(ctx) {
 The layout chain resolves from outermost (root) to innermost:
 
 ```
-pages/layout.js           → Root layout (NavLayout, sidebar, theme)
-  pages/detail/layout.js  → Nested layout (scoped context provider)
-    pages/detail/[id].js  → Page (consumes context)
+<srcDir>/pages/layout.js           → Root layout (NavLayout, sidebar, theme)
+  <srcDir>/pages/detail/layout.js  → Nested layout (scoped context provider)
+    <srcDir>/pages/detail/[id].js  → Page (consumes context)
 ```
 
 Each layout's loader runs **before** the page's loader. Layouts render their content via `<slot></slot>`.

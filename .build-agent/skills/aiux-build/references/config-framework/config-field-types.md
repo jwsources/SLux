@@ -43,7 +43,7 @@ actionLabel = i18n.getMessage('Review task');
 
 Every other option (`label`, `description`, `dependsOn`, `group`, and all type-specific options such as `choices`, `min`, `max`, `list`, `table`, `component`) goes to the config schema unchanged. A field with no initializer reads `undefined` until an attribute, a parent, or an admin supplies a value.
 
-**4. Four Lit options may ride along in the same object:** `attribute`, `reflect`, `converter`, `hasChanged`. Any other Lit `PropertyDeclaration` key (`state`, `noAccessor`, `useDefault`, …) is **not** forwarded to Lit — it lands in the config schema instead and is silently ignored. Lit's `type` is not settable: the attribute converter is derived from the config `type`. `Number`, `Boolean`, and `Array` pass through; `'select-multi'` becomes `Array`; every other type — `String`, `'url'`, `'color'`, `'textarea'`, `'datetime'`, `'table-picker'`, `'reference-picker'`, `'table-reference'`, `'role-picker'`, `'condition-builder'`, `'custom'` — uses `String`. Pass `converter` when you need different parsing.
+**4. Four Lit options may ride along in the same object:** `attribute`, `reflect`, `converter`, `hasChanged`. Any other Lit `PropertyDeclaration` key (`state`, `noAccessor`, `useDefault`, …) is **not** forwarded to Lit — it lands in the config schema instead and is silently ignored. Lit's `type` is not settable: the attribute converter is derived from the config `type`. `Number`, `Boolean`, and `Array` pass through; `'select-multi'` becomes `Array`; `'table-picker'` and `'reference-picker'` with `multi: true` become `Object`; every other type — `String`, `'url'`, `'color'`, `'textarea'`, `'datetime'`, `'table-picker'`, `'reference-picker'`, `'table-reference'`, `'role-picker'`, `'condition-builder'`, `'custom'` — uses `String`. Pass `converter` when you need different parsing.
 
 **5. A live admin edit re-renders through `aiuxConfigData`, not through this key.** When the config editor writes a value it reassigns `aiuxConfigData` (a reactive property on every `AIUXElement`), which triggers the update, and the getter then reads the new override. The property's own key does **not** appear in `changedProperties`. Code that must react to an override change watches `aiuxConfigData`:
 
@@ -87,10 +87,10 @@ No nullish coalescing or fallback logic is needed — `@configProperty`'s getter
 | `'url'`               | URL text input                          | `string`                            | `String`            | `maxlength`, `minlength`, `pattern`, `placeholder`            |
 | `'textarea'`          | Multi-line textarea                     | `string`                            | `String`            | `rows`, `maxlength`, `minlength`, `placeholder`               |
 | `'select-multi'`      | Multi-select typeahead                  | `string[]`                          | `Array`             | `choices` (required)                                          |
-| `'table-picker'`      | Table search typeahead                  | `string`                            | `String`            | `items`                                                       |
-| `'reference-picker'`  | Record search typeahead                 | `string` (sys_id)                   | `String`            | `table` (required), `items`                                   |
-| `'table-reference'`   | Two stacked typeaheads                  | `{table, record}`                   | `String` [^1]       | —                                                             |
-| `'role-picker'`       | Role search typeahead                   | `string[]`                          | `String` [^1]       | `items`                                                       |
+| `'table-picker'`      | Table search typeahead                  | `string` (or `{table: string[]}` with `multi`; adds `columns` with `columnPicker`) | `String` (or `Object` with `multi`/`columnPicker`) | `items`, `multi`, `maxItems`, `reorderable`, `tableQuery`, `columnPicker` |
+| `'reference-picker'`  | Record search typeahead                 | `string` (or `{record: string[]}` with `multi`; adds `columns` with `columnPicker`) | `String` (or `Object` with `multi`/`columnPicker`) | `table` (required), `items`, `multi`, `maxItems`, `reorderable`, `recordQuery`, `columnPicker`, `sideLabelField`, `subLabelFields` |
+| `'table-reference'`   | Two stacked typeaheads                  | `{table, record}` (`record` is `string[]` with `recordMulti`; adds `columns` with `columnPicker`) | `String` [^1] (`Object` with `columnPicker`) | `recordMulti`, `maxItems`, `reorderable`, `tableQuery`, `recordQuery`, `columnPicker`, `sideLabelField`, `subLabelFields` |
+| `'role-picker'`       | Role search typeahead                   | `string[]`                          | `String` [^1]       | `items`, `maxItems`, `reorderable`, `recordQuery`             |
 | `'datetime'`          | Date + time picker (calendar + time)    | `string` (`YYYY-MM-DD HH:mm:ss`)    | `String`            | `hideTime` (date-only when `true`)                            |
 | `'color'`             | Color swatch picker                     | `string` (CSS custom property name) | `String`            | `choices`                                                     |
 | `'condition-builder'` | Filter condition builder                | `string` or `{table, encodedQuery}` | `String` [^1]       | `tableName`                                                   |
@@ -135,6 +135,10 @@ import {i18n} from '@servicenow/aiux-services';
   // Assign to a collapsible accordion group.
   // See config-groups.md for configGroups setup and fallback behavior.
   group: 'myGroupId',
+
+  // Flags this field's admin-entered value as text i18n plugins should
+  // translate. Only meaningful on string-valued config types.
+  translatable: true,
 
   // ── Optional Lit property options ─────────────────────────────────────
   // These four are forwarded to Lit's @property() instead of the schema.
@@ -190,7 +194,7 @@ The following `@configProperty` option fields are user-facing and should be wrap
 
 \* `@config` only — `@configProperty` has no `default` option (use a field initializer instead).
 
-Fields that are **not** localized (do not wrap): `type`, `min`, `max`, `step`, `pattern`, `group` (the id string on `@configProperty`), `dependsOn`, `choices[].value`, and the four Lit options (`attribute`, `reflect`, `converter`, `hasChanged`). The field initializer is ordinary code — wrap it in `i18n.getMessage()` when it is user-facing text (`title = i18n.getMessage('Open incidents');`).
+Fields that are **not** localized (do not wrap): `type`, `min`, `max`, `step`, `pattern`, `group` (the id string on `@configProperty`), `dependsOn`, `translatable`, `choices[].value`, and the four Lit options (`attribute`, `reflect`, `converter`, `hasChanged`). The field initializer is ordinary code — wrap it in `i18n.getMessage()` when it is user-facing text (`title = i18n.getMessage('Open incidents');`).
 
 > **`default` note (`@config` only):** Wrap in `i18n.getMessage()` when the value is a user-facing string (e.g. `default: i18n.getMessage('Review task')`). Non-string defaults (`Boolean`, `Number`, objects) and identifier strings don't need wrapping.
 
@@ -239,6 +243,110 @@ Hardcoded dropdown entries that bypass the default GQL fetch. When provided, **o
 
 > Not supported for `'table-reference'` — both searches are GQL-driven only.
 
+### `multi` / `maxItems` / `reorderable` — `'table-picker'` / `'reference-picker'`
+
+Enables multi-select mode for table and reference pickers. When `multi: true`, the field renders a pill-based multi-select typeahead instead of a single-select combobox. The stored value changes from `string` to an object with a `table` or `record` array.
+
+| Property      | Type      | Required | Notes |
+| ------------- | --------- | -------- | ----- |
+| `multi`       | `boolean` | No       | When `true`, enables multi-select. Value becomes `{table: string[]}` for table-picker or `{record: string[]}` for reference-picker. |
+| `maxItems`    | `number`  | No       | Maximum number of selections (0 = unlimited). Only valid with `multi: true`. Unselected items are disabled in the dropdown when the limit is reached. |
+| `reorderable` | `boolean` | No       | When `true`, selected pills can be reordered by dragging them or with Ctrl+ArrowLeft/Right while a pill is focused. Reorders are announced to screen readers via an aria-live region. Only valid with `multi: true`. |
+
+```js
+@configProperty({
+  type: 'table-picker',
+  multi: true,
+  maxItems: 5,
+  reorderable: true,
+  label: i18n.getMessage('Allowed tables')
+})
+allowedTables = {table: []};
+
+@configProperty({
+  type: 'reference-picker',
+  multi: true,
+  maxItems: 3,
+  table: 'incident',
+  label: i18n.getMessage('Related incidents')
+})
+relatedIncidents = {record: []};
+```
+
+> For `'table-reference'` use `recordMulti: true` instead of `multi` — the table side stays single while the record side becomes a pill multi-select. The value shape is always `{table: string, record: string | string[]}`; with `recordMulti`, `record` is a `string[]` of sys_ids. `maxItems` and `reorderable` apply to the record side.
+
+### `columnPicker` — `'table-picker'` / `'reference-picker'` / `'table-reference'`
+
+Adds a column-selection UI below the table/record picker(s), letting the admin pick which columns of the resolved table the widget should use — including dot-walked reference fields (e.g. `'assigned_to.name'`). Not supported on `'role-picker'`; combining the two logs a warning and the option is ignored.
+
+| Property       | Type      | Required | Notes |
+| -------------- | --------- | -------- | ----- |
+| `columnPicker` | `boolean` | No       | When `true`, the value gains a `columns` key: `{[table]: string[]}`, one entry per table currently driving the picker (the picked table(s) for `'table-picker'`, the field's fixed `table` for `'reference-picker'`, the picked table for `'table-reference'`). An absent or empty `columns[table]` means **all columns**, not none. |
+
+```js
+@configProperty({
+  type: 'table-picker',
+  columnPicker: true,
+  label: i18n.getMessage('Source table')
+})
+sourceTable = '';
+// → {table: 'incident', columns: {incident: ['number', 'assigned_to.name']}}
+```
+
+Switching the driving table drops that table's stored columns from `columns` (they're kept in a session-only stash so re-picking the same table within the same pane session restores them, but nothing is persisted). With `multi`/`recordMulti`, each currently-selected table gets its own column section, stacked.
+
+### `sideLabelField` / `subLabelFields` — Secondary data in the picker dropdown
+
+Adds supporting data to each option in a `'reference-picker'`/`'table-reference'` (record side) dropdown, in addition to the primary display value — so whoever is picking a record has enough context to choose the right one. Display-only: neither option changes the dispatched value shape, and a field the current user can't read (or that's empty) is dropped rather than rendered as null/empty — Glide's GraphQL resolver already enforces field-level read access server-side.
+
+| Property         | Type       | Required | Notes |
+| ----------------- | ---------- | -------- | ----- |
+| `sideLabelField`  | `string`   | No       | One field, rendered as a badge next to the primary label (e.g. `'state'`). |
+| `subLabelFields`  | `string[]` | No       | One or more fields, joined with `" · "` and wrapped to 2 lines (e.g. `['category', 'assigned_to']`). |
+
+```js
+@configProperty({
+  type: 'reference-picker',
+  table: 'incident',
+  sideLabelField: 'state',
+  subLabelFields: ['category', 'assigned_to'],
+  label: i18n.getMessage('Related incident')
+})
+incident = '';
+```
+
+Omitting both preserves the picker's default behavior exactly — only the primary label is shown.
+
+### `tableQuery` / `recordQuery` — Server-side filters
+
+Limits which items are fetched from GQL by prepending a ServiceNow encoded query condition to every API call for that field. The filter is applied server-side before results reach the dropdown.
+
+| Property      | Type     | Applies to                              | Notes |
+| ------------- | -------- | --------------------------------------- | ----- |
+| `tableQuery`  | `string` | `'table-picker'`, `'table-reference'` (table side) | Encoded query filter for the `sys_db_object` fetch (e.g. `'nameSTARTSWITHcmdb'`). |
+| `recordQuery` | `string` | `'reference-picker'`, `'table-reference'` (record side), `'role-picker'` | Encoded query filter for the record/role fetch (e.g. `'active=true'`). For `'role-picker'`, defaults to `'active=true'` when omitted. |
+
+```js
+@configProperty({
+  type: 'reference-picker',
+  table: 'incident',
+  recordQuery: 'active=true',
+  label: i18n.getMessage('Active incidents')
+})
+incident;
+
+@configProperty({
+  type: 'table-reference',
+  recordMulti: true,
+  tableQuery: 'nameSTARTSWITHcmdb',
+  recordQuery: 'active=true',
+  label: i18n.getMessage('CMDB records')
+})
+cmdbRecords;
+```
+
+> **Label resolution is exempt.** Saved values always resolve their display label via an exact-match query regardless of the filter — a sys_id that no longer matches the filter still shows its human-readable label in the pill or input.
+
 ### `list` — `Array` (Record List)
 
 Configures the record-list editor source. This is the **inline `@configProperty`** variant — for the class-level `@externalConfig` decorator, see `config-external.md`.
@@ -260,9 +368,10 @@ Most types only need the base schema + the Quick Reference table. The notes belo
 - **Datetime:** Pass `hideTime: true` for a **date-only** field — stores `YYYY-MM-DD` instead of `YYYY-MM-DD HH:mm:ss` and commits on day-click.
 - **Select:** `type: String` + `choices` converts the text input to a select dropdown.
 - **Multi-Select:** `type: 'select-multi'` + `choices` (required). Same `choices` shape as Select. Stored value is `string[]`.
-- **Reference Picker:** `table: string` (required) — the ServiceNow table to search. Value is a sys_id.
-- **Table + Reference:** Two stacked typeaheads (table → record). Value is `{table, record}`. No extra options; `items` is not supported.
-- **Role Picker:** GQL-backed multi-select. Value is `string[]` of role identifiers.
+- **Reference Picker:** `table: string` (required) — the ServiceNow table to search. Value is a sys_id. With `multi: true`, value becomes `{record: string[]}` of sys_ids; optional `maxItems` caps selections. Optional `recordQuery` filters the GQL fetch (e.g. `'active=true'`).
+- **Table Picker (multi):** With `multi: true`, value becomes `{table: string[]}` of table names; optional `maxItems` caps selections. Optional `tableQuery` filters the table GQL fetch.
+- **Table + Reference:** Two stacked typeaheads (table → record). Value is `{table, record}` — with `recordMulti: true` the record side becomes a pill multi-select and `record` is a `string[]`; `maxItems` and `reorderable` apply to the record side. `items` and `multi` are not supported. Optional `tableQuery` filters the table side, `recordQuery` filters the record side.
+- **Role Picker:** GQL-backed multi-select. Value is `string[]` of role identifiers. Optional `maxItems` caps selections; `reorderable: true` lets users drag pills (or Ctrl+Arrow keys) to reorder. Optional `recordQuery` filters the role GQL fetch. Defaults to `'active=true'` when omitted — callers can override (e.g. `recordQuery: 'active=false'`) without contradiction.
 - **Condition Builder:** `tableName: string` (optional). With `tableName` → value is an encoded query string (e.g. `'active=true^category=hardware'`). Without `tableName` → user picks the table in the dialog, value is `{table, encodedQuery}`. Can also pair a `table-picker` field via `dependsOn` (see `config-depends-on.md`).
 - **Color Picker:** Uses `choices` shape (see [Shared Option Shapes](#choices)) — `value` is a CSS custom property name, `group` creates section headings in the swatch popover. When `choices` is omitted, the default platform palette renders. Swatches without a `group` render in a flat grid. Unresolved tokens render transparent.
 
@@ -289,10 +398,11 @@ Renders an author-supplied Lit component in place of a built-in editor. Use this
   // If parse throws, the raw value is passed unchanged and an error is logged.
   parse: (value) => ({label: '', icon: 'tag', color: 'red', ...value}),
 
-  // Static props to spread onto the component element. Must be a plain
-  // object — arrays, strings, and other types are ignored with a warning.
-  // Reserved keys (configEntryId, configKey, configValue, configPath) are
-  // stripped with a warning — they are set by the framework.
+  // Static props spread onto the component element — fixed at declaration
+  // time, never updated at runtime. For anything live, read `.allConfig`
+  // (below). Must be a plain object. Reserved keys (configEntryId,
+  // configKey, configValue, configPath, allConfig) are stripped with a
+  // warning — the framework sets them.
   props: {theme: 'dark', maxItems: 5}
 })
 // The runtime default lives here — any JSON-serializable value, commonly an
@@ -306,13 +416,14 @@ myField = {label: '', icon: 'tag', color: 'red'};
 
 The target component must follow this contract:
 
-1. Accept four properties from the props pane:
+1. Accept five properties from the props pane:
    - `.configEntryId` — the config entry ID (string, e.g. `'my-widget'` or `'parent.child'` for nested widgets)
    - `.configKey` — the `@configProperty` property key (string, e.g. `'myField'`)
    - `.configValue` — the current value (after `parse` if provided)
    - `.configPath` — a globally unique path: `{experience}/{page}/{topLevelTag}/{entryId}`. Use this to associate external data with a specific config entry across experiences and pages.
+   - `.allConfig` — a **live** `{propKey: value}` map of every config value on the same widget instance; the pane pushes a fresh map on any field edit. Declare it reactive to re-render. See [`allConfig` — live sibling values](#allconfig--live-sibling-values).
 
-   Any additional properties declared in `props` are spread onto the element alongside these four.
+   Any additional properties declared in `props` are spread onto the element alongside these five.
 
 2. On any change, call `dispatchConfigFieldValueChange` from `@servicenow/aiux-components-core` — the exact same event every built-in field dispatches, there is no separate "custom" event:
 
@@ -352,6 +463,7 @@ export default class MyCustomField extends AIUXElement {
   @property({attribute: false}) configKey = null;
   @property({attribute: false}) configValue = null;
   @property({attribute: false}) configPath = null;
+  @property({attribute: false}) allConfig = {}; // live sibling values — must be reactive to update
 
   _handleInput(e) {
     if (!this.configEntryId || !this.configKey) return;
@@ -407,7 +519,36 @@ Static properties to spread onto the custom component element. Useful for passin
 editorProp = {};
 ```
 
-The following keys are **reserved** and will be stripped from `props` with a warning: `configEntryId`, `configKey`, `configValue`, `configPath`. These are always set by the framework. Non-object `props` values (strings, arrays, numbers) are ignored with a warning.
+**`props` values are forever static** — declaration-time schema metadata, spread unchanged on every render. For anything that can change at runtime, declare another `@configProperty` and read it from `.allConfig` instead. Reserved keys `configEntryId`, `configKey`, `configValue`, `configPath`, `allConfig` are stripped with a warning (`props` is spread *after* the framework bindings, so a collision would overwrite them). Non-object values are ignored with a warning.
+
+**`allConfig` — live sibling values:**
+
+The dynamic counterpart to `props`: a `{propKey: value}` map of every config field on the **same widget instance** (not other widgets on the page). The pane pushes a fresh map on any field edit — no subscription or wiring on your side.
+
+```js
+@property({attribute: false}) allConfig = {};
+
+render() {
+  const showAdvanced = Boolean(this.allConfig.showAdvanced); // sibling Boolean field
+  // …re-renders automatically when the admin toggles it
+}
+```
+
+- **Must be reactive** (`@property({attribute: false})`) — the map is assigned regardless, but only a reactive property re-renders on sibling changes.
+- **Stable shape** — built from the full schema, so locked and `dependsOn`-hidden fields are always present; keys never appear or vanish with visibility.
+- **Value resolution matches the visible row** — pending edit → saved value → declared default → live element value; unset scalars read `''`, unset `Array`/`Object` read `null`.
+- **Read your own value from `.configValue`, not `allConfig[configKey]`** — own edits are debounced (~300ms), so your key lags; sibling keys land immediately.
+
+#### Floating content for custom components
+
+The props pane renders custom fields inside a scrollable container (`overflow-y: auto`). This means any floating content using `position: absolute` will be **clipped** at the scroll boundary — dropdowns, autocomplete panels, date pickers, etc. will be cut off if they extend beyond the visible scroll area.
+
+To avoid clipping, use one of these approaches (in order of preference):
+
+1. **Modal dialog** — open an `<aiux-modal>` or `<dialog>` from a button inside the field. The modal renders in the top layer, completely outside the scroll container. Keep a local `@state()` draft and call `dispatchConfigFieldValueChange` only on confirm. This is the recommended approach for complex editing surfaces.
+2. **Popover API** — use `popover="manual"` with `showPopover()`/`hidePopover()`. Popovers render in the browser's top layer and escape all overflow clipping. Close the popover on scroll to avoid it becoming disjointed from its trigger.
+3. **`position: fixed`** — positions relative to the viewport instead of the scroll container. Close on scroll to avoid disjoint. Note: `contain: layout` on any ancestor will trap `position: fixed` — the props pane does not set this on the custom field container.
+4. **Native `<select>`** — the browser renders native select dropdowns at the OS compositor level, outside the DOM entirely. No clipping issues, but limited styling.
 
 #### Gotchas
 
@@ -416,10 +557,10 @@ The following keys are **reserved** and will be stripped from `props` with a war
 - **Dispatching on every keystroke** for an expensive composite field can feel jumpy in the live preview — batch locally and dispatch once (blur, or a modal's Save) if that's an issue.
 - **`configEntryId`/`configKey` can be `null`** during initial render in some timing edge cases — guard with `if (!this.configEntryId || !this.configKey) return;` before dispatching.
 - **`parse` errors are caught** — a throwing `parse` function won't crash the props pane; the raw value is used and an error is logged.
-- **`props` reserved key conflicts** — if your `props` object contains `configEntryId`, `configKey`, `configValue`, or `configPath`, those keys are silently stripped (with a warning logged) since the framework always sets them.
+- **`props` reserved key conflicts** — if your `props` object contains `configEntryId`, `configKey`, `configValue`, `configPath`, or `allConfig`, those keys are silently stripped (with a warning logged) since the framework always sets them.
+- **Expecting `props` to update dynamically** — schema `props` are fixed at declaration time. React to changing values via `.allConfig` (declared reactive — a plain field gets assigned but never re-renders).
+- **Reading your own value from `allConfig[configKey]`** — own edits are debounced (~300ms), so that key lags; use `.configValue`.
 - Richer editing surfaces (e.g. an `<aiux-modal>` opened from a button inside the field) are fully supported — only call `dispatchConfigFieldValueChange` on confirm, not per-keystroke inside the modal; keep a local draft `@state()` and merge it in on save.
-
-See [`examples/admin-configuration/components/admin-config-custom-field/index.js`](../../../../../examples/admin-configuration/components/admin-config-custom-field/index.js) for a worked example (a composite label/icon/color field with an "Advanced settings…" modal), wired into both `all-types/index.js` (alongside every other field type) and a standalone `/custom-field-props-pane` demo page.
 
 ## Migrating from `@config` to `@configProperty`
 

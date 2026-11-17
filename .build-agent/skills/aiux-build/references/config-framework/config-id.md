@@ -58,7 +58,7 @@ and auto-imports `elementId` from `@servicenow/aiux-components-core` when it is 
 ## Constraints
 
 - **Static string literal only.** `aiux-config-id=${id}`, `aiux-config-id="${id}"`, an unquoted value, or a missing value is a **build error**. This compile-time check is the main advantage over writing `elementId(this, …)` by hand, which could not enforce it.
-- **`html` templates only.** `layout` tagged templates are deliberately left untouched. Inside a `layout` template, write the directive form by hand — `aiux-config-data=${elementId(this, 'id')}` — with an explicit `elementId` import.
+- **`html` and `region` use different mechanisms.** The `html` build transform desugars the attribute as shown above. In a `region` definition, write the same static `aiux-config-id="id"`; the region renderer stamps `data-aiux-element-id` and forwards the rendering host's config slice. Do not pass `elementId(this, ...)` into a region: directives are not serializable region values. `layout` tagged templates are not the current editable-region authoring API.
 - **`elementId` still works.** The manual form is unchanged and remains valid; it is now the escape hatch rather than the recommended path.
 
 ## Per-Instance Semantics
@@ -85,3 +85,7 @@ Breaking the chain at any level makes everything below it unconfigurable. The co
 ## Top-Level Pages
 
 Top-level elements (pages or layouts rendered directly into the document root, with no custom-element ancestor) do **not** need `aiux-config-id` on themselves. They are the config storage anchor — the config editor identifies them by their tag name. Only their child components need the attribute to be discoverable.
+
+## Editable Region Layouts
+
+A `region` tagged template lives in its own module under the app root's `regions/` directory, not inline in the page, and every widget instance inside it needs a static `aiux-config-id` as described above. See `regions.md` for placement, relative import depth, the DSL grammar, and verification.

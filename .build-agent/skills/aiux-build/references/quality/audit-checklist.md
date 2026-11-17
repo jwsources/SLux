@@ -6,16 +6,16 @@
 
 ## 1. Structure
 
-**Check:** Required files and directory layout.
+**Check:** Required files and directory layout. `<srcDir>` is the value of `srcDir` in `aiux.json` (scaffolded as `src/lux`); if unset it resolves to the project root. `package.json`, `aiux.json`, and `now.config.json` always stay at the true project root.
 
 | Item                               | Pass | Warn                                                   | Fail                                                         |
 | ---------------------------------- | ---- | ------------------------------------------------------ | ------------------------------------------------------------ |
 | `aiux.json` exists at root         | ✅   | —                                                      | ❌ Missing                                                   |
 | `package.json` has `aiux.basename` | ✅   | ⚠️ Missing (valid for widget-only or global-page apps) | ❌ Mismatched with `aiux.json#basename`                      |
 | `now.config.json` scope matches    | ✅   | —                                                      | ❌ Scope mismatch                                            |
-| `pages/layout.js` exists           | ✅   | —                                                      | ❌ Missing root layout                                       |
-| `pages/home/page.js` exists        | ✅   | ⚠️ Different landing page                              | —                                                            |
-| `theme.js` at root                 | ✅   | ⚠️ Missing (uses defaults)                             | —                                                            |
+| `<srcDir>/pages/layout.js` exists  | ✅   | —                                                      | ❌ Missing root layout                                       |
+| `<srcDir>/pages/home/page.js` exists | ✅ | ⚠️ Different landing page                              | —                                                            |
+| `<srcDir>/theme.js` exists         | ✅   | ⚠️ Missing (uses defaults)                             | —                                                            |
 | No stray files in root             | ✅   | ⚠️ Unnecessary files                                   | —                                                            |
 | Three-way config agreement         | ✅   | —                                                      | ❌ `aiux.json` ↔ `package.json` ↔ `now.config.json` mismatch |
 

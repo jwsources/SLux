@@ -1,4 +1,4 @@
-# PLATFORM-NOTES.md
+# TOOLNOTES.md
 
 Reference detail for agents **[AGENTS.md](AGENTS.md) is the always-read file and
 holds the rules**; this one is lookup-only, loaded on the triggers in AGENTS.md's final table.
@@ -16,7 +16,7 @@ The AIUX packs were written for offline agents with a shell. There is none here.
 | --- | --- |
 | `pnpm build` / `now-sdk build` | the **`build`** tool — **SDK ACTION** |
 | `pnpm deploy` / `now-sdk install` | the **`install`** tool — **SDK ACTION**, requires dist and dist-metadata to be delete first |
-| `pnpm dev` (dev server, hot reload) | **no equivalent.** After the install: `ui_diagnostics` (headless render + console + network + DOM) |
+| `pnpm dev` (dev server, hot reload) | **no equivalent.** After the install: `ui_diagnostics` on a platform page (headless render + console + network + DOM), or the `atf-cloud-runner__browser_*` tools for anything under `/aiux/` — ⚠ `ui_diagnostics` **HANGS THIS IDE** on a Lux portal route, see AGENTS.md non-negotiable #5 |
 | `pnpm lint` / `eslint-plugin-aiux-*` | no execution. Regex-detectable rules → `fs_grep`; type/syntax → `run_diagnostics`. The plugins *are* installed, so the user's own `pnpm lint` does enforce them |
 | `node scripts/validate-component.js` | do the assertions inline; `aiux-build` → `scripts/validate-checks.md` carries all 30 ported checks |
 | `node scripts/sync-widgets.mjs` (+ `--check`) | **concept deleted.** `run_query` on `sys_aix_widget`, live |
@@ -147,11 +147,74 @@ Measured in a real browser against this instance:
 Prefer the name. Read `width`/`height` off the row and pass both to `lazyImage` so there is no layout
 shift.
 
-### sys_aix_experience field names, and the extend preconditions
+### sys_aix_experience field names, and what the extend preconditions actually are
 
-The display field is **`title`**, not `name` — `nameISNOTEMPTY` is rejected outright. Before writing
-extension pages, confirm on the host row: `url_suffix` matches the directory, `extendable = 1`, and
-`content_hash` is **non-empty** (empty = no bundle, renders nothing).
+The display field is **`title`**, not `name` — `nameISNOTEMPTY` is rejected outright.
+
+🔴 **CORRECTED — the old `extendable = 1` / non-empty `content_hash` preconditions recorded here were
+WRONG, and following them would refuse a perfectly good host.** Measured against the **Sales Portal**
+(`sys_aix_experience` `29aa0e97fb97fe5089ecfee34eefdc09`, `url_suffix` `salesportal`, scope
+`sn_ex_emp_hub_mw`): **both `extendable` and `content_hash` are EMPTY**, and the portal renders fully in a
+real browser — nav, widgets, user session — and an extension page overlaid onto it works, with its
+`sys_aix_experience_extension` row created on install.
+
+The real precondition is only this: **the host row must exist**, and the directory path must carry its
+**project id** and its **`url_suffix`**. `extendable` is a boolean whose dictionary default is `true`, so
+an empty value there is not `false`; `content_hash` being empty does not mean "no bundle".
+
+⚠ **Verify host contents on the PARENT table.** `sys_aix_widget` is role-filtered (see above), so a query
+for a host's pages can return a **false zero**. Measured on Sales Portal: 6 of 14 rows visible via
+`sys_aix_widget`, all 14 via `sys_ux_widget`. Two "dangling reference" conclusions were drawn from that
+false zero before the parent-table cross-check disproved them. The experience's `layout` field also points
+at **`sys_aix_layout`**, not `sys_aix_widget` — checking it against the wrong table reports a real layout
+as missing.
+
+### fs_copy on a directory is DESTRUCTIVE, not additive
+
+🔴 Measured while merging pack v3.0.0. `fs_copy` with `overwrite: true` on a **directory** does not merge
+the two trees — it **replaces the destination subdirectory wholesale and deletes destination-only files**.
+A merge of `ui-discovery/references/` that way silently deleted **47 local-only reference files**; they were
+only recovered because a pre-merge backup existed.
+
+- **Copy skill files ONE AT A TIME**, one `fs_copy` per file, whenever the destination holds anything the
+  source does not.
+- Before any directory copy into a tree you care about, take a backup first:
+  `fs_copy .build-agent/skills` → a non-hidden path, merge, verify, then `fs_delete` the backup and confirm
+  the project file count returns to its pre-copy value.
+- A directory copy is only safe when the source is a strict **per-subdirectory superset** of the
+  destination. `aiux-build/references/` happened to satisfy that (28 → 36 files, nothing lost) — that was
+  luck, not care, and the file-count delta is what proved it.
+
+### The aiux-services barrel fails the isolate bundle
+
+🔴 Measured — it broke a real build here, and **pack v3.0.0's own extension page template still gets it
+wrong**, so this will keep recurring.
+
+```
+isolate bundle failed for page "...": Could not resolve import "#context"
+  from ".../@servicenow/aiux/core/observability/logger.js"
+```
+
+Cause, read from `node_modules/@servicenow/aiux/core/commons/build-isolate-bundle.js`: `classifyExternal()`
+and `normalize()` rewrite `@servicenow/aiux/X` → `@servicenow/aiux-X`, after which `lit`,
+`aiux-components-core` and `aiux-components-record` become externals and `aiux-client` becomes an isolate
+**stub**. But `SN_PACKAGE_DIRS` is `['components','directives','controllers','mixins','libraries']` and
+`services/` is **not in it**, so `@servicenow/aiux/aiux-services` is neither external nor stubbed: it is
+bundled **inline**, dragging `core/observability` in, whose `logger.js` uses Node subpath imports
+(`#context`, `#processor`) that rollup's node-resolve rejects as "outside package".
+
+| Don't | Do |
+| --- | --- |
+| `import {i18n} from '@servicenow/aiux/aiux-services'` | `import {i18n} from '@servicenow/aiux/aiux-services/src/i18n.js'` |
+
+`services/src/i18n.js` has **zero imports** and reads `globalThis.__WIDGET_MESSAGES__` when `window` is
+undefined, so it is SSR-isolate-safe alone. The exports entry `"./aiux-services/*": "./services/*"` makes
+the deep path resolvable. ⚠ Its JSDoc says the build extracts `t(...)` only when `t` is imported from
+`@servicenow/aiux-services` — specifier-keyed — so prefer `i18n.getMessage(...)`, and use a local
+`utils/i18n.js` wrapper when extraction into the translation catalog matters.
+
+Also note `aiux-client` being a stub means `navigate` is **undefined during SSR** and real on the client:
+safe from a click handler, fatal if called from a loader.
 
 ### Percentage points are not percent
 
@@ -164,26 +227,44 @@ Count metrics (items per receipt) do move in percent. Enforced in
 
 ## Extension model
 
-This app **extends an existing host experience** rather than defining its own. Two directory conventions:
+This app **extends an existing host experience** rather than defining its own. Paths resolve through
+`srcDir`, which `aiux.json` sets to **`src/lux`** here. Three directory conventions:
 
 ```
-# Convention 1 — host scope + route id (scaffolded default)
-src/extensions/<host_scope>/<host_route_id>/pages/<route>/page.js
-src/extensions/<host_scope>/<host_route_id>/application.js        # optional per-host lifecycle
+# Convention 1 — host PROJECT ID + host BASENAME (scaffolded default)
+<srcDir>/extensions/<host_project_id>/<host_basename>/pages/<route>/page.js
+<srcDir>/extensions/<host_project_id>/<host_basename>/application.js   # optional per-host lifecycle
 
 # Convention 2 — direct host experience sys_id
-src/extensions/<experience_sys_id>/pages/<route>/page.js
-src/extensions/<experience_sys_id>/application.js                 # optional per-host lifecycle
+<srcDir>/extensions/<experience_sys_id>/pages/<route>/page.js
+<srcDir>/extensions/<experience_sys_id>/application.js
+
+# Convention 3 — the literal directory name `glide` (pack v3.0.0)
+<srcDir>/extensions/glide/pages/<route>/page.js
+# resolves to GLIDE_EXPERIENCE_SYS_ID 4f3d8d0ecda0d19c568d19a5c25422c0 (Core UI / Glide)
 ```
 
-This app uses convention 1: `src/extensions/<host_scope>/<host_route_id>/`.
+This app uses convention 1, concretely:
+`src/lux/extensions/sn_ex_emp_hub_mw/salesportal/pages/<route>/page.js`.
 
-- `<host_route_id>` is the host experience's `url_suffix` (e.g. `employeeslate`). It **must match the
-  host** so pages overlay the host's routes at `/aiux/<host_route_id>/…`.
-- Both conventions are discovered identically; one project may mix them to target multiple hosts.
+- ⚠ **Extensions are the ONE exception to the project-root fallback.** With `srcDir` unset they resolve at
+  `src/extensions/`, never project-root `extensions/`. Verified in
+  `node_modules/@servicenow/aiux/core/commons/project-config.js` → `resolveSrcPath`.
+- ⚠ **Convention 1's first segment is the host's PROJECT ID, not its scope.** They coincide whenever the
+  host predates `aiux.json`'s `projectId` field, because such a host uses its scope as its project id —
+  that is why `sn_ex_emp_hub_mw` works for Sales Portal, where `sys_aix_project.project_id` and
+  `sys_scope.scope` are both `sn_ex_emp_hub_mw`. Read `source_aix_project.project_id` off the experience
+  rather than assuming the scope.
+- `<host_basename>` is the host experience's `url_suffix` (e.g. `salesportal`). It **must match the
+  host** so pages overlay the host's routes at `/aiux/<host_basename>/…`.
+- All conventions are discovered identically; one project may mix them to target multiple hosts.
 - **The directory path is the entire link to the host.** There is no `extends`/`routeMap` in `aiux.json`.
 - `extension.js` is **not** read by the build. The lifecycle module is always `application.js`.
 - `.ts` wins over `.js` when both exist in a directory.
+- A `[param]` directory makes a route parameter, surfaced to the loader as `ctx.params.<param>`; a static
+  `async loader()`'s return value is exposed as `this.loaderData`. ⚠ **An `fs_grep` glob containing a
+  `[param]` segment silently matches NOTHING** — the brackets parse as a character class. Use a `*`
+  wildcard for that segment. Measured: both the pattern and a known-present control returned zero.
 - Contribute host chrome from `setup()` with the nav helpers from `@servicenow/aiux/aiux-components-nav`:
   `addNavItem`, `removeNavItem`, `setL3Nav`, `appendL3Nav` (current names `appendL1Nav`/`prependL1Nav`/
   `removeL1Nav`, plus the `L2` equivalents for items under a specific L1's `l2Nav`; all accept an array).
@@ -234,17 +315,17 @@ loader rules:
   `migrate-header-config/` registers as `migrate-header-config-review`, so a folder name that
   differs from the skill name is normal and not a symptom.
 
-Boundary-reviewed, from `@servicenow/agent-pack-aiux` v2.6.0:
+Boundary-reviewed, merged against `@servicenow/agent-pack-aiux` **v3.0.0**:
 
 | Skill (registered name) | Folder | Use for |
 | --- | --- | --- |
-| `ui-discovery` | `ui-discovery` | **always first for UI** — reusable components and instance widgets |
-| `aiux-build` | `aiux-build` | pages, routes, layouts, widgets, server scripts, `AIUXElement` lifecycle/decorators/loaders/context. Also carries the one-way extension → experience-owning conversion |
+| `ui-discovery` | `ui-discovery` | **always first for UI** — reusable components and instance widgets. Index is a UNION of local and v3.0.0 entries |
+| `aiux-build` | `aiux-build` | pages, routes, layouts, widgets, server scripts, `AIUXElement` lifecycle/decorators/loaders/context, ACLs, page collections, page views, regions. Also carries the one-way extension → experience-owning conversion |
 | `accessibility` | `accessibility` | accessibility audits and fixes |
 | `figma-to-widget` | `figma-to-widget` | a Figma URL → widget |
-| `pages-extensions-generator` | `pages-extensions-generator` | extension pages under `src/extensions/` that overlay a host |
+| `pages-extensions-generator` | `pages-extensions-generator` | extension pages overlaying a host. ⚠ **No longer exists upstream** — dropped at v3.0.0 and absorbed into `aiux-build/references/app/extensions.md`, which is now the authority for conventions. Retained for `__parentScopeName__` resolution and its three `assets/` templates |
 | `migrate-header-config-review` | `migrate-header-config` | legacy `headerConfig.js` → app-owned `header-config.js`. **Registered name ≠ folder name.** Its `references/header-config-contract.md` is authored here, not shipped by the pack |
-| `internationalization` | `internationalization` | global-readiness review without translating |
+| `internationalization` | `internationalization` | global-readiness review without translating. ⚠ Its own `i18n-litjs.md` **overrides** the parent SKILL.md on ICU plurals: `i18n.getMessage` does plain placeholder substitution with NO plural/gender selection |
 | `localization` | `localization` | locale adaptation, RTL, translation catalogs |
 
 From `@servicenow/agent-pack-horizon-design-knowledge`. **No boundary blocks** — they were audited and
@@ -267,6 +348,8 @@ to drift from:
 | `aiux-instance-ops` | investigating or verifying instance state, and the confirm-then-read-back rule before any write |
 | `aiux-agents` | briefing a sub-agent before an `agent` delegation — the three real targets, and the rules a sub-agent does **not** inherit |
 | `aiux-tailwind-vision-spec` | deterministic visual-element → AIUX class and token mapping, from `tailwind.css` |
+| `aiux-widget` | creating, editing or cloning a `sys_aix_widget` — a Lit component extending `AIUXWidgetElement`, for AI portals, the Employee Hub and Otto conversation cards. Also for a widget that lists but never renders, or a column holding `Symbol(CallExpressionShape)` |
+| `diag-playbook` | triaging instance performance, data growth and housekeeping — `syslog`, `sysevent`, `sys_trigger`, `sysauto`, table rotation, queue/event backlogs, `stats.do` |
 | `servicenow-interactive-report-writer` | evidence-led interactive HTML reports, with a bundled template and validator |
 
 Provided by the environment, **not** on disk under `.build-agent/skills/`: `atf-run-test` (run, debug or
@@ -283,12 +366,18 @@ environment:
   header-config contract is authored at `migrate-header-config/references/header-config-contract.md`, and
   `pages-extensions-generator`'s Full Documentation section maps all four original paths to shipped or
   authored equivalents.
-- `.argus/rules/**` and `tools/eslint-plugin-aiux-*` (in `accessibility`)
-- `examples/admin-configuration/**` (in `aiux-build`)
-- `i18n-litjs.md` / `i18n-intljs.md` / `l10n-litjs.md` / `l10n-intljs.md` (in `internationalization` /
-  `localization`)
-- `scripts/test-no-figma.js` (in `figma-to-widget`)
-- the per-component repo links in `ui-discovery/references/components/*.md`
+- `.argus/rules/**` and `tools/eslint-plugin-aiux-*` (in `accessibility`) — **still dead at v3.0.0**,
+  still cited twice. The local boundary block neutralises them; that correction is permanent, not interim.
+- `examples/admin-configuration/**` (in `aiux-build`) — the directory does not exist in the published
+  package. Not found cited in the five most likely reference files at v3.0.0, so it may have been dropped;
+  if it survives anywhere it is still broken.
+- ~~`i18n-litjs.md` / `i18n-intljs.md` / `l10n-litjs.md` / `l10n-intljs.md`~~ — ✅ **FIXED at v3.0.0.**
+  All four now ship and have been copied in. Do not re-add a note claiming they are missing.
+- `scripts/test-no-figma.js` (in `figma-to-widget`) — **still dead at v3.0.0**; the whole "No-Figma path"
+  section and its `node scripts/test-no-figma.js` command reference a file the package does not contain.
+- the per-component repo links in `ui-discovery/references/components/*.md` — **mitigated at v3.0.0**:
+  followable dead links were replaced by a single provenance line naming the vendor monorepo path. The
+  path is still not shipped, but it now reads as attribution rather than a pointer.
 
 Also measured dead. ⚠ These contain `.claude/`, which is a path inside the **vendor's** monorepo and has
 nothing to do with the removed `.claude/skills` pipeline:
@@ -361,14 +450,39 @@ summaries above** — each row names the ground a record covers, not its current
 
 ## Drift detection
 
-The skills in `.build-agent/skills/` are **edited copies** of `@servicenow/agent-pack-aiux` **v2.6.0**;
-the pristine originals in `node_modules/` are the diff baseline. All `@servicenow/*` deps are pinned to
-`"latest"`, so a reinstall performed outside this IDE can change the packs — check
-`node_modules/@servicenow/agent-pack-aiux/package.json`. **Re-copying a pack over `.build-agent/skills/`
-overwrites every boundary block**; that loss is visible and cheap to redo, not silent, but it is a full
-re-audit.
+The skills in `.build-agent/skills/` were **merged against `@servicenow/agent-pack-aiux` v3.0.0** (Nov
+2026); the pristine originals in `node_modules/` remain the diff baseline. All `@servicenow/*` deps are
+pinned to `"latest"`, so a reinstall performed outside this IDE can change the packs again — check
+`node_modules/@servicenow/agent-pack-aiux/package.json`.
+
+**What the v2.6.0 → v3.0.0 merge established, so the next merge need not rediscover it:**
+
+| Skill | How it merged |
+| --- | --- |
+| `aiux-build` | **merged.** Took 8 new reference files, `<srcDir>` indirection, `@acl()` over `@roles()`, the regions build rule and the provider/context base classes. Boundary block re-applied |
+| `ui-discovery` | **merged selectively.** Upstream's index is a different GENERATION, not a superset — it drops ~25 component refs, 7 of 8 directives and 4 controllers we hold. Index is now a union; upstream still re-ships the whole dead widget-sync apparatus, which must never be reinstated |
+| `internationalization` / `localization` | **merged.** The four companion files (`i18n-litjs`, `i18n-intljs`, `l10n-litjs`, `l10n-intljs`) now SHIP — the old "neither file ships" note was deleted as false |
+| `migrate-header-config` | **merged small.** Took the header-config data shape and `srcDir` discovery, folded into the authored contract file |
+| `accessibility` / `figma-to-widget` | **kept local.** v3.0.0 changed neither SKILL.md; both still cite the same dead paths |
+| `pages-extensions-generator` | **dropped upstream, retargeted locally.** Absorbed into `aiux-build/references/app/extensions.md`. Kept for its `__parentScopeName__` resolution and its three `assets/` templates, which the pack does not ship |
+
+⚠ **The pack's own README lists only 5 skills while shipping 7.** Trust the directory listing, never the
+pack README, when asking what a pack contains.
+
+⚠ **v3.0.0 reversed two rules.** Mixed projects (own `pages/` + extension pages) are now stated as
+supported, conditional on the installed build — see AGENTS.md → Do not. And `@roles()` is retired for new
+gating. Anything written against the old rules is now wrong.
+
+**Re-copying a pack over `.build-agent/skills/` overwrites every boundary block** — and, because
+`fs_copy` on a directory is destructive (see Measured facts), it also **deletes local-only files**. Back
+up first, copy file by file, and verify.
 
 For a whole-tree text sweep of `.build-agent/` (which grep cannot traverse): `fs_copy` it to a non-hidden
 path, grep the copy, `fs_delete` it, and confirm the file count returns to its pre-copy value. Do **not**
-rename `.build-agent` — that path is the skill load path, so dropping the dot de-registers all 12 skills,
+rename `.build-agent` — that path is the skill load path, so dropping the dot de-registers all 19 skills,
 and the registry only refreshes between messages, so the breakage surfaces a message later.
+
+**The sweep that found every hand edit** (reusable next time): copy the tree out, then
+`fs_grep` the copy for `WEB IDE`. That returned exactly 9 files — the 9 `SKILL.md` boundary blocks plus
+`aiux-build/references/app/backend-layer.md`, which is the one *reference* file carrying an edit and
+therefore the one a blanket `references/` overwrite would silently destroy.

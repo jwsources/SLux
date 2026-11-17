@@ -1,4 +1,14 @@
-# @servicenow/aiux-contact-card
+# Contact card
+
+> Source: `@servicenow/aiux-contact-card@4.0.2` · `components/external/contact-card/docs/usage/aiux-contact-card.md`
+
+`<aiux-contact-card>` renders the contact data the host passes in: name,
+avatar or initials, titles, badges, and label/value fields. It loads nothing.
+Clickable titles and fields fire `aiux-contact-card:item-clicked`; the host
+performs the action (open a record, start an email, and so on).
+
+Built in: initials fallback, an empty state, and a responsive layout driven
+by the card's own width.
 
 ## Import
 
@@ -6,155 +16,185 @@
 import '@servicenow/aiux-contact-card';
 ```
 
-
-Contact card component that displays a user's avatar, name, titles, badges, and contact fields.
-
-Aligned with the 2026 redesign (AINPX-Contact-card-2026): a colored contact name, a 32px avatar,
-one status-badge group with up to three items, and a 3-column body grid for label/value fields.
-See [Badge Colors](#badge-colors) below for the
-current badge rendering, and [Empty state](#empty-state) for the no-contact-selected view.
-
 ## Usage
 
-```html
-<aiux-contact-card
-  heading-name="Julie Lewis"
-  avatar-src="/avatar.png"
-  .badges=${[
-    {label: 'Escalated', color: 'critical'},
-    {label: 'VIP', color: 'positive'}
-  ]}
-  .subHeadingTitles=${[{label: 'Network Admin', clickable: true}]}
-  .content=${[
-    {label: 'Email', value: 'julie@example.com', clickable: true},
-    {label: 'Phone', value: '+1 555-1234'}
-  ]}
-></aiux-contact-card>
+### Minimal complete example
+
+```ts
+import {html} from 'lit';
+import {customElement, property} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
+import '@servicenow/aiux-contact-card';
+
+@customElement('my-caller-card')
+export class MyCallerCard extends AIUXElement {
+  @property({type: Object}) caller: {
+    name: string;
+    email: string;
+    title: string;
+  } | null = null;
+
+  private _onItemClicked(e: CustomEvent) {
+    const {type, item} = e.detail;
+    if (type === 'field' && item.id === 'email') {
+      window.location.href = `mailto:${item.value}`;
+    }
+  }
+
+  render() {
+    if (!this.caller) {
+      return html`<aiux-contact-card
+        empty
+        empty-state-msg="Select a caller."
+      ></aiux-contact-card>`;
+    }
+    return html`
+      <aiux-contact-card
+        heading-name=${this.caller.name}
+        .subHeadingTitles=${[{label: this.caller.title}]}
+        .badges=${[{label: 'VIP', color: 'positive'}]}
+        .content=${[
+          {
+            id: 'email',
+            label: 'Email',
+            value: this.caller.email,
+            clickable: true
+          }
+        ]}
+        @aiux-contact-card:item-clicked=${this._onItemClicked}
+      ></aiux-contact-card>
+    `;
+  }
+}
 ```
 
-## Properties
+**What happens:** without `headingName` (and without `empty`) the element
+renders nothing. `item` in the event is the same object you passed in, so
+put an `id` on items you need to tell apart.
 
-| Property           | Type                | Attribute         | Default           | Description                                                                   |
-| ------------------ | ------------------- | ----------------- | ----------------- | ----------------------------------------------------------------------------- |
-| `headingName`      | `String`            | `heading-name`    | `''`              | Display name of the contact. Required — card renders nothing if empty.        |
-| `avatarSrc`        | `String`            | `avatar-src`      | `''`              | URL of the avatar image. Falls back to initials when empty.                   |
-| `headingLevel`     | `Number`            | `heading-level`   | `3`               | HTML heading element level (`1`–`6`) for the contact name.                    |
-| `headingVariant`   | `String`            | `heading-variant` | `'header-tertiary'` | Visual text style for the heading. See [Heading Variants](#heading-variants). |
-| `badges`           | `ContactBadge[]`    | —                 | `[]`              | Up to three badges displayed beside the contact metadata or beneath it in reflow. |
-| `subHeadingTitles` | `SubHeadingTitle[]` | —                 | `[]`              | Titles shown below the name. Supports multiple entries.                       |
-| `content`          | `ContactField[]`    | —                 | `[]`              | Label/value field pairs shown in the card body.                               |
-| `hideBorder`       | `Boolean`           | `hide-border`     | `false`           | Removes the border and padding around the card.                               |
-| `empty`            | `Boolean`           | `empty`           | `false`           | When true, renders `<aiux-empty-state-content>` instead of contact content and ignores `headingName`. See [Empty state](#empty-state). |
-| `emptyStateTitle`  | `String`            | `empty-state-title` | `''`            | Heading shown in the empty state. Defaults to a localized "No contact selected" when left unset. |
-| `emptyStateMsg`    | `String`            | `empty-state-msg` | `''`              | Optional body text shown below the empty-state heading. Empty hides the body text. |
-| `ariaLabel`        | `String \| null`    | `aria-label`      | `null`            | Accessible label for screen readers. Defaults to `headingName`.               |
-| `role`             | `String \| null`    | `role`            | `'group'`         | ARIA role reflected onto the host element. Defaults to `'group'` for a11y parity with `sn-contact-card`. |
+## API
 
-## Config Properties
+### Properties and attributes
 
-Set via the platform Config Editor (`configSchema`), not as HTML attributes.
+`badges`, `subHeadingTitles`, and `content` are property only; pass a new
+array to update them (in-place changes are not observed). Properties
+marked "Config Editor" are also admin-overridable per instance; an admin
+value wins over the one set in code.
 
-| Property                | Type      | Label            | Default     | Description                                        |
-| ------------------------ | --------- | ---------------- | ----------- | --------------------------------------------------- |
-| `configHeadingVariant`   | `String`  | Heading Variant  | `undefined` | Overrides `headingVariant`. See [Heading Variants](#heading-variants) for the available values. |
-| `configHideBorder`       | `Boolean` | Hide Border      | `undefined` | Overrides `hideBorder`: hides the border around the card. |
+| Property           | Attribute               | Type                         | Default             | Update behavior        | Description                                                                                                                                                     |
+| ------------------ | ----------------------- | ---------------------------- | ------------------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `headingName`      | `heading-name`          | `string`                     | `''`                | Updates immediately    | Contact name. Required; also the source of the initials and the default `aria-label`. Long names wrap.                                                          |
+| `avatarSrc`        | `avatar-src`            | `string`                     | `''`                | Updates immediately    | Image URL for a 32 px round avatar. Empty shows initials (first letters of the first and last words).                                                           |
+| `headingLevel`     | `heading-level`         | `1 \| 2 \| 3 \| 4 \| 5 \| 6` | `3`                 | Updates immediately    | Heading element for the name (`h1`–`h6`); other values use `h3`. Does not change the style.                                                                     |
+| `headingVariant`   | `heading-variant`       | `HeadingVariant`             | `'header-tertiary'` | Updates immediately    | Config Editor. Text style of the name.                                                                                                                          |
+| `subHeadingTitles` | property only           | `SubHeadingTitle[]`          | `[]`                | On new array reference | Titles on one line under the name, separated by dividers and truncated. Entries with a blank `label` are skipped. `clickable` renders a link-styled button.     |
+| `badges`           | property only           | `ContactBadge[]`             | `[]`                | On new array reference | Shown beside the name; the first three with a non-blank `label`. `color` defaults to `low`.                                                                     |
+| `content`          | property only           | `ContactField[]`             | `[]`                | On new array reference | Label/value grid below the header. Entries with a blank `label` or `value` are skipped. `clickable` renders the value as a link-styled button.                  |
+| `hideBorder`       | `hide-border`           | `boolean`                    | `false`             | Updates immediately    | Config Editor. Removes the border, rounded corners, and 16 px padding.                                                                                          |
+| `empty`            | `empty`                 | `boolean`                    | `false`             | Updates immediately    | Shows the empty state instead of the contact.                                                                                                                   |
+| `emptyStateTitle`  | `empty-state-title`     | `string`                     | `''`                | Updates immediately    | Empty-state heading. Empty uses localized "No contact selected".                                                                                                |
+| `emptyStateMsg`    | `empty-state-msg`       | `string`                     | `''`                | Updates immediately    | Empty-state body text; hidden when blank.                                                                                                                       |
+| `ariaLabel`        | `aria-label` (reflects) | `string \| null`             | `null`              | Updates immediately    | Host accessible name. When unset, the element sets it to `headingName` (or the empty-state heading when `empty`) and keeps it in sync. A value you set is kept. |
+| `role`             | `role` (reflects)       | `string \| null`             | `'group'`           | Updates immediately    | Host ARIA role.                                                                                                                                                 |
 
-## Dependencies
+Badge colors map to DaisyUI soft badges: `critical`, `high` → error;
+`warning`, `moderate`, `orange`, `yellow` → warning; `positive`, `green`,
+`green-yellow` → success; `info`, `teal` → info; `blue` → primary;
+`magenta`, `purple` → secondary; `pink` → accent; `low`, `brown`, `gray` →
+neutral.
 
-`@servicenow/aiux-components-empty-state-content` is a peer dependency, used to render the
-[empty state](#empty-state) (`empty` set to true).
+### Events
 
-## Asset Dependencies
+| Event                            | `detail`                     | Delivery                          | Fires when                                                                                               | Notes                                                 |
+| -------------------------------- | ---------------------------- | --------------------------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------------------------------- |
+| `aiux-contact-card:item-clicked` | `ContactCardItemClickDetail` | Bubbles, composed, not cancelable | The user activates a clickable title (`type: 'title'`) or field (`type: 'field'`), by click or keyboard. | Non-clickable items render as text and never fire it. |
 
-The empty state illustration requires the following platform icon asset to be available in
-the deployment:
+### Slots
 
-- `/aiux/assets/core/icons/window-question--theme.svg`
+None.
 
-## Empty state
+### Methods
 
-Set `empty` to render the no-contact-selected view instead of contact content. `headingName` is
-ignored while `empty` is set. `emptyStateTitle` defaults to a localized "No contact selected";
-`emptyStateMsg` is optional body text shown below the heading and is hidden when left empty.
+None.
 
-```html
-<aiux-contact-card empty></aiux-contact-card>
+### Data shapes
 
-<aiux-contact-card
-  empty
-  empty-state-msg="Select a contact from the list to see their details here."
-></aiux-contact-card>
-```
+```ts
+type HeadingVariant =
+  | 'header-primary' // 2xl bold
+  | 'header-secondary' // xl bold
+  | 'header-tertiary' // lg normal
+  | 'title-primary' // base semibold
+  | 'title-secondary' // sm semibold
+  | 'title-tertiary'; // xs medium
 
-## Events
+type BadgeColor =
+  | 'critical'
+  | 'high'
+  | 'warning'
+  | 'moderate'
+  | 'positive'
+  | 'info'
+  | 'low'
+  | 'magenta'
+  | 'pink'
+  | 'orange'
+  | 'yellow'
+  | 'brown'
+  | 'green'
+  | 'green-yellow'
+  | 'blue'
+  | 'gray'
+  | 'teal'
+  | 'purple';
 
-All events bubble and are composed.
-
-- `aiux-contact-card:item-clicked` - Fired when a clickable title or content field is activated (click or keyboard). Detail: `{ type: 'title' | 'field', item: SubHeadingTitle | ContactField }`
-
-```javascript
-card.addEventListener('aiux-contact-card:item-clicked', e => {
-  const {type, item} = e.detail;
-  // type: 'title' | 'field'
-  // item: { label, value?, clickable, id? }
-});
-```
-
-## Types
-
-### `ContactBadge`
-
-```typescript
 interface ContactBadge {
   label: string;
-  color?: BadgeColor; // see Badge Colors below
+  color?: BadgeColor;
 }
-```
 
-### `SubHeadingTitle`
-
-```typescript
 interface SubHeadingTitle {
   label: string;
-  clickable?: boolean; // renders as a link, fires aiux-contact-card:item-clicked
-  id?: string; // passed through in the item-clicked event detail
+  clickable?: boolean;
+  id?: string;
 }
-```
 
-### `ContactField`
-
-```typescript
 interface ContactField {
   label: string;
   value: string;
-  clickable?: boolean; // renders value as a link, fires aiux-contact-card:item-clicked
-  id?: string; // passed through in the item-clicked event detail
+  clickable?: boolean;
+  id?: string;
+}
+
+interface ContactCardItemClickDetail {
+  type: 'title' | 'field';
+  item: SubHeadingTitle | ContactField; // the object from your array
 }
 ```
 
-## Heading Variants
+These types are not exported from the package entry.
 
-| Variant            | Style                               |
-| ------------------ | ----------------------------------- |
-| `header-primary`   | `text-2xl font-bold`                |
-| `header-secondary` | `text-xl font-bold`                 |
-| `header-tertiary`  | `text-lg font-normal` (default)     |
-| `title-primary`    | `text-base font-semibold`           |
-| `title-secondary`  | `text-sm font-semibold`             |
-| `title-tertiary`   | `text-xs font-medium`               |
+## Integration details
 
-## Badge Colors
+### Sizing and layout
 
-`critical` · `high` · `warning` · `moderate` · `positive` · `info` · `low` · `magenta` · `pink` · `orange` · `yellow` · `brown` · `green` · `green-yellow` · `blue` · `gray` · `teal` · `purple`
+- `display: block; width: 100%`. Layout follows the card's own width:
+  fields use 6 columns at 1024 px and wider, 3 by default, 2 at 471 px or
+  narrower, 1 below 320 px. At 320 px or narrower the avatar moves above the
+  name; below 320 px the header stacks.
+- Badges share the header row with the name and truncate when space runs out.
+- The empty-state illustration is loaded from
+  `/aiux/assets/core/icons/window-question--theme.svg` on the serving origin.
 
-All badge colors render as `aiux-badge-soft` (2026 redesign). There is no outline, dash, or ghost
-variant anymore; the color list above only changes the badge's color, not its style.
+## Accessibility, localization, and customization
 
-## SSR
-
-This component is SSR-compatible. It has no browser API calls, no timers, and `render()` is a pure function of component state. The Babel-transpiled build is at `vN/index.js`.
-
-The empty state pulls in the `aiux-empty-state-content` peer, which transitively imports
-`@servicenow/aiux-components-core`. SSR safety there relies on the host (karuna) deduping
-external-core peers onto the single core copy every component in this repo already imports, the
-same as any other external-core sibling dependency.
+- **Accessibility:** the host is `role="group"` named by `headingName` unless
+  you set `aria-label`. Fields are a `<dl>`; clickable items are native
+  buttons, so keyboard activation works. Set `headingLevel` to fit the page
+  outline.
+- **Localization:** list labels ("Titles", "Status badges", "Contact
+  details") and the default empty-state heading are localized. All contact
+  text is host-supplied.
+- **Customization:** no parts or element-specific custom properties. The name
+  and links use the theme's primary color ramp; badges use DaisyUI badge
+  colors.

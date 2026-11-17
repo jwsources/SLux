@@ -33,8 +33,17 @@ This is the only agent file in this repo; the agent that runs here is the Servic
    - `?uxpcb=1` does not help — that is browser-side, and the staleness is in the SSR output.
    - Only escalate to a tenant-cache eviction if the title is STILL the element name after a reload.
 
-`run_diagnostics` and `ui_diagnostics` are validation, not change — no approval needed. `ui_diagnostics`
-needs an install first.
+5. **NEVER call `ui_diagnostics` on an AIUX/Lux portal route.** It **HANGS THIS IDE** on any
+   `/aiux/<basename>/…` path — user-confirmed, no exception, no retry. It remains fine on ordinary
+   platform pages (`/nav_to.do`, `/list/<table>`, a UI Page).
+   - **For a Lux portal, verify with the `atf-cloud-runner` browser tools instead.** They drive a real
+     browser out of process and return an accessibility snapshot you can diff — which is also the only
+     way to satisfy non-negotiable #4's reload-twice rule on these routes.
+   - This is the one place the AIUX skills' advice ("after install → `ui_diagnostics`") is actively
+     dangerous rather than merely void.
+
+`run_diagnostics` is validation, not change — no approval needed. `ui_diagnostics` is also validation and
+needs an install first, **but see #5 before pointing it at anything under `/aiux/`.**
 
 ## There is no terminal
 
@@ -45,7 +54,7 @@ Every `pnpm` script in `package.json` is how this app builds *outside* this IDE.
 | `pnpm build` | the **`build`** tool — SDK ACTION |
 | `pnpm deploy` | the **`install`** tool — SDK ACTION. Deploy **after** the host, then evict the tenant cache |
 | `pnpm lint` | no execution. Regex-detectable rules → `fs_grep`; type/syntax → `run_diagnostics` |
-| `pnpm dev` | no equivalent. No dev server, no hot reload. After install → `ui_diagnostics` |
+| `pnpm dev` | no equivalent. No dev server, no hot reload. After install → `ui_diagnostics` on a platform page, or the **`atf-cloud-runner` browser tools** for anything under `/aiux/` (see non-negotiable #5) |
 
 The AIUX skills were written for offline agents **with** a shell. Every `pnpm`, `node`, `npx`, `curl`,
 `find` and `grep` instruction in them is void — the full translation table is in TOOLNOTES.md.
@@ -99,19 +108,37 @@ The AIUX skills were written for offline agents **with** a shell. Every `pnpm`, 
 - Guard browser globals with `isServer` from `lit`
 - Tailwind + DaisyUI for styling; **no `--now-*` CSS tokens**
 - **DaisyUI classes are `aiux-` prefixed.** Unprefixed component classes (`card`, `badge-success`) emit
-  nothing, and an unsafelisted utility is tree-shaken silently. See PLATFORM-NOTES.md before writing CSS.
-- Custom element tags carry the app's scope, kebab-cased (`x-snc-[SCOPE]]-…`)
-- Net-new pages the host doesn't own can be role-gated with `@roles(['admin'])`
+  nothing, and an unsafelisted utility is tree-shaken silently. See TOOLNOTES.md → DaisyUI safelist
+  before writing CSS.
+- Custom element tags carry the app's scope, kebab-cased (`x-snc-[SCOPE]-…`)
+- **Gate net-new pages with `@acl()` on the page class, or `experienceAcls` in `aiux.json`.** Pack
+  v3.0.0 retires `@roles()`: "Never `@roles()` for new gating". Existing `@roles()` usage still works —
+  do not churn it — but write new gating the new way. See `aiux-build/references/app/acl.md`.
+- **Never import the `@servicenow/aiux/aiux-services` barrel in a page, widget or component.** It is
+  bundled INLINE by the isolate builder (`services/` is not in its `SN_PACKAGE_DIRS`), drags in
+  `core/observability`, and fails the page's isolate bundle with
+  `Could not resolve import "#context"`. Measured — it broke a real build here. Deep-import instead:
+  `import {i18n} from '@servicenow/aiux/aiux-services/src/i18n.js'`. That module has zero imports and is
+  SSR-isolate-safe. Pack v3.0.0's own extension page template still gets this wrong.
 
 ## Do not
 
-- **Do not add an app's own `pages/` directory or a `landing` to `aiux.json`.** Own pages plus
-  `src/extensions/` pages in one project is unsafe, not merely unsupported (STRY64103259) — the own pages
-  get silently wired into the host's experience. An app that both extends another app *and* has its own
-  pages must be a **separate** app. (Specific to extension *pages*; a `src/extensions/` tree holding only
-  per-host lifecycle modules does not trigger it.)
-- **Do not add the host as a `package.json` dependency** or import its page source. The scope/route-id in
-  the directory path is the entire coupling.
+- **Mixed projects (own `pages/` + extension pages) — REVISED at pack v3.0.0, conditional on your build.**
+  The old rule here was "unsafe, not merely unsupported (STRY64103259)". v3.0.0 states the opposite:
+  "Mixed projects are supported by current SDK builds: with `aiux.json.basename` present, the app retains
+  its own experience, theme, lifecycle, and page memberships… Older builds incorrectly assigned ordinary
+  pages to the host and suppressed the local experience." It then hedges, and the hedge is the operative
+  part: **"Verify generated metadata with the consumer's installed build."**
+  - So this is permitted now, but it is **not** a free action. Add a dedicated
+    `<srcDir>/extensions/<host>/application.js` so the root lifecycle is not reused for the host, and
+    check the emitted manifest: if `isolateBundlePaths` lists both `isolate/application.js` **and**
+    `isolate/src/extensions/…/application.js`, the installed build LACKS the fix — on such a build omit
+    the dedicated module. Details in `aiux-build/references/app/extensions.md`.
+  - ⬜ **Unverified on this instance.** Nobody has yet read back emitted metadata here to confirm which
+    behaviour this installed SDK has. Until someone does, treat a mixed project as a deliberate,
+    verified-after-install choice rather than a default.
+- **Do not add the host as a `package.json` dependency** or import its page source. The project-id/route-id
+  in the directory path is the entire coupling.
 
 ## Before building or updating UI
 
@@ -119,17 +146,42 @@ The AIUX skills were written for offline agents **with** a shell. Every `pnpm`, 
 2. Evaluate reusable components and instance widgets together. If a candidate exists, use the best match
    and proceed without asking for confirmation.
 
-`.build-agent/skills/` holds **17 skill folders, committed and hand-edited** — version-controlled
-content, not generated. Twelve are edited copies of the ServiceNow agent packs; the other five
-(`hint-lookup`, `aiux-instance-ops`, `aiux-agents`, `servicenow-interactive-report-writer`,
-`aiux-tailwind-vision-spec`) are authored here. There is no `postinstall` hook, no `.claude/skills`, no
-`.agents/skills` symlink and no `pnpm agent:skills`. Do not try to regenerate them.
+`.build-agent/skills/` holds **19 skill folders, committed and hand-edited** — version-controlled
+content, not generated. Twelve derive from the ServiceNow agent packs; the other seven
+(`hint-lookup`, `aiux-instance-ops`, `aiux-agents`, `aiux-widget`, `diag-playbook`,
+`servicenow-interactive-report-writer`, `aiux-tailwind-vision-spec`) are authored here. There is no
+`postinstall` hook, no `.claude/skills`, no `.agents/skills` symlink and no `pnpm agent:skills`. Do not
+try to regenerate them.
+
+⚠ **`pages-extensions-generator` no longer exists upstream.** The pack dropped it at v3.0.0 and absorbed
+its capability into `aiux-build/references/app/extensions.md`. The local folder is retained and retargeted
+at that reference, because it still holds the only documentation of `__parentScopeName__` /
+`__parentRouteId__` resolution plus the three `assets/` templates the pack does not ship.
 
 Two more skills — `atf-run-test` and `update-system-property` — are provided by the environment and are
 **not** on disk. TOOLNOTES.md → Skill inventory lists all of them, plus the two loader rules that make a
 skill silently invisible.
 
 ---
+
+## Extension paths resolve through `srcDir`
+
+`aiux.json` here sets **`"srcDir": "src/lux"`**, so this app's extension pages live at:
+
+```
+src/lux/extensions/<host-project-id>/<host-basename>/pages/<route>/page.js
+```
+
+- **Extensions are the one exception to the project-root fallback.** With `srcDir` UNSET they resolve at
+  `src/extensions/`, never project-root `extensions/`. With `srcDir` set they resolve at
+  `<srcDir>/extensions/`. Verified against
+  `node_modules/@servicenow/aiux/core/commons/project-config.js` → `resolveSrcPath`.
+- Convention 1 is **host project id + host basename**, not scope + route id. They coincide for a host
+  created before `aiux.json` carried a `projectId`, because such a host uses its scope as its project id —
+  which is why `sn_ex_emp_hub_mw/salesportal` works for the Sales Portal.
+- `aiux.json`'s own `projectId` must be a **non-empty** string. An empty `""` does NOT fall back to the
+  scope: the validator does `aiuxJson.projectId ?? scope`, and `??` only triggers on null/undefined, so
+  `""` reaches the non-empty check and **fails the build**. Measured here.
 
 ## Read TOOLNOTES.md when
 
@@ -140,7 +192,8 @@ skill silently invisible.
 | Writing or debugging CSS, Tailwind or DaisyUI classes | Measured facts → DaisyUI safelist |
 | Writing a `css` or `html` tagged template | Measured facts → backtick trap |
 | Referencing an image | Measured facts → `db_image` URLs |
-| Touching `src/extensions/` structure or `application.js` | Extension model · hooks |
+| Touching `<srcDir>/extensions/` structure or `application.js` | Extension model · hooks |
+| Copying or merging skill files | Measured facts → `fs_copy` is destructive |
 | Something is blocked and you may need to ask the user | Genuinely unavailable |
 | A skill cites a path that does not exist | Dead links in the pack |
 | The pack version may have moved | Drift detection |

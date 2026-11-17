@@ -1,270 +1,174 @@
-# @servicenow/aiux-context
+# Experience context
+
+> Source: `@servicenow/aiux-context@1.2.161` · `context/docs/usage/experienceContext.md`
+
+`experienceContext` is a global context holding a frozen snapshot of the
+current experience's metadata. Core builds it once in the browser from the
+experience config the server writes into the page head. It does not change on
+navigation and nothing fetches more metadata automatically; code that has more
+can merge it in with `experienceContextManager.setExperienceConfig`.
 
 ## Import
 
 ```js
-import {experienceContext} from '@servicenow/aiux-context';
-```
-
-
-Logical barrel exports for AIUX Lit contexts, including `routeContext` for the current navigation state, `experienceContext`/`experienceContextManager` for app/experience metadata, and `userPreferencesContext` for pre-fetched user preferences.
-
-## Installation
-
-```bash
-pnpm add @servicenow/aiux-context
+import {experienceContext, experienceContextManager} from '@servicenow/aiux-context';
 ```
 
 ## Usage
 
-Import all contexts from a single package:
+### Minimal complete example
 
-```javascript
-import {
-  widgetRenderingContext,
-  mobileAppBridgeContext
-} from '@servicenow/aiux-context';
-
-// Or use shorter aliases
-import {widgetOrigin, mobileAppBridge} from '@servicenow/aiux-context';
-```
-
-## Available Exports
-
-| Export                     | Alias             | Description                                             | Source Package                               |
-| --------------------------- | ----------------- | ---------------------------------------------------------- | -------------------------------------------- |
-| `widgetRenderingContext`    | `widgetOrigin`    | Context for widget rendering origin                        | `@servicenow/aiux-context-widget-origin`     |
-| `mobileAppBridgeContext`    | `mobileAppBridge` | Context for mobile app bridge integration                   | `@servicenow/aiux-context-mobile-app-bridge` |
-| `routeContext`              | —                 | Reactive context exposing the current navigation state      | `./src/route-context.js` (this package)      |
-| `experienceContext`         | —                 | Reactive metadata for the current app/experience             | `./src/experience-context.js` (this package) |
-| `experienceContextManager`  | —                 | Imperative API for setting/reading `experienceContext`       | `./src/experience-context.js` (this package) |
-| `userPreferencesContext`    | —                 | Reactive context holding pre-fetched user preferences        | `@servicenow/aiux-components-core`           |
-
-## Examples
-
-### Consuming Contexts
-
-```javascript
-import {LitElement, html} from 'lit';
-import {consume} from '@lit/context';
-import {
-  widgetRenderingContext,
-  mobileAppBridgeContext
-} from '@servicenow/aiux-context';
-
-class MyWidget extends LitElement {
-  @consume({context: widgetRenderingContext})
-  origin;
-
-  @consume({context: mobileAppBridgeContext})
-  bridge;
-
-  render() {
-    return html`
-      <div>
-        <p>Rendering in: ${this.origin}</p>
-        <p>Platform: ${this.bridge ? 'Mobile App' : 'Web Browser'}</p>
-      </div>
-    `;
-  }
-}
-```
-
-### With ContextConsumer
-
-```javascript
-import {LitElement, html} from 'lit';
-import {ContextConsumer} from '@lit/context';
-import {widgetRenderingContext} from '@servicenow/aiux-context';
-
-class MyWidget extends LitElement {
-  constructor() {
-    super();
-    new ContextConsumer(this, {
-      context: widgetRenderingContext,
-      callback: value => {
-        this.origin = value;
-        this.requestUpdate();
-      }
-    });
-  }
-
-  render() {
-    return html`<div>Origin: ${this.origin}</div>`;
-  }
-}
-```
-
-### Conditional Rendering Based on Context
-
-```javascript
-import {LitElement, html} from 'lit';
-import {consume} from '@lit/context';
-import {
-  widgetRenderingContext,
-  mobileAppBridgeContext
-} from '@servicenow/aiux-context';
-
-class AdaptiveWidget extends LitElement {
-  @consume({context: widgetRenderingContext})
-  origin;
-
-  @consume({context: mobileAppBridgeContext})
-  bridge;
-
-  render() {
-    const isChatMode = this.origin === 'chat';
-    const isMobile = !!this.bridge;
-
-    return html`
-      <div
-        class="${isChatMode ? 'compact' : 'full'} ${isMobile
-          ? 'mobile'
-          : 'web'}"
-      >
-        ${isChatMode ? this.renderCompactView() : this.renderFullView()}
-      </div>
-    `;
-  }
-
-  renderCompactView() {
-    return html`<div class="compact">Compact chat view</div>`;
-  }
-
-  renderFullView() {
-    return html`<div class="full">Full page view</div>`;
-  }
-}
-```
-
-### Providing Context
-
-Use with `ContextProvider` or the `provideOrigin` directive:
-
-```javascript
-import {LitElement, html} from 'lit';
-import {ContextProvider} from '@lit/context';
-import {widgetRenderingContext} from '@servicenow/aiux-context';
-
-class ParentWidget extends LitElement {
-  constructor() {
-    super();
-    new ContextProvider(this, {
-      context: widgetRenderingContext,
-      initialValue: 'page'
-    });
-  }
-
-  render() {
-    return html`<child-widget></child-widget>`;
-  }
-}
-```
-
-Or use the `provideOrigin` directive:
-
-```javascript
+```js
 import {html} from 'lit';
-import {provideOrigin} from '@servicenow/aiux-directives';
+import {AIUXElement} from '@servicenow/aiux-components-core';
+import {experienceContext} from '@servicenow/aiux-context';
 
-html`
-  <div ${provideOrigin('chat')}>
-    <child-widget></child-widget>
-  </div>
-`;
-```
-
-## Context Values
-
-### widgetRenderingContext (alias: widgetOrigin)
-
-Tracks where a widget is rendered:
-
-- `'page'` - Widget is rendered in a page context
-- `'chat'` - Widget is rendered in a chat/conversation context
-
-### mobileAppBridgeContext (alias: mobileAppBridge)
-
-Provides access to mobile app bridge functionality:
-
-- `undefined` - Running in web browser
-- `object` - Running in mobile app (provides native capabilities)
-
-### routeContext
-
-Exposes the current navigation state (`{path, matched, ...}`) as set by the app's router (`AIUXAppLayoutElement._initRouter` in `@servicenow/aiux-components-core`). Before the router initializes — very early module load, or on the server prior to routing — `get()` returns a frozen `{matched: false}` default rather than throwing.
-
-```javascript
-class MyWidget extends AIUXElement {
-  static contexts = [routeContext];
-  render() {
-    const route = routeContext.get();
-    return html`<div>${route.path}</div>`;
-  }
-}
-```
-
-### experienceContext / experienceContextManager
-
-`experienceContext` holds a frozen snapshot of the current app/experience metadata (`sysId`, `name`, `title`, `theme`, `properties`, `isLoaded`, etc.). Initially only `name` is populated (derived from the URL); the rest stay `null` and `isLoaded: false` until a layout loader calls `experienceContextManager.setExperienceConfig(config)` — Karuna does not auto-fetch this metadata the way aiux-kit does.
-
-```javascript
-class MyWidget extends AIUXElement {
+export class ExperienceBanner extends AIUXElement {
   static contexts = [experienceContext];
+  static properties = {_hydrated: {state: true}};
+
+  firstUpdated() {
+    this._hydrated = true; // server HTML has no metadata; keep the first client render identical
+  }
+
   render() {
     const experience = experienceContext.get();
-    return html`<div>${experience.title ?? experience.name}</div>`;
+    if (!this._hydrated || !experience.isLoaded) return html``;
+    const tagline = experience.properties?.tagline ?? '';
+    return html`
+      <div class="aiux-navbar bg-base-200">
+        <span class="text-lg font-semibold">${experience.title ?? experience.name}</span>
+        <span class="text-sm opacity-70">${tagline}</span>
+      </div>
+    `;
   }
 }
-
-// From a layout loader, once the metadata is available:
-experienceContextManager.setExperienceConfig({sysId, title, theme});
+customElements.define('experience-banner', ExperienceBanner);
 ```
 
-`experienceContextManager` also exposes `get(key)`, `subscribe(callback)` (fires immediately with the current value, then on every update), and getters for `sysId`/`name`/`isLoaded`.
+**What happens:** the first render matches the server HTML (empty); after
+`firstUpdated()` the banner renders. `static contexts` re-renders the element
+whenever the value is replaced. Read through `experienceContext.get()` in `render()`; do not cache
+the snapshot in a field.
 
-### userPreferencesContext
+## API
 
-Re-exported from `@servicenow/aiux-components-core`. Holds all pre-fetched user preferences as a flat `Record<string, string>`, seeded at request time from build-time-extracted `getUserPreference()` call sites. Components that declare `static contexts = [userPreferencesContext]` re-render automatically when a preference changes.
+### Value
 
-```javascript
-import {LitElement, html} from 'lit';
-import {userPreferencesContext} from '@servicenow/aiux-components-core';
+A frozen `ExperienceMetadata` object (see Data shapes).
 
-class MyWidget extends LitElement {
-  static contexts = [userPreferencesContext];
+| Field or method | Type | Meaning |
+| --- | --- | --- |
+| `sysId` | `string \| null` | sys_id of the experience record (`sys_aix_experience`). |
+| `name` | `string` | Experience name (its URL suffix, e.g. `aict`). Without a server config: last segment of the app base path. `''` on the server. |
+| `appShell` | `string \| null` | App shell reference from the experience record. |
+| `title` | `string \| null` | Experience title. |
+| `telemetryConfig` | `unknown \| null` | The app's telemetry configuration when the instance has one for it; otherwise `null`. |
+| `theme` | `string \| null` | Theme reference from the experience record. |
+| `properties` | `Record<string, string> \| null` | Experience properties (`sys_aix_experience_properties`) as `{name: value}`. |
+| `urlSuffix` | `string \| null` | URL suffix of the experience. |
+| `dashboardSysIds` | `string[] \| null` | sys_ids of dashboards attached to the experience. |
+| `urlRewriteRules` | `{experienceRules, globalRules}` | Always present. `experienceRules` from the experience; `globalRules` are the instance-wide rules. The app layout applies them in `navigate()`. |
+| `isLoaded` | `boolean` | `true` when built from the server config; `false` otherwise (other nullable fields are `null`). |
 
-  render() {
-    const prefs = userPreferencesContext.get();
-    return html`<div>${prefs['glide.ui.accessibility.voice_input']}</div>`;
-  }
-}
+- Only the fields above come from the server config; other keys in it (for
+  example `scope` or `themeData`) are not copied.
+
+### Providing
+
+Provided automatically. `@servicenow/aiux-components-core` creates it at
+module load, so it exists before any element connects. Do not provide it
+yourself.
+
+### Consuming
+
+```js
+// AIUXElement (Karuna)
+static contexts = [experienceContext];
+render() { const experience = experienceContext.get(); /* ... */ }
 ```
 
-## Benefits
+```js
+// @lit/context ContextConsumer (aiux-kit style), browser only
+import {ContextConsumer} from '@lit/context';
 
-- **Single dependency**: Install one package instead of two separate context packages
-- **Convenience**: Import multiple contexts from one location
-- **Tree-shaking**: Only imports what you use
-- **Discoverability**: Easy to find all available contexts
-- **Type safety**: Works with TypeScript decorators
+this._experience = new ContextConsumer(this, {
+  context: experienceContext,
+  subscribe: true,
+  callback: experience => { /* called with the current value, then on every change */ }
+});
+```
 
-## Individual Packages
+```js
+// Outside an element: fires immediately with the current value, then on every change
+const unsubscribe = experienceContextManager.subscribe(experience => { /* ... */ });
+```
 
-If you prefer granular dependencies, you can still install individual packages:
+- **Updates when:** `experienceContextManager.setExperienceConfig(...)` or
+  `experienceContext.set(...)` is called. Not updated by navigation, by editing
+  the experience or theme on the instance, or by anything else automatic.
+- **Before a provider exists:** not applicable; `get()` never returns
+  `undefined`. With no server config (for example a page served without an
+  experience record) it returns `isLoaded: false`, all nullable fields `null`,
+  `name` from the base path, and empty `experienceRules`.
+- `ContextConsumer` requests are answered by a `window` listener; with
+  `subscribe: false` the callback runs once with the current value.
+- `experienceContext.subscribe(callback)` returns an unsubscribe function and
+  does not call `callback` with the current value.
 
-- `@servicenow/aiux-context-widget-origin`
-- `@servicenow/aiux-context-mobile-app-bridge`
+### Updating
 
-## Related Packages
+The value is frozen; replace it rather than mutating it.
+`experienceContextManager.setExperienceConfig(config)` shallow-merges `config`
+into the current value, sets `isLoaded: true`, and notifies both
+`experienceContext` and manager subscribers. A falsy `config` is ignored.
 
-- `@servicenow/aiux-directives` - Logical exports for AIUX directives
-- `@servicenow/aiux-directive-provider-origin` - Directive for providing widget origin context
+```js
+import {experienceContextManager} from '@servicenow/aiux-context';
 
-## SSR Compatibility
+// In the browser, e.g. in firstUpdated() after fetching extra metadata:
+experienceContextManager.setExperienceConfig({title: record.title, properties: record.properties});
+```
 
-✅ All contexts are SSR-safe and work in both server-side and client-side rendering environments.
+Set it in the browser only; do not set it from a loader or during server
+render.
 
-## License
+### Exported helpers
 
-See the main repository LICENSE file.
+| Export | Signature | Use |
+| --- | --- | --- |
+| `experienceContextManager.subscribe` | `(callback: (value: ExperienceMetadata) => void) => () => void` | Subscribe outside an element; calls `callback` immediately. Throws if `callback` is not a function. |
+| `experienceContextManager.get` | `(key: string) => unknown` | `value[key]`, or `null` when absent. |
+| `experienceContextManager.sysId` / `.name` / `.isLoaded` | getters | Same as the matching fields of `experienceContext.get()`. |
+| `experienceContextManager.setExperienceConfig` | `(config: Partial<ExperienceMetadata>) => void` | Merge `config` into the value and set `isLoaded: true` (see Updating). |
+| `experienceContextManager.destroy` | `() => void` | Drop all manager subscribers and reset the value to what was built at page load. For test isolation. |
+
+### Data shapes
+
+```ts
+type ExperienceMetadata = Readonly<{
+  sysId: string | null;
+  name: string;
+  appShell: string | null;
+  title: string | null;
+  telemetryConfig: unknown | null;
+  theme: string | null;
+  properties: Record<string, string> | null;
+  urlSuffix: string | null;
+  dashboardSysIds: string[] | null;
+  urlRewriteRules: {experienceRules: unknown[]; globalRules: unknown[]};
+  isLoaded: boolean;
+  [key: string]: unknown; // keys merged in at runtime
+}>;
+```
+
+## Integration details
+
+### SSR
+
+- Server render sees the default value (`isLoaded: false`, `name: ''`,
+  nullable fields `null`).
+- The first client render already sees the real metadata. Render output that
+  depends on it only after `firstUpdated()` (as in the example) so the first
+  client render matches the server HTML.
+- The `ContextConsumer` bridge is installed only in the browser.

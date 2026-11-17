@@ -1,12 +1,15 @@
----
-argus-naming-exceptions:
-  - rule: event_name_namespaced_with_component
-    identifiers:
-      - feedback-clicked
-      - granular-feedback-submit-clicked
----
+# Feedback
 
-# @servicenow/aiux-sn-feedback
+> Source: `@servicenow/aiux-sn-feedback@8.0.2` · `components/external/feedback/docs/usage/aiux-sn-feedback.md`
+
+`<aiux-sn-feedback>` renders a "Helpful" and a "Not helpful" button. Clicking
+one selects it, reports the click, and, when a form is configured for that
+side, opens a popover form. On submit it dispatches the form's values. It
+never saves feedback; the host persists it.
+
+Built in: selected/unselected button states, the popover form (one checklist
+or radio group, one comment box with a character counter), a submit button,
+an error message, and a "Thanks for your feedback!" confirmation tooltip.
 
 ## Import
 
@@ -14,276 +17,234 @@ argus-naming-exceptions:
 import '@servicenow/aiux-sn-feedback';
 ```
 
-
-Thumbs up/down feedback widget with an optional granular feedback form (checklist, radio buttons, textarea). Built with Lit 3, fully SSR-compatible.
-
-## Installation
-
-```js
-import '@servicenow/aiux-sn-feedback';
-```
-
-## Storybook
-
-Feedback stories are available from the repo root:
-
-```bash
-pnpm storybook
-```
-
-The Storybook examples cover thumbs-only feedback, granular feedback, preselected states, and managed-submit error handling.
-
 ## Usage
 
-### Minimal (thumbs only)
+### Minimal complete example
 
-```html
-<aiux-sn-feedback></aiux-sn-feedback>
-```
+```ts
+import {html} from 'lit';
+import {customElement, property} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
+import '@servicenow/aiux-sn-feedback';
 
-### With granular feedback form
-
-```js
-import { Feedback } from '@servicenow/aiux-sn-feedback';
-
-const positiveFeedback = {
-  heading: 'What did you like?',
+const NEGATIVE = {
+  heading: 'What went wrong?',
   items: [
     {
       type: 'checklist',
       value: [
-        { id: 'accurate', label: 'Accurate information', checked: false },
-        { id: 'clear', label: 'Clear and easy to understand', checked: false },
-      ],
+        {id: 'inaccurate', label: 'Inaccurate'},
+        {id: 'incomplete', label: 'Incomplete'},
+        {id: 'irrelevant', label: 'Not relevant'}
+      ]
     },
-    { type: 'textarea', value: '', maxlength: 300 },
-  ],
+    {type: 'textarea', maxlength: 500}
+  ]
 };
 
-const negativeFeedback = {
-  heading: 'What went wrong?',
-  items: [
-    {
-      type: 'radio',
-      value: [
-        { id: 'incomplete', label: 'Incomplete answer', checked: false },
-        { id: 'inaccurate', label: 'Inaccurate information', checked: false },
-      ],
-    },
-    { type: 'textarea', value: '', maxlength: 300 },
-  ],
-};
-```
+@customElement('my-answer-feedback')
+export class MyAnswerFeedback extends AIUXElement {
+  @property({type: String}) answerId = '';
+  private _rating = 'NONE'; // submit detail does not carry the thumb
 
-```html
-<aiux-sn-feedback
-  .positiveFeedback="${positiveFeedback}"
-  .negativeFeedback="${negativeFeedback}"
-  @feedback-clicked="${onThumbClick}"
-  @granular-feedback-submit-clicked="${onSubmit}"
-></aiux-sn-feedback>
-```
+  private _onClicked(e: CustomEvent) {
+    const {button, isSelected} = e.detail; // 'THUMBS_UP' | 'THUMBS_DOWN'
+    this._rating = isSelected ? button : 'NONE';
+    this._save({answerId: this.answerId, rating: this._rating});
+  }
 
-### Handling the submit event
+  private _onSubmit(e: CustomEvent) {
+    const reasons = e.detail.items.find(i => i.type === 'checklist');
+    const comment = e.detail.items.find(i => i.type === 'textarea');
+    this._save({
+      answerId: this.answerId,
+      rating: this._rating,
+      reasons: reasons?.value.filter(o => o.checked).map(o => o.itemId) ?? [],
+      comment: comment?.value ?? ''
+    });
+  }
 
-```js
-function onSubmit(e) {
-  const {items} = e.detail;
-  // items = [{ type: 'checklist', value: [...] }, { type: 'textarea', value: '...' }]
-  await fetch('/api/feedback', {method: 'POST', body: JSON.stringify(items)});
-}
-```
+  private _save(payload: object) {
+    // The page listening on this element upserts the record by answerId.
+    this.dispatchEvent(new CustomEvent('my-feedback-save', {detail: payload}));
+  }
 
-## Managed submit pattern
-
-> **Important:** By default the popover auto-closes after submit and shows a confirmation tooltip. If your app needs to **validate, show loading states, or handle errors** before closing, use the `manage-submit` attribute instead.
-
-When `manage-submit` is set, the component hands full control of the popover lifecycle to the parent. The popover stays open after submit, and the parent closes it (or shows an error) by updating the `error` property with a **new `timestamp`**.
-
-### When to use `manage-submit`
-
-- The submit handler calls an async API and you want to keep the popover open until the response arrives
-- You need to display a server-side validation error inside the popover
-- You want to show a loading/spinner state during submission
-
-### Basic setup
-
-```html
-<aiux-sn-feedback
-  manage-submit
-  .error="${{isError: false, timestamp: Date.now()}}"
-  @granular-feedback-submit-clicked="${onSubmit}"
-></aiux-sn-feedback>
-```
-
-### Handling success and error
-
-```js
-async function onSubmit(e) {
-  try {
-    await submitToApi(e.detail.items);
-    // ✓ Close the popover — set isError: false with a NEW timestamp
-    feedbackEl.error = { isError: false, timestamp: Date.now() };
-  } catch {
-    // ✗ Show error inside the popover — set isError: true with a NEW timestamp
-    feedbackEl.error = { isError: true, timestamp: Date.now() };
+  render() {
+    return html`
+      <aiux-sn-feedback
+        .negativeFeedback=${NEGATIVE}
+        @feedback-clicked=${this._onClicked}
+        @granular-feedback-submit-clicked=${this._onSubmit}
+      ></aiux-sn-feedback>
+    `;
   }
 }
 ```
 
-### How it works
+**What happens:** "Helpful" has no form here, so clicking it only selects it.
+After submit, the popover closes, the form resets, and the confirmation
+tooltip shows for 1 second, without waiting for any save. The thumb stays
+selected.
 
-| `error` value                          | Effect                                             |
-| -------------------------------------- | -------------------------------------------------- |
-| `{ isError: false, timestamp: <new> }` | Closes the popover and resets the form             |
-| `{ isError: true, timestamp: <new> }`  | Keeps the popover open and shows the error message |
-| Same timestamp as before               | No change (component deduplicates by timestamp)    |
+### Additional patterns
 
-> **Tip:** Always use `Date.now()` (or an incrementing counter) for the timestamp so the component detects the change.
-
-## Properties
-
-### `<aiux-sn-feedback>`
-
-| Property           | Attribute       | Type                                      | Default                             | Description                                                                    |
-| ------------------ | --------------- | ----------------------------------------- | ----------------------------------- | ------------------------------------------------------------------------------ |
-| `loadState`        | `load-state`    | `'NONE' \| 'THUMBS_UP' \| 'THUMBS_DOWN'`  | `'NONE'`                            | Pre-selects a button on initial render                                         |
-| `positiveFeedback` | —               | `GranularFeedbackDetails \| null`         | `null`                              | Config for the thumbs-up popover (heading + items)                             |
-| `negativeFeedback` | —               | `GranularFeedbackDetails \| null`         | `null`                              | Config for the thumbs-down popover (heading + items)                           |
-| `placement`        | `placement`     | `FeedbackPlacement`                       | `'bottom'`                          | Where the popover opens relative to the trigger button                         |
-| `manageSubmit`     | `manage-submit` | `boolean`                                 | `false`                             | When `true`, the parent manages popover close after submit                     |
-| `error`            | —               | `{ isError: boolean, timestamp: number }` | `{ isError: false, timestamp: -1 }` | Shows/clears an error message in the form. Use a new `timestamp` to re-trigger |
-
-## Config Properties
-
-Set via the platform Config Editor (`configSchema`), not as HTML attributes.
-
-| Property          | Type     | Label     | Default     | Description                                                                      |
-| ----------------- | -------- | --------- | ----------- | -------------------------------------------------------------------------------- |
-| `configPlacement` | `String` | Placement | `undefined` | Placement of the granular feedback popover panel relative to the trigger button. |
-
-## Events
-
-All events bubble and are composed.
-
-### `feedback-clicked`
-
-Fired when a thumb button is clicked (selected or deselected).
+Host-managed submit. Report the save outcome through `error`, with a new
+`timestamp` each time:
 
 ```ts
-detail: {
-  button: 'THUMBS_UP' | 'THUMBS_DOWN';
-  isSelected: boolean;
+@state() private _error = {isError: false, timestamp: -1};
+
+async _onSubmit(e) {
+  const timestamp = this._error.timestamp + 1; // must differ from the last outcome
+  try {
+    await saveFeedback(e.detail.items);
+    this._error = {isError: false, timestamp}; // closes + confirms
+  } catch {
+    this._error = {isError: true, timestamp}; // shows the error message
+  }
 }
+
+html`
+  <aiux-sn-feedback
+    manage-submit
+    .error=${this._error}
+    .positiveFeedback=${POSITIVE}
+    .negativeFeedback=${NEGATIVE}
+    @granular-feedback-submit-clicked=${this._onSubmit}
+  ></aiux-sn-feedback>
+`;
 ```
 
-### `granular-feedback-submit-clicked`
+## API
 
-Fired when the user submits the granular feedback form.
+### Properties and attributes
+
+| Property           | Attribute       | Type                              | Default                           | Update behavior     | Description                                                                                                                                                                                                                                   |
+| ------------------ | --------------- | --------------------------------- | --------------------------------- | ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `loadState`        | `load-state`    | `FeedbackButtonState`             | `'NONE'`                          | When connected      | Initially selected button. `'SUBMIT_FEEDBACK'` selects neither. Re-read each time the element is attached.                                                                                                                                    |
+| `positiveFeedback` | property only   | `GranularFeedbackDetails \| null` | `null`                            | Updates immediately | Form for "Helpful". `null`: the button only selects. An empty or all-invalid `items` list still opens a popover containing only Submit. A new value discards the user's unsaved edits.                                                        |
+| `negativeFeedback` | property only   | `GranularFeedbackDetails \| null` | `null`                            | Updates immediately | Form for "Not helpful". Same rules.                                                                                                                                                                                                           |
+| `placement`        | `placement`     | `FeedbackPlacement`               | `'bottom'`                        | Next open           | Popover placement relative to the clicked button; see `aiux-sn-popover`.                                                                                                                                                                      |
+| `manageSubmit`     | `manage-submit` | `boolean`                         | `false`                           | Updates immediately | Submit only dispatches the event and disables Submit; the popover stays open until `error` reports success.                                                                                                                                   |
+| `error`            | property only   | `FeedbackError`                   | `{isError: false, timestamp: -1}` | On change           | `manageSubmit` only for success. `isError: false` with a `timestamp` different from the previous one (and not `-1`) closes the popover and shows the confirmation. `isError: true` shows the error message in the form until `error` changes. |
+
+Form rules:
+
+- Only the first `checklist` or `radio` item and the first `textarea` item
+  are used, rendered in that order. Items with an empty option list are
+  dropped.
+- Radio: only the first option with `checked: true` starts selected.
+- Textarea: `maxlength` defaults to 300; Submit is disabled while the text is
+  longer than it.
+- Closing the popover (close button, Escape, outside click, or a successful
+  submit) discards unsaved edits.
+- In managed mode, Submit stays disabled after a submit until the popover
+  closes; an error does not re-enable it.
+
+### Events
+
+| Event                              | `detail`                                                      | Delivery                          | Fires when                    | Notes                                                                                                                                  |
+| ---------------------------------- | ------------------------------------------------------------- | --------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `feedback-clicked`                 | `{button: 'THUMBS_UP' \| 'THUMBS_DOWN', isSelected: boolean}` | Bubbles, composed, not cancelable | The user clicks either thumb. | `isSelected: false` means the user deselected it (clicking the selected thumb again). Clicking the other thumb switches the selection. |
+| `granular-feedback-submit-clicked` | `{items: SubmitPayloadItem[]}`                                | Bubbles, composed, not cancelable | The user clicks Submit.       | List items include every option with its `checked` state.                                                                              |
+
+The internal popovers' cancelable `aiux-sn-popover:close-request` bubbles out
+of this element; a page-level listener that calls `preventDefault()` on it also
+keeps this element's popover open.
+
+### Slots
+
+None.
+
+### Methods
+
+None.
+
+### Data shapes
 
 ```ts
-detail: {
-  items: Array<{
-    type: 'checklist' | 'radio' | 'textarea';
-    value: ProcessedListItem[] | string;
-  }>;
-}
-```
+type FeedbackButtonState =
+  'NONE' | 'THUMBS_UP' | 'THUMBS_DOWN' | 'SUBMIT_FEEDBACK';
 
-## Data types
-
-```ts
 interface GranularFeedbackDetails {
-  heading: string;
-  items: RawFeedbackItem[];
+  heading: string; // popover heading
+  items: Array<
+    | {
+        type: 'checklist';
+        value: {id: string; label: string; checked?: boolean}[];
+      }
+    | {type: 'radio'; value: {id: string; label: string; checked?: boolean}[]}
+    | {type: 'textarea'; value?: string; maxlength?: number}
+  >;
 }
 
-type RawFeedbackItem =
-  | { type: 'checklist'; value: { id: string; label: string; checked?: boolean }[] }
-  | { type: 'radio'; value: { id: string; label: string; checked?: boolean }[] }
-  | { type: 'textarea'; value?: string; maxlength?: number };
+interface FeedbackError {
+  isError: boolean;
+  timestamp: number; // a new value for each outcome, e.g. a counter
+}
+
+interface SubmitPayloadItem {
+  type: 'checklist' | 'radio' | 'textarea';
+  value:
+    | {
+        itemId: string;
+        order: number;
+        checked: boolean;
+        label: string;
+        hasLink: false;
+      }[]
+    | string; // textarea
+}
+
+type FeedbackPlacement =
+  | 'top'
+  | 'top-start'
+  | 'top-end'
+  | 'bottom'
+  | 'bottom-start'
+  | 'bottom-end'
+  | 'left'
+  | 'left-start'
+  | 'left-end'
+  | 'right'
+  | 'right-start'
+  | 'right-end'
+  // deprecated physical aliases
+  | 'top-left'
+  | 'top-right'
+  | 'bottom-left'
+  | 'bottom-right'
+  | 'left-top'
+  | 'left-bottom'
+  | 'right-top'
+  | 'right-bottom';
 ```
 
-## File structure
+These types are not exported from the package entry.
 
-The package publishes TypeScript source only; there is no build step in this repo.
+## Integration details
 
-```
-feedback/
-├── package.json
-└── src/
-    ├── index.ts                          # Public exports (package entry point)
-    ├── feedback.ts                       # <aiux-sn-feedback> — single registered element
-    ├── renders/
-    │   ├── feedback-button.render.ts     # Render helper for thumb buttons
-    │   ├── feedback-popover.render.ts    # Render helper for popover panel
-    │   └── feedback-form.render.ts       # Render helper for form (checklist/radio/textarea)
-    ├── constants/
-    │   └── feedback-constants.ts         # Labels, enums, event names
-    ├── controllers/
-    │   ├── FeedbackStateController.ts    # Button state, popover open/close
-    │   ├── FeedbackFormController.ts     # Checklist/radio/textarea mutations
-    │   └── FeedbackTooltipController.ts  # Confirmation tooltip timer
-    ├── styles/
-    │   └── feedback.styles.ts            # All component styles (single shadow DOM)
-    ├── types/
-    │   └── feedback.types.ts             # All TypeScript interfaces
-    └── utils/
-        └── feedback-helpers.ts           # Data normalization helpers
-```
+### SSR
 
-## Exports
+The buttons render on the server; the popover opens only in the browser.
 
-```js
-import { Feedback } from '@servicenow/aiux-sn-feedback';
-```
+### Lifecycle
 
-## Architecture
+Re-attaching the element resets the selection to `loadState` and the forms to
+the current configuration.
 
-`<aiux-sn-feedback>` is the **single registered custom element**. All visual sub-sections (button, popover, form) are implemented as **render helper functions** in separate files under `renders/`. This follows the Karuna naming convention (Rule 8) — only the top-level component has a `@customElement` tag; children use render functions.
+### Sizing and layout
 
-Business logic lives in three Lit `ReactiveController` classes:
+`display: block`; the two buttons sit in a row at the start. The popover
+opens outside the element's box and does not affect layout.
 
-| Controller                  | Responsibility                                                       |
-| --------------------------- | -------------------------------------------------------------------- |
-| `FeedbackStateController`   | Which button is selected, whether popover is open, processed items   |
-| `FeedbackFormController`    | Checklist / radio / textarea item mutations and submit payload build |
-| `FeedbackTooltipController` | Confirmation tooltip show/hide with auto-dismiss timer               |
+## Accessibility, localization, and customization
 
-Render helpers are pure functions — they take data and callbacks, return `TemplateResult`. All state mutations happen in controllers, which call `host.requestUpdate()` to trigger re-renders.
-
-## Accessibility
-
-| Feature              | Implementation                                                                         |
-| -------------------- | -------------------------------------------------------------------------------------- |
-| Thumb buttons        | `aria-label`, `aria-pressed`, `title`                                                  |
-| SVG icons            | `aria-hidden="true"` on all decorative SVGs                                            |
-| Popover dialog       | `role="dialog"`, `aria-modal`, heading via `aiux-sn-popover` — focus trap included     |
-| Escape key           | Handled by `aiux-sn-popover`; closes panel and returns focus to trigger button         |
-| Focus management     | `focus-panel` attribute on `aiux-sn-popover` moves focus in on open; restored on close |
-| Checklist group      | `role="group"` with `aria-label`                                                       |
-| Radio group          | `role="radiogroup"` with `aria-label`                                                  |
-| Form inputs          | `<label for>` on all checkboxes and radio buttons                                      |
-| Textarea             | `aria-label` matching placeholder text, `aria-describedby` linked to character counter |
-| Character counter    | `aria-live="polite"`, linked via `id` to textarea's `aria-describedby`                 |
-| Error message        | `role="alert"` for immediate screen reader announcement                                |
-| Confirmation tooltip | `role="tooltip"`, `aria-live="polite"`                                                 |
-| Feedback container   | `role="group"`, `aria-label="Feedback"`                                                |
-| Focus indicators     | `focus-visible` outlines on all interactive elements                                   |
-
-## Styling
-
-All colors use DaisyUI semantic tokens (`bg-base-100`, `border-base-300`, `text-text-primary`, etc.) which automatically switch for light/dark theme via the DaisyUI theme system.
-
-The popover panel (arrow, shadow, sizing) is rendered and styled by `aiux-sn-popover`. The only custom CSS in `feedback.styles.ts` is `:host { display: block }` and the `.sr-only` helper for the screen-reader live region.
-
-## SSR compatibility
-
-This component is compatible with `@lit-labs/ssr`.
-
-| Constraint                           | How it is handled                                              |
-| ------------------------------------ | -------------------------------------------------------------- |
-| No browser globals in `render()`     | `render()` uses only Lit templates and controller state        |
-| No `window` / `setTimeout` on server | All timer calls are guarded with `if (!isServer)` from `'lit'` |
-| No DOM access outside event handlers | DOM queries only run in `updated()` / event handlers           |
-| All properties have safe defaults    | Every `@property` has an explicit default value                |
+- **Accessibility:** the buttons use `aria-pressed`; the popover traps focus
+  and returns it on close; the confirmation is announced through a live
+  region.
+- **Localization:** button labels, Submit, the placeholder, the error
+  message, and the confirmation are localized. `heading` and option `label`
+  values are the caller's to translate.
+- **Customization:** no styling hooks; the element uses the DaisyUI theme,
+  and the selected thumb uses the `success` color.

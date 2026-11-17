@@ -1,19 +1,18 @@
----
-argus-naming-exceptions:
-  - rule: package_name_aiux_sn_prefix
-    identifiers:
-      - '@servicenow/aiux-components-dialog'
-  - rule: aiux_prefix_for_custom_elements
-    identifiers:
-      - aiux-dialog
-  - rule: event_name_namespaced_with_component
-    identifiers:
-      - aiux-dialog-open
-      - aiux-dialog-close
-      - aix-dialog-close
-      - aiux-dialog-close-request
----
-# @servicenow/aiux-components-dialog
+# Dialog
+
+> Source: `@servicenow/aiux-components-dialog@2.4.1` · `components/external/dialog/docs/usage/aiux-dialog.md`
+
+`<aiux-dialog>` shows its slotted content in a dialog while `open` is `true`.
+The close button, Escape, and backdrop click fire a cancelable
+`aiux-dialog-close-request`; unless it is prevented, the element sets `open`
+to `false` itself and fires `aiux-dialog-close`. Keep your own open state in
+sync from `aiux-dialog-close`.
+
+Built in: backdrop, close button, enter/exit animation (reduced when the user
+prefers reduced motion), moving focus in and restoring it on close, Tab
+trapping (modal), body scroll lock (modal), stacking of several open dialogs,
+header dragging (modeless), and a resize handle (optional). Footer and action
+buttons are the host's content.
 
 ## Import
 
@@ -21,165 +20,177 @@ argus-naming-exceptions:
 import '@servicenow/aiux-components-dialog';
 ```
 
-
-Modal and modeless dialog component for the Karuna AIUX platform.
-
-## Installation
-
-```bash
-pnpm add @servicenow/aiux-components-dialog
-```
-
 ## Usage
 
-```javascript
+### Minimal complete example
+
+```ts
+import {html} from 'lit';
+import {customElement, state} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
 import '@servicenow/aiux-components-dialog';
+
+@customElement('my-delete-confirm')
+export class MyDeleteConfirm extends AIUXElement {
+  @state() private _open = false;
+
+  private _confirm() {
+    this.dispatchEvent(
+      new CustomEvent('my-delete-requested', {bubbles: true, composed: true})
+    );
+    this._open = false;
+  }
+
+  render() {
+    return html`
+      <button class="aiux-btn" @click=${() => (this._open = true)}>
+        Delete
+      </button>
+      <aiux-dialog
+        size="sm"
+        ?open=${this._open}
+        @aiux-dialog-close=${() => (this._open = false)}
+      >
+        <h2 slot="header">Delete record?</h2>
+        <p>This cannot be undone.</p>
+        <div slot="footer">
+          <button class="aiux-btn" @click=${() => (this._open = false)}>
+            Cancel
+          </button>
+          <button class="aiux-btn aiux-btn-error" @click=${this._confirm}>
+            Delete
+          </button>
+        </div>
+      </aiux-dialog>
+    `;
+  }
+}
 ```
+
+**What happens:** without the `aiux-dialog-close` handler, `_open` stays
+`true` after the user closes the dialog, so setting it to `true` again does
+not reopen it. Focus returns to the Delete button on close.
+
+### Additional patterns
+
+Block user close gestures (close button, Escape, backdrop) while there are
+unsaved changes; setting `open` to `false` still closes:
 
 ```js
 html`
   <aiux-dialog
-    ?open=${this.showDialog}
-    @aiux-dialog-close=${() => {
-      this.showDialog = false;
+    ?open=${open}
+    @aiux-dialog-close-request=${e => {
+      if (dirty) e.preventDefault();
     }}
+    @aiux-dialog-close=${() => (open = false)}
+    >…</aiux-dialog
   >
-    <div slot="header">Dialog Title</div>
-    <p>Dialog content goes here</p>
-    <div slot="footer">
-      <button
-        class="aiux-btn aiux-btn-primary"
-        @click=${() => {
-          this.showDialog = false;
-        }}
-      >
-        OK
-      </button>
-    </div>
+`;
+```
+
+Modeless, draggable panel (page stays interactive, no backdrop):
+
+```js
+html`
+  <aiux-dialog
+    .isModal=${false}
+    ?open=${open}
+    dialog-label="Notes"
+    @aiux-dialog-close=${() => (open = false)}
+  >
+    <div slot="header">Notes</div>
+    <textarea></textarea>
   </aiux-dialog>
 `;
 ```
 
-## Properties
+## API
 
-| Property               | Type      | Default | Attribute                 | Description                                                        |
-| ---------------------- | --------- | ------- | ------------------------- | ------------------------------------------------------------------ |
-| `open`                 | `Boolean` | `false` | `open`                    | Whether the dialog is visible                                      |
-| `showCloseButton`      | `Boolean` | `true`  | `show-close-button`       | Show the close (x) button                                          |
-| `closeOnEscape`        | `Boolean` | `true`  | `close-on-escape`         | Close on Escape key                                                |
-| `closeOnBackdropClick` | `Boolean` | `true`  | `close-on-backdrop-click` | Close when clicking the backdrop                                   |
-| `preventScroll`        | `Boolean` | `true`  | `prevent-scroll`          | Prevent body scroll while open (auto-disabled for modeless)        |
-| `resizable`            | `Boolean` | `false` | `resizable`               | Allow drag-to-resize                                               |
-| `isModal`              | `Boolean` | `true`  | `is-modal`                | Modal (backdrop + focus trap) vs modeless (draggable, no backdrop) |
-| `size`                 | `String`  | `'md'`  | `size`                    | Preset width: `sm`, `md`, `lg`, `xl`, `fullscreen`                 |
-| `customSize`           | `Object`  | `null`  | `custom-size`             | Exact dimensions: `{ width, height }` (any CSS value)              |
-| `hidePadding`          | `Boolean` | `false` | `hide-padding`            | Remove padding from header, body, and footer                       |
-| `dialogLabel`          | `String`  | `''`    | `dialog-label`            | Accessible name (aria-label) when no header slot is provided       |
+### Properties and attributes
 
-For Boolean properties that default to `true`, such as `showCloseButton`, `closeOnEscape`, `closeOnBackdropClick`, `preventScroll`, and `isModal`, set `false` with JavaScript property assignment or Lit property binding.
+Booleans that default to `true` can be turned off only with a property
+binding (`.isModal=${false}`); an attribute value of `"false"` still means
+`true`.
 
-`hidePadding` only removes the dialog's own header/body/footer padding. It does not adjust the layout of slotted content — `::slotted()` cannot reach past direct slot children, so if your slotted content also needs padding or layout adjustments to look right with `hide-padding`, style that content yourself (either in the light DOM or by injecting a `<style>` into your own component's shadow root).
+| Property               | Attribute                 | Type                       | Default | Update behavior                                                                | Description                                                                                                                                                                                                                                                                                                                                                      |
+| ---------------------- | ------------------------- | -------------------------- | ------- | ------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `open`                 | `open` (reflects)         | `boolean`                  | `false` | Updates immediately                                                            | Opens or closes the dialog with animation. The element sets it to `false` on an unprevented close request. When `false`, nothing renders once the exit animation ends.                                                                                                                                                                                           |
+| `size`                 | `size` (reflects)         | `DialogSize`               | `'md'`  | Updates immediately                                                            | Width: `sm` 300 px, `md` 512 px, `lg` 800 px, `xl` 1140 px, `fullscreen` full width and viewport height minus 32 px. Ignored while `customSize` is set.                                                                                                                                                                                                          |
+| `customSize`           | `custom-size` (JSON)      | `DialogCustomSize \| null` | `null`  | Updates immediately                                                            | Overrides `size`. `width` defaults to `100%`, `height` to `auto`. `maxWidth` is not currently used.                                                                                                                                                                                                                                                              |
+| `isModal`              | `is-modal` (reflects)     | `boolean`                  | `true`  | Backdrop and dragging immediately; focus trapping and scroll lock on next open | `true`: backdrop, Tab trapping, scroll lock. `false`: no backdrop, page stays interactive, focus can leave, draggable by the header, starts 50 px from the top-left of the viewport.                                                                                                                                                                             |
+| `showCloseButton`      | `show-close-button`       | `boolean`                  | `true`  | Updates immediately                                                            | Close (×) button in the top corner.                                                                                                                                                                                                                                                                                                                              |
+| `closeOnEscape`        | `close-on-escape`         | `boolean`                  | `true`  | Updates immediately                                                            | Escape requests close, for the topmost open dialog only.                                                                                                                                                                                                                                                                                                         |
+| `closeOnBackdropClick` | `close-on-backdrop-click` | `boolean`                  | `true`  | Updates immediately                                                            | Modal only: clicking outside the dialog box requests close.                                                                                                                                                                                                                                                                                                      |
+| `preventScroll`        | `prevent-scroll`          | `boolean`                  | `true`  | Takes effect on next open                                                      | Modal only: locks `document.body` scrolling while open.                                                                                                                                                                                                                                                                                                          |
+| `resizable`            | `resizable` (reflects)    | `boolean`                  | `false` | Updates immediately                                                            | Native resize handle; minimum 300 × 200 px. No effect with `size="fullscreen"`.                                                                                                                                                                                                                                                                                  |
+| `hidePadding`          | `hide-padding` (reflects) | `boolean`                  | `false` | Updates immediately                                                            | Removes header, body, and footer padding. Also restyles `#preferences-modal-title`, `.preferences-sidebar`, `.preference-wrapper`, `.tabs-wrapper`, `.aiux-form-control.fieldset`, `.toggle-container`, and `.toggle-content` anywhere in the shadow root (or subtree) containing the dialog, and the active-tab underline of slotted `aiux-tab-group` elements. |
+| `dialogLabel`          | `dialog-label`            | `string`                   | `''`    | Updates immediately                                                            | Accessible name. When empty, the dialog is labelled by the header slot.                                                                                                                                                                                                                                                                                          |
 
-## Slots
+### Events
 
-| Slot      | Description                    |
-| --------- | ------------------------------ |
-| (default) | Dialog body content            |
-| `header`  | Dialog header / title content  |
-| `footer`  | Dialog footer / action buttons |
+| Event                       | `detail` | Delivery                          | Fires when                                                                             | Notes                                                                                                                                                     |
+| --------------------------- | -------- | --------------------------------- | -------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aiux-dialog-close-request` | none     | Bubbles, composed, cancelable     | The user clicks the close button, presses Escape, or clicks the backdrop.              | `preventDefault()` keeps the dialog open. Not fired when the host sets `open` to `false`.                                                                 |
+| `aiux-dialog-close`         | none     | Bubbles, composed, not cancelable | `open` changes from `true` to `false`, after a close request or when the host sets it. | Fires at the start of the exit animation. Also fired as `aix-dialog-close` with the same delivery. Not fired when an open dialog is removed from the DOM. |
+| `aiux-dialog-open`          | none     | Bubbles, composed, not cancelable | `open` changes to `true`.                                                              |                                                                                                                                                           |
 
-## Events
+### Slots
 
-Events bubble and cross the shadow DOM boundary.
+- `header`: title. Hidden when empty. Slotted elements get the title text
+  style. In modeless dialogs, dragging it moves the dialog (except
+  from inputs, buttons, links, selects, and textareas).
+- Default: body. Scrolls when the dialog reaches the viewport height.
+- `footer`: actions. Hidden when empty. The slotted element is laid out as a
+  right-aligned, wrapping row.
 
-| Event                       | Cancelable | Description                                                                    |
-| --------------------------- | ---------- | ------------------------------------------------------------------------------ |
-| `aiux-dialog-open`          | No         | Fired when the dialog opens                                                    |
-| `aiux-dialog-close`         | No         | Fired when the dialog closes                                                   |
-| `aix-dialog-close`          | No         | Legacy alias also fired when the dialog closes                                 |
-| `aiux-dialog-close-request` | Yes        | Fired when close is requested; call `preventDefault()` to keep the dialog open |
+### Methods
 
-```javascript
-dialog.addEventListener('aiux-dialog-close-request', e => {
-  if (hasUnsavedChanges) {
-    e.preventDefault(); // keep dialog open
-  }
-});
+None.
+
+### Data shapes
+
+```ts
+type DialogSize = 'sm' | 'md' | 'lg' | 'xl' | 'fullscreen';
+
+interface DialogCustomSize {
+  width?: string; // CSS length
+  height?: string; // CSS length
+  maxWidth?: string; // not currently used
+}
 ```
 
-## Controlled vs Uncontrolled
+These types are not exported from the package entry.
 
-The dialog supports both usage patterns:
+## Integration details
 
-**Uncontrolled (default):** The dialog manages its own `open` state. When the user clicks the backdrop, presses Escape, or clicks the close button, the dialog sets `open = false` internally after dispatching a cancelable `aiux-dialog-close-request` event.
+### SSR
 
-```js
-html`<aiux-dialog ?open=${this.show}>
-  <p>Closes itself unless you preventDefault</p>
-</aiux-dialog>`;
-```
+A closed dialog renders nothing on the server. Focus handling, stacking, and
+the scroll lock start in the browser.
 
-**Controlled:** Prevent the default close behavior and manage `open` from the parent. This is useful when you need confirmation before closing (e.g. unsaved changes).
+### Lifecycle
 
-```js
-html`<aiux-dialog
-  ?open=${this.show}
-  @aiux-dialog-close-request=${e => {
-    e.preventDefault();
-    if (this._canClose()) this.show = false;
-  }}
->
-  <p>Parent decides when to close</p>
-</aiux-dialog>`;
-```
+Removing an open dialog from the DOM releases its scroll lock, stack
+position, and focus trap without firing `aiux-dialog-close`. Slotted content
+stays in the light DOM while closed, so its state persists across opens. A
+modeless dialog keeps its dragged position across opens.
 
-## Modeless (Draggable) Dialog
+### Sizing and layout
 
-Set `is-modal` to `false` for a draggable, non-blocking dialog without a backdrop. The header acts as the drag handle.
+- The dialog renders above the page; ancestors' `overflow` does not clip it.
+- Several open modal dialogs stack; only the most recently opened is shown,
+  and closing it reveals the previous one. Modeless dialogs stay visible.
+- Height is at most the viewport height minus 32 px; the body scrolls.
 
-```html
-<aiux-dialog ?open="${this.show}" .isModal="${false}" size="md">
-  <div slot="header">Draggable Panel</div>
-  <p>Background remains interactive</p>
-</aiux-dialog>
-```
+## Accessibility, localization, and customization
 
-## Custom Size
-
-```html
-<aiux-dialog
-  ?open=${this.show}
-  .customSize=${{ width: '800px', height: '600px' }}
->
-  <div slot="header">Custom Sized</div>
-  <p>Overrides the size attribute</p>
-</aiux-dialog>
-```
-
-## Accessibility
-
-- `role="dialog"` with `aria-modal` on the dialog container
-- `aria-labelledby` linked to the header slot; `aria-label` fallback via `dialogLabel`
-- Focus trap cycles Tab/Shift+Tab within the dialog (modal mode), traversing nested shadow DOMs
-- Focus moves into the dialog on open and restores to the trigger on close
-- Popover API integration for top-layer promotion
-
-## Reduced Motion
-
-The `@reducedMotionAware` decorator respects `prefers-reduced-motion`. Scale+fade enter/exit animations are replaced with a simple fade when reduced motion is active.
-
-## Dialog Stacking
-
-Multiple open dialogs are managed by a shared stack. Only the topmost modal dialog is visible; each dialog receives an incremented z-index. Closing the top dialog reveals the one below.
-
-## Tag Name
-
-The canonical custom element tag is `aiux-dialog`.
-
-## Dependencies
-
-- `@servicenow/aiux-components-core` (workspace)
-- `@servicenow/aiux-controller-focus` (workspace) — powers the dialog's Tab/Shift+Tab focus trap and previous-focus restore
-- `@servicenow/aiux-directive-icon` (workspace)
-- `lit` (peer)
-- `@lit/localize` (peer)
+- **Accessibility:** provide a `header` or `dialogLabel`. The box has
+  `role="dialog"` and `aria-modal`. Opening focuses the first focusable
+  element (the close button when shown); closing returns focus to the element
+  focused before opening. Dragging is mouse-only.
+- **Localization:** the close button's label is localized. All other text is
+  slotted by the host.
+- **Customization:** `--modal-backdrop` sets the backdrop color (default
+  `rgba(0, 0, 0, 0.5)`). Slotted body text defaults to the base size and
+  tertiary text color.

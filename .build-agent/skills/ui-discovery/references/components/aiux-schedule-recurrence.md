@@ -1,4 +1,20 @@
-# @servicenow/aiux-schedule-recurrence
+# Schedule recurrence
+
+> Source: `@servicenow/aiux-schedule-recurrence@6.0.2` · `components/external/schedule-recurrence/docs/usage/aiux-schedule-recurrence.md`
+
+`<aiux-schedule-recurrence>` is a self-contained card. The host sets the
+initial values through properties. The element keeps the working state itself,
+validates it, and emits a save payload when the user clicks Save. It never
+persists anything; saving, closing, or resetting after Save or Cancel is the
+host's job.
+
+Built in: title, start date with a calendar popover, All day toggle, from/to
+times, end date, optional "Due in" field, searchable timezone picker (with a
+"Floating time" option), Repeats (never/daily/weekly/monthly/yearly) with
+interval and day/date options, series end (never / after N occurrences / on a
+date), an Advanced settings disclosure with skip dates and exceptions, inline
+validation messages, a live plain-language summary, and Cancel/Save buttons.
+Save is disabled while the form is invalid. Do not build these yourself.
 
 ## Import
 
@@ -6,507 +22,342 @@
 import '@servicenow/aiux-schedule-recurrence';
 ```
 
+## Usage
 
-A presentational Lit web component for creating and editing recurring event schedules in Karuna applications.
+### Minimal complete example
 
-> **Important — Presentational Component Only**
->
-> This component handles **UI rendering, client-side validation, and payload generation** only. It does **not** interact with any backend tables, APIs, or services.
->
-> The consuming BU (Business Unit) is responsible for:
->
-> - Fetching existing recurrence data from the backend and mapping it to component properties
-> - Listening to the `aiux-schedule-recurrence:save` event and persisting the payload to the backend
-> - Handling `aiux-schedule-recurrence:cancel` to close or navigate away
-> - Any server-side validation beyond what the component provides client-side
-
-## Installation
-
-```bash
-pnpm add @servicenow/aiux-schedule-recurrence
-```
-
-## Quick Start
-
-### Create Mode (minimal)
-
-```typescript
+```ts
+import {html} from 'lit';
+import {customElement, state} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
 import '@servicenow/aiux-schedule-recurrence';
-```
 
-```html
-<aiux-schedule-recurrence
-  event-title="Team Standup"
-  start-date="05-04-2026"
-  selected-timezone="America/Los_Angeles"
-  @aiux-schedule-recurrence:save="${handleSave}"
-  @aiux-schedule-recurrence:cancel="${handleCancel}"
-></aiux-schedule-recurrence>
-```
+@customElement('my-patch-window')
+export class MyPatchWindow extends AIUXElement {
+  @state() private _editing = true;
+  @state() private _summary = '';
 
-### Edit Mode (pre-populated recurrence)
+  private _onSave(e: CustomEvent) {
+    // e.detail.eventRecurrence.event / skipDates / exceptions: yours to persist.
+    this._summary = e.detail.eventRecurrence.summary;
+    this._editing = false;
+  }
 
-```html
-<aiux-schedule-recurrence
-  event-title="Team Standup"
-  start-date="05-04-2026"
-  to-date="05-04-2026"
-  all-day
-  selected-timezone="Asia/Kolkata"
-  time-format="hh:mm a"
-  first-day-of-week="0"
-  repeat-type="weekly"
-  repeat-count="1"
-  occurrences="5"
-  .daysInWeek=${[0, 3]}
-  .recurrenceSkipDates=${[
-    { index: 0, key: 'skip0', startDate: '13-04-2026', isValid: true }
-  ]}
-  .recurrenceExceptions=${[
-    {
-      index: 0,
-      key: 'exc0',
-      eventTitle: 'Special Meeting',
-      startDate: '20-04-2026',
-      toDate: '20-04-2026',
-      allDay: false,
-      fromTime: '02:00 PM',
-      toTime: '03:00 PM',
-      selectedTimezone: 'Asia/Kolkata',
-      repeats: 'never'
+  render() {
+    if (!this._editing) {
+      return html`<p class="whitespace-pre-line">${this._summary}</p>`;
     }
-  ]}
-  @aiux-schedule-recurrence:save=${handleSave}
-  @aiux-schedule-recurrence:cancel=${handleCancel}
-  @aiux-schedule-recurrence:change=${handleChange}
-  @aiux-schedule-recurrence:invalid=${handleInvalid}
-></aiux-schedule-recurrence>
-```
-
-> **Note:** Properties prefixed with `.` (e.g., `.daysInWeek`, `.recurrenceSkipDates`) must be set via JavaScript property binding, not as HTML attributes.
-
-### Single-Date All-Day Mode (BU-specific)
-
-```html
-<aiux-schedule-recurrence
-  event-title="Holiday"
-  start-date="25-12-2026"
-  all-day
-  hide-end-date-on-all-day
-  @aiux-schedule-recurrence:save="${handleSave}"
-></aiux-schedule-recurrence>
-```
-
-> When `hide-end-date-on-all-day` is set and `all-day` is toggled on, the End Date field is hidden and `toDate` is automatically synced to `startDate`. The `toDate` field is excluded from the save payload.
-
-### Custom Default Series End (BU-specific)
-
-```html
-<aiux-schedule-recurrence
-  event-title="Store Hours"
-  start-date="01-01-2026"
-  default-series-end-type="on"
-  default-series-end-days="365"
-  @aiux-schedule-recurrence:save="${handleSave}"
-></aiux-schedule-recurrence>
-```
-
-> When `default-series-end-type` is set to `'on'`, the series end will default to "On" with the date set to `startDate + defaultSeriesEndDays` (365 days = 1 year). This applies when the user changes the Repeats dropdown and also to exceptions.
-
-### Due in Field (BU-specific)
-
-```html
-<aiux-schedule-recurrence
-  event-title="Task Schedule"
-  start-date="01-01-2026"
-  show-due-in-field
-  due-in-max-days="90"
-  due-in-default-value="10"
-  @aiux-schedule-recurrence:save="${handleSave}"
-></aiux-schedule-recurrence>
-```
-
-> The "Due in" field is a BU-specific dropdown that allows users to specify a number of days. It is hidden by default and can be enabled via `show-due-in-field`. The dropdown values range from 0 to `due-in-max-days` (default 90), and the default selected value is `due-in-default-value` (default 10).
-
-## Features
-
-- **Event Configuration** — Title, start/end dates, from/to times, timezone selection
-- **All-Day Events** — Toggle that hides time pickers
-- **Recurrence Patterns**:
-  - Never (one-time event)
-  - Daily (every N days)
-  - Weekly (every N weeks, specific days of the week)
-  - Monthly (by date number or by day-of-week pattern)
-  - Yearly (by date number or by day-of-week pattern)
-- **Series End Options** — Never, on a specific date, or after N occurrences
-- **Skip Dates** — Exclude specific dates from the recurrence
-- **Exceptions** — Define alternate recurrence rules for specific occurrences
-- **Live Summary** — Auto-generated human-readable description of the recurrence pattern
-- **Client-Side Validation** — Required fields, date/time range checks, real-time error display
-- **External Validation Messages** — Display server-side errors/warnings via `.validationMessages`
-- **Internationalization** — All UI strings are localized via `@lit/localize`
-
-## Properties
-
-### Event Fields
-
-| Property           | Attribute           | Type      | Default              | Description                                                                      |
-| ------------------ | ------------------- | --------- | -------------------- | -------------------------------------------------------------------------------- |
-| `eventTitle`       | `event-title`       | `string`  | `''`                 | Title of the event                                                               |
-| `startDate`        | `start-date`        | `string`  | `''`                 | Start date (format matches `dateFormat`)                                         |
-| `toDate`           | `to-date`           | `string`  | `''`                 | End date (format matches `dateFormat`)                                           |
-| `allDay`           | `all-day`           | `boolean` | `false`              | Whether this is an all-day event (hides time pickers)                            |
-| `fromTime`         | `from-time`         | `string`  | `''`                 | Start time (format matches `timeFormat`)                                         |
-| `toTime`           | `to-time`           | `string`  | `''`                 | End time (format matches `timeFormat`)                                           |
-| `selectedTimezone` | `selected-timezone` | `string`  | `''` (browser local) | IANA timezone identifier. Defaults to the browser's local timezone when omitted. |
-
-### Recurrence Configuration
-
-| Property      | Attribute      | Type                    | Default     | Description                                                                                           |
-| ------------- | -------------- | ----------------------- | ----------- | ----------------------------------------------------------------------------------------------------- |
-| `repeatType`  | `repeat-type`  | `RepeatType`            | `'never'`   | Recurrence frequency: `'never'`, `'daily'`, `'weekly'`, `'monthly'`, `'yearly'`                       |
-| `repeatCount` | `repeat-count` | `number \| undefined`   | `undefined` | Repeat interval (e.g., every 2 weeks). Maps to the `every` field in detail objects                    |
-| `occurrences` | `occurrences`  | `number \| undefined`   | `undefined` | Number of occurrences for series end type `'after'`                                                   |
-| `daysInWeek`  | — (JS only)    | `number[] \| undefined` | `undefined` | Days selected for weekly recurrence (`0`=Sun, `1`=Mon, ... `6`=Sat)                                   |
-| `repeatUntil` | `repeat-until` | `string`                | `''`        | Series end date (format matches `dateFormat`) for series end type `'on'`                              |
-| `monthType`   | `month-type`   | `string`                | `''`        | Monthly pattern: `'date'` (by date number) or `'day'` (by day-of-week)                                |
-| `yearType`    | `year-type`    | `string`                | `''`        | Yearly pattern: `'date'` (by date number) or `'day'` (by day-of-week)                                 |
-| `weekIndex`   | `week-index`   | `string`                | `''`        | Week position for monthly/yearly day patterns: `'first'`, `'second'`, `'third'`, `'fourth'`, `'last'` |
-| `dayOfWeek`   | `day-of-week`  | `number \| undefined`   | `undefined` | Day of week for monthly/yearly day patterns (`0`=Sun ... `6`=Sat)                                     |
-
-### Format & Locale
-
-| Property             | Attribute           | Type                                                           | Default             | Description                                                                                                                                                                                                                                                                                                                               |
-| -------------------- | ------------------- | -------------------------------------------------------------- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `dateFormat`         | `date-format`       | `'dd-MM-yyyy' \| 'yyyy-MM-dd' \| 'MM/dd/yyyy' \| 'dd/MM/yyyy'` | `'dd-MM-yyyy'`      | Date format used for display and parsing. Only these four values are supported; any other value logs a console warning and falls back to `'dd-MM-yyyy'`. Note that `MM/dd/yyyy` (US) and `dd/MM/yyyy` (EU/India/AU/UK) look visually identical for dates where day and month are both ≤ 12, so pick one per deployment and stick with it. |
-| `timeFormat`         | `time-format`       | `'hh:mm a' \| 'HH:mm'`                                         | `'hh:mm a'`         | Time format used for display and parsing. Only these two values are supported (`'hh:mm a'` for 12-hour, `'HH:mm'` for 24-hour); any other value logs a console warning and falls back to `'hh:mm a'`.                                                                                                                                     |
-| `firstDayOfWeek`     | `first-day-of-week` | `number`                                                       | `1`                 | First day of the week (`0`=Sunday, `1`=Monday)                                                                                                                                                                                                                                                                                            |
-| `availableTimezones` | — (JS only)         | `TimezoneOption[]`                                             | `DEFAULT_TIMEZONES` | Timezone options for the dropdown (26 built-in timezones)                                                                                                                                                                                                                                                                                 |
-
-### Advanced Settings
-
-| Property                 | Attribute                  | Type                         | Default                    | Description                                                                                                                                                                                                                                                 |
-| ------------------------ | -------------------------- | ---------------------------- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `recurrenceSkipDates`    | — (JS only)                | `SkipDate[]`                 | `[]`                       | Pre-populated skip dates. Each `startDate` must match the configured `dateFormat`; mismatched strings fail validation and disable Save until the user re-picks the date.                                                                                    |
-| `recurrenceExceptions`   | — (JS only)                | `RecurrenceException[]`      | `[]`                       | Pre-populated exception rules. Each `startDate` / `toDate` must match the configured `dateFormat`. Each exception's `selectedTimezone` is overwritten with the parent event's `selectedTimezone` on load; exceptions do not have their own timezone picker. |
-| `seriesEndFields`        | — (JS only)                | `SeriesEndType[]`            | `['never', 'on', 'after']` | Which series end options to show                                                                                                                                                                                                                            |
-| `disableSkipDate`        | `disable-skip-date`        | `boolean`                    | `false`                    | Hide the skip dates section entirely                                                                                                                                                                                                                        |
-| `expandAdvancedSettings` | `expand-advanced-settings` | `boolean`                    | `false`                    | Open the advanced settings accordion by default                                                                                                                                                                                                             |
-| `hideEndDateOnAllDay`    | `hide-end-date-on-all-day` | `boolean`                    | `false`                    | When `true` and `allDay` is enabled, hides the End Date field and excludes `toDate` from the payload                                                                                                                                                        |
-| `defaultSeriesEndType`   | `default-series-end-type`  | `'never' \| 'on' \| 'after'` | `'never'`                  | Default series end type when repeat type changes                                                                                                                                                                                                            |
-| `defaultSeriesEndDays`   | `default-series-end-days`  | `number`                     | `180`                      | Number of days to add to start date for 'on' type series end                                                                                                                                                                                                |
-| `showDueInField`         | `show-due-in-field`        | `boolean`                    | `false`                    | Show the "Due in" dropdown field (BU-specific)                                                                                                                                                                                                              |
-| `dueInMaxDays`           | `due-in-max-days`          | `number`                     | `90`                       | Maximum value in the "Due in" dropdown (0 to this value)                                                                                                                                                                                                    |
-| `dueInDefaultValue`      | `due-in-default-value`     | `number`                     | `10`                       | Default selected value in the "Due in" dropdown                                                                                                                                                                                                             |
-| `dueIn`                  | `due-in`                   | `number \| undefined`        | `undefined`                | Current "Due in" value (input/output)                                                                                                                                                                                                                       |
-| `validationMessages`     | — (JS only)                | `ValidationMessage[]`        | `[]`                       | External validation messages (e.g., server-side errors) displayed as alerts                                                                                                                                                                                 |
-
-## Date Formats
-
-The `dateFormat` property accepts one of four values. Every date the component reads (`startDate`, `toDate`, `repeatUntil`, plus the `startDate` / `toDate` inside each `recurrenceSkipDates` and `recurrenceExceptions` entry) and every date the component writes (save payload, recurrence summary) is in this format.
-
-| `dateFormat` | Example for 15 April 2026 | Typical region                                                  |
-| ------------ | ------------------------- | --------------------------------------------------------------- |
-| `dd-MM-yyyy` | `15-04-2026`              | Default; common across the Karuna platform                      |
-| `yyyy-MM-dd` | `2026-04-15`              | ISO 8601, backend-friendly                                      |
-| `MM/dd/yyyy` | `04/15/2026`              | United States                                                   |
-| `dd/MM/yyyy` | `15/04/2026`              | Most of the rest of the world (EU, India, Australia, UK, LATAM) |
-
-**Setting a non-default format:**
-
-```html
-<aiux-schedule-recurrence
-  date-format="MM/dd/yyyy"
-  start-date="04/15/2026"
-  to-date="04/15/2026"
-  .recurrenceSkipDates=${[
-    { index: 0, key: 'skip0', startDate: '05/04/2026', isValid: true }
-  ]}
-></aiux-schedule-recurrence>
-```
-
-**Validation behavior**
-
-- The field-level error `"The date must match format: dd-MM-yyyy, yyyy-MM-dd, MM/dd/yyyy, dd/MM/yyyy"` fires when a date string fails to parse against the **currently configured** format. Even though the message lists all four formats, the form only accepts the one configured via `dateFormat`.
-- Save is disabled until every required date parses cleanly.
-
-**Unsupported values**
-
-If a `dateFormat` outside the four supported values is passed (via attribute binding, plain-JS, or `as any` casts that bypass the TS type), the component logs a `console.warn` and falls back to `dd-MM-yyyy` so the form remains usable. TypeScript consumers using JS property binding will see a compile-time error first.
-
-**Caveat: visual ambiguity between US and EU slash formats**
-
-`MM/dd/yyyy` and `dd/MM/yyyy` look identical for any date where both day and month are ≤ 12 (e.g. `04/05/2026` is April 5 in one and 4 May in the other: same characters, different date). The format string is the only disambiguator. Pick one per deployment, and never switch a deployed consumer without re-keying its stored dates.
-
-## Events
-
-All events bubble and are composed.
-
-### `aiux-schedule-recurrence:save`
-
-Fired when the Save button is clicked. **Only fires if the form is valid.**
-
-```typescript
-element.addEventListener('aiux-schedule-recurrence:save', (e: CustomEvent) => {
-  const { eventRecurrence } = e.detail;
-  // eventRecurrence contains: { event, skipDates, exceptions }
-  // Send to your backend API
-});
-```
-
-**Payload shape** (`e.detail`):
-
-```typescript
-{
-  eventRecurrence: {
-    event: {
-      eventOrRuleName: string;    // maps from eventTitle
-      startDate: string;
-      toDate?: string;            // included only when allDay=true (excluded when hide-end-date-on-all-day is also true)
-      fromTime?: string;          // included only when allDay=false
-      toTime?: string;            // included only when allDay=false
-      repeats: RepeatType;
-      selectedTimezone: string;
-      allDay: boolean;
-      // Only the ACTIVE detail object is included (based on repeats value):
-      dayDetails?: { every: number; seriesEndDetails: { type, date?, occurence? } };
-      weekDetails?: { every: number; daysInWeek: number[]; seriesEndDetails: {...} };
-      monthDetails?: { every: number; onDetails: { type, dateNumber?, day?, weekType? }; seriesEndDetails: {...} };
-      yearDetails?: { every: number; onDetails: {...}; seriesEndDetails: {...} };
-    };
-    skipDates: Array<{
-      startDate: string;
-      toDate: string;              // same as startDate
-      index: number;
-      eventOrRuleName: string;     // auto-generated "Skip Date 0", "Skip Date 1", etc.
-      repeats: 'never';
-      allDay: true;
-      key: string;
-    }>;
-    exceptions: Array<{
-      eventOrRuleName: string;
-      startDate: string;
-      toDate?: string;             // included only when allDay=true (excluded when hide-end-date-on-all-day is also true)
-      fromTime?: string;           // included only when allDay=false
-      toTime?: string;             // included only when allDay=false
-      repeats: RepeatType;
-      selectedTimezone: string;    // always the parent event's timezone; any value passed via `.recurrenceExceptions[].selectedTimezone` is overwritten on load
-      allDay: boolean;
-      index: number;
-      key: string;
-      // Active detail object included (same as event)
-    }>;
-    summary: string;               // human-readable description of the recurrence pattern (e.g. "Every day, starting 15-04-2026")
+    return html`
+      <aiux-schedule-recurrence
+        event-title="Patch window"
+        start-date="2026-10-05"
+        date-format="yyyy-MM-dd"
+        time-format="HH:mm"
+        from-time="22:00"
+        to-time="23:30"
+        selected-timezone="Europe/London"
+        repeat-type="weekly"
+        default-series-end-type="after"
+        @aiux-schedule-recurrence:save=${this._onSave}
+        @aiux-schedule-recurrence:cancel=${() => (this._editing = false)}
+      ></aiux-schedule-recurrence>
+    `;
   }
 }
 ```
 
-> **Payload Field Rules:**
->
-> - When `allDay=true`: `toDate` is included, `fromTime`/`toTime` are excluded
-> - When `allDay=false`: `fromTime`/`toTime` are included, `toDate` is excluded
-> - When `hide-end-date-on-all-day=true` and `allDay=true`: `toDate` is also excluded
+**What happens:** the form initializes once, on first render. Later property
+changes update only the fields listed as "Applied on change". The element
+never closes or resets itself on Save or Cancel; this wrapper removes it and
+shows the summary on Save.
 
-### `aiux-schedule-recurrence:cancel`
+### Additional patterns
 
-Fired when the Cancel button is clicked. No payload.
+Preset a monthly pattern with skip dates. Every filled skip date needs
+`isValid: true`, or Save stays disabled:
 
-```typescript
-element.addEventListener('aiux-schedule-recurrence:cancel', () => {
-  // Close the dialog or navigate away
-});
-```
-
-### `aiux-schedule-recurrence:change`
-
-Fired when any field value changes.
-
-```typescript
-element.addEventListener('aiux-schedule-recurrence:change', (e: CustomEvent) => {
-  const { field, value, event } = e.detail;
-  // field: the property path that changed (e.g., 'eventTitle', 'repeats', 'skipDates')
-  // value: the new value
-  // event: full RecurrenceEvent snapshot
-});
-```
-
-### `aiux-schedule-recurrence:invalid`
-
-Fired when the form validity state changes (valid to invalid or vice versa).
-
-```typescript
-element.addEventListener('aiux-schedule-recurrence:invalid', (e: CustomEvent) => {
-  const { isValid, errors } = e.detail;
-  // isValid: boolean
-  // errors: ValidationError[] — array of { field: string, message: string }
-});
-```
-
-## Slots
-
-### `footer-start`
-
-A named slot for injecting custom content on the left side of the action buttons footer. Useful for adding navigation buttons like "Previous" or "Back".
-
-```html
-<aiux-schedule-recurrence
-  event-title="Store Hours"
-  @aiux-schedule-recurrence:save="${handleSave}"
->
-  <button slot="footer-start" class="aiux-btn aiux-btn-ghost" @click="${goToPreviousStep}">
-    ← Previous
-  </button>
-</aiux-schedule-recurrence>
-```
-
-**Layout:**
-
-```
-┌─────────────────────────────────────────────────────┐
-│ [slot:footer-start]          [Cancel]  [Save]       │
-└─────────────────────────────────────────────────────┘
-```
-
-> Events from slotted content bubble up automatically — no special handling required.
-
----
-
-## Integration Guide
-
-### Creating a New Recurrence
-
-1. Render the component with desired defaults (or no attributes for a blank form)
-2. Listen for `aiux-schedule-recurrence:save`
-3. Extract `e.detail.eventRecurrence` and persist to your backend
-
-```typescript
-handleSave(e: CustomEvent) {
-  const payload = e.detail.eventRecurrence;
-  // POST payload to your backend API
-  await myApi.createRecurrence(payload);
-}
-```
-
-### Editing an Existing Recurrence
-
-1. Fetch the recurrence data from your backend
-2. Map backend field names to component properties
-3. Pass complex data (skip dates, exceptions, days-in-week) via JS property binding
-4. On save, update the backend record with the new payload
-
-```typescript
-// Map backend data to component properties
-const recurrence = await myApi.getRecurrence(id);
-
+```js
 html`
   <aiux-schedule-recurrence
-    event-title=${recurrence.eventOrRuleName}
-    start-date=${recurrence.startDate}
-    to-date=${recurrence.toDate}
-    repeat-type=${recurrence.repeats}
-    repeat-count=${recurrence.weekDetails?.every}
-    ?all-day=${recurrence.allDay}
-    selected-timezone=${recurrence.selectedTimezone}
-    .daysInWeek=${recurrence.weekDetails?.daysInWeek}
-    .recurrenceSkipDates=${mapSkipDates(recurrence.skipDates)}
-    .recurrenceExceptions=${mapExceptions(recurrence.exceptions)}
-    @aiux-schedule-recurrence:save=${(e) => myApi.updateRecurrence(id, e.detail.eventRecurrence)}
+    event-title="Board review"
+    start-date="10/13/2026"
+    date-format="MM/dd/yyyy"
+    repeat-type="monthly"
+    month-type="day"
+    week-index="second"
+    day-of-week="2"
+    occurrences="12"
+    expand-advanced-settings
+    .recurrenceSkipDates=${[
+      {index: 0, key: 'skip-0', startDate: '12/08/2026', isValid: true}
+    ]}
+    @aiux-schedule-recurrence:save=${onSave}
+    @aiux-schedule-recurrence:cancel=${onCancel}
   ></aiux-schedule-recurrence>
 `;
 ```
 
-### Validation Flow
+## API
 
-- The component performs **client-side validation** automatically (required fields, date ranges, time ranges, occurrence counts)
-- The **Save button is disabled** when the form is invalid
-- Listen to `aiux-schedule-recurrence:invalid` for real-time validity state updates
-- For **server-side validation errors**, pass them via the `.validationMessages` property:
+### Properties and attributes
 
-```typescript
-// Display server-side errors as alerts above the action buttons
-element.validationMessages = [
-  {
-    type: 'error',
-    message: 'This time slot conflicts with an existing schedule.',
-  },
-  { type: 'warning', header: 'Note', message: 'Holiday schedule may apply.' },
-];
+Dates are strings in `dateFormat`. Times accept `HH:mm` or `hh:mm AM/PM`.
+Boolean properties that default to `true` cannot be turned off with an
+attribute. Use a property binding such as `.showNever=${false}`.
+
+"Applied on change" means the new value replaces the user's current value for
+that field. It does not fire `change`.
+
+| Property                             | Attribute                               | Type                                                           | Default                                           | Update behavior                                                           | Description                                                                                                                                                                                                   |
+| ------------------------------------ | --------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------- | ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `eventTitle`                         | `event-title`                           | `string`                                                       | `''`                                              | Applied on change                                                         | Title. Required.                                                                                                                                                                                              |
+| `startDate`                          | `start-date`                            | `string`                                                       | today, in the timezone                            | Applied on change                                                         | Start date. Changing it re-derives the weekly day and the monthly/yearly date/day options. When `allDay` is false, it also sets the end date to the same date.                                                |
+| `toDate`                             | `to-date`                               | `string`                                                       | `startDate`                                       | Initialization: used only when `allDay` is true. Later: applied on change | End date. The field is shown only when all day.                                                                                                                                                               |
+| `allDay`                             | `all-day`                               | `boolean`                                                      | `false`                                           | Applied on change                                                         | Hides the times and shows End date.                                                                                                                                                                           |
+| `fromTime`                           | `from-time`                             | `string`                                                       | current time                                      | Applied on change                                                         | Start time.                                                                                                                                                                                                   |
+| `toTime`                             | `to-time`                               | `string`                                                       | one hour after the current time (capped at 23:59) | Applied on change                                                         | End time. Must be after `fromTime` when the start and end dates are the same.                                                                                                                                 |
+| `selectedTimezone`                   | `selected-timezone`                     | `string`                                                       | browser timezone                                  | Applied on change                                                         | IANA id, or `'floating'`. Exceptions always use this timezone.                                                                                                                                                |
+| `repeatType`                         | `repeat-type`                           | `RepeatType`                                                   | `'never'`                                         | Applied on change                                                         | Changing it resets that repeat type's options to defaults. `'never'` clears skip dates and exceptions. Changing from `'never'` restores `recurrenceSkipDates` and `recurrenceExceptions`.                     |
+| `dateFormat`                         | `date-format`                           | `'dd-MM-yyyy' \| 'yyyy-MM-dd' \| 'MM/dd/yyyy' \| 'dd/MM/yyyy'` | `'dd-MM-yyyy'`                                    | Updates immediately; existing date strings are not converted              | Format for every date in, shown, and out. Other values log a warning and fall back to the default.                                                                                                            |
+| `timeFormat`                         | `time-format`                           | `'hh:mm a' \| 'HH:mm'`                                         | `'hh:mm a'`                                       | Updates immediately                                                       | Format for the time fields and the payload (`'hh:mm AM'` or `'HH:mm'`). Other values log a warning and fall back to the default.                                                                              |
+| `availableTimezones`                 | property only                           | `TimezoneOption[]`                                             | built-in list                                     | Updates immediately                                                       | Timezone choices. "Floating time" is always listed first. `[]` hides the timezone field.                                                                                                                      |
+| `firstDayOfWeek`                     | `first-day-of-week`                     | `number` (0 = Sunday)                                          | `1`                                               | Updates immediately                                                       | Order of the weekly day checkboxes. It does not change the calendar popovers.                                                                                                                                 |
+| `recurrenceSkipDates`                | property only                           | `SkipDate[]`                                                   | `[]`                                              | Replaces the list on change                                               | Initial skip dates. Ignored while repeats is `'never'`.                                                                                                                                                       |
+| `recurrenceExceptions`               | property only                           | `RecurrenceException[]`                                        | `[]`                                              | Replaces the list on change                                               | Initial exceptions. Pass the full shape, including all four detail objects. Ignored while repeats is `'never'`.                                                                                               |
+| `seriesEndFields`                    | property only                           | `SeriesEndType[]`                                              | `['never', 'on', 'after']`                        | Updates immediately                                                       | Series-end options to offer. Array order is ignored; the display order is never, after, on.                                                                                                                   |
+| `showNever` / `showAfter` / `showOn` | `show-never` / `show-after` / `show-on` | `boolean`                                                      | `true`                                            | Updates immediately                                                       | Hide one series-end option each, together with `seriesEndFields`. If all three are false, none of them filters. Hiding an option does not change the selected series-end type.                                |
+| `defaultSeriesEndType`               | `default-series-end-type`               | `SeriesEndType`                                                | `'never'`                                         | Initialization, and each time repeats changes                             | Series end selected for a new repeat type. `'after'` sets 10 occurrences. `'on'` sets the date to `defaultSeriesEndDays` after the start.                                                                     |
+| `defaultSeriesEndDays`               | `default-series-end-days`               | `number`                                                       | `180`                                             | Initialization, and each time repeats changes                             | Days from the start date to the prefilled series-end date.                                                                                                                                                    |
+| `occurrences`                        | `occurrences`                           | `number`                                                       | —                                                 | Initialization only                                                       | Sets the series end to after N occurrences. Ignored when repeats is `'never'`.                                                                                                                                |
+| `repeatUntil`                        | `repeat-until`                          | `string`                                                       | `''`                                              | Initialization only                                                       | Sets the series end to that date. Takes precedence over `occurrences`.                                                                                                                                        |
+| `repeatCount`                        | `repeat-count`                          | `number`                                                       | —                                                 | Initialization only                                                       | Interval ("every N").                                                                                                                                                                                         |
+| `daysInWeek`                         | property only                           | `number[]` (0 = Sunday)                                        | start date's weekday                              | Initialization only                                                       | Weekly days. `repeatType` must be `'weekly'`.                                                                                                                                                                 |
+| `monthType` / `yearType`             | `month-type` / `year-type`              | `'date' \| 'day'`                                              | `'date'`                                          | Initialization only                                                       | Monthly or yearly "On": a date number, or a weekday in a week of the month. Requires the matching `repeatType`.                                                                                               |
+| `weekIndex`                          | `week-index`                            | `'first' \| 'second' \| 'third' \| 'fourth' \| 'last'`         | from start date                                   | Initialization only                                                       | Week of the month for `'day'`. Monthly or yearly only.                                                                                                                                                        |
+| `dayOfWeek`                          | `day-of-week`                           | `number` (0 = Sunday)                                          | from start date                                   | Initialization only                                                       | Weekday for `'day'`. Monthly or yearly only.                                                                                                                                                                  |
+| `expandAdvancedSettings`             | `expand-advanced-settings`              | `boolean`                                                      | `false`                                           | Opens or closes on change                                                 | Advanced settings open state. While it is open and recurring, an empty skip-date row is added whenever there are none.                                                                                        |
+| `disableSkipDate`                    | `disable-skip-date`                     | `boolean`                                                      | `false`                                           | Updates immediately                                                       | Hides the skip dates section.                                                                                                                                                                                 |
+| `hideEndDateOnAllDay`                | `hide-end-date-on-all-day` (reflected)  | `boolean`                                                      | `false`                                           | Updates immediately                                                       | With all day, hides End date, keeps it equal to the start date, and omits `toDate` from the payload.                                                                                                          |
+| `showDueInField`                     | `show-due-in-field`                     | `boolean`                                                      | `false`                                           | Field: immediately. Initial value: initialization only                    | Shows the "Due in" dropdown (main event only) and adds `dueIn` to the payload.                                                                                                                                |
+| `dueInMaxDays`                       | `due-in-max-days`                       | `number`                                                       | `90`                                              | Updates immediately                                                       | "Due in" options run from 0 to this value, clamped to 0–365.                                                                                                                                                  |
+| `dueInDefaultValue`                  | `due-in-default-value`                  | `number`                                                       | `10`                                              | Initialization only                                                       | Initial "Due in" when `dueIn` is unset.                                                                                                                                                                       |
+| `dueIn`                              | `due-in`                                | `number`                                                       | —                                                 | Initialization only                                                       | Initial "Due in" value.                                                                                                                                                                                       |
+| `validationMessages`                 | property only                           | `ValidationMessage[]`                                          | `[]`                                              | Updates immediately                                                       | Host-supplied alerts (`role="alert"`) shown above the summary. They do not affect Save.                                                                                                                       |
+| `showAlert`                          | `show-alert`                            | `boolean`                                                      | `false`                                           | Updates immediately                                                       | Shows an `<aiux-alert-message>` banner at the top.                                                                                                                                                            |
+| `alertType`                          | `alert-type`                            | `string`                                                       | `'error'`                                         | Updates immediately                                                       | Alert type: `info`, `success`, `warning`, `error`, and so on.                                                                                                                                                 |
+| `alertTitle`                         | `alert-title`                           | `string`                                                       | `''`                                              | Updates immediately                                                       | Banner title.                                                                                                                                                                                                 |
+| `alertMessage`                       | `alert-message`                         | `string`                                                       | `''`                                              | Updates immediately                                                       | Banner text.                                                                                                                                                                                                  |
+| `alertDismissible`                   | `alert-dismissible`                     | `boolean`                                                      | `false`                                           | Updates immediately                                                       | Adds a close button. Closing hides the banner and emits `alert-dismiss` (bubbles, composed) from the banner; `showAlert` stays `true`. To show it again later, set `showAlert` to `false` on `alert-dismiss`. |
+
+### Events
+
+Use the literal event names; the package does not export constants for them.
+
+| Event                              | `detail`             | Delivery                          | Fires when                                                                                                                           | Notes                                                                                                                                                                                                         |
+| ---------------------------------- | -------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aiux-schedule-recurrence:save`    | `SaveEventDetail`    | Bubbles, composed, not cancelable | The user clicks an enabled Save.                                                                                                     | Save is enabled only when validation passes, no time field holds unparseable text, and every filled skip date has `isValid: true`.                                                                            |
+| `aiux-schedule-recurrence:cancel`  | `null`               | Bubbles, composed, not cancelable | The user clicks Cancel.                                                                                                              | Nothing is reset.                                                                                                                                                                                             |
+| `aiux-schedule-recurrence:change`  | `ChangeEventDetail`  | Bubbles, composed, not cancelable | Each user edit: title on blur, other controls on selection. It also fires for adding, removing, or editing a skip date or exception. | Not fired for property changes, the Advanced settings toggle, collapsing an exception, or time text that cannot be parsed.                                                                                    |
+| `aiux-schedule-recurrence:invalid` | `InvalidEventDetail` | Bubbles, composed, not cancelable | Validity flips in either direction, from user edits or property changes.                                                             | Initial validity is treated as invalid. A form that starts valid fires `{isValid: true}` during the first update; one that starts invalid (for example, an empty title) fires nothing until it becomes valid. |
+
+### Slots
+
+- `footer-start`: content placed at the start of the footer row, before
+  Cancel and Save.
+
+### Methods
+
+None.
+
+### Data shapes
+
+```ts
+type RepeatType = 'never' | 'daily' | 'weekly' | 'monthly' | 'yearly';
+type SeriesEndType = 'never' | 'on' | 'after';
+type WeekLabel = 'first' | 'second' | 'third' | 'fourth' | 'last';
+
+// ---- Inputs ----
+interface TimezoneOption {
+  id: string; // value stored in selectedTimezone
+  label: string;
+}
+
+interface SkipDate {
+  index: number;
+  key: string; // unique; used to track rows
+  startDate: string; // dateFormat; '' for an empty row
+  isValid: boolean; // must be true for a filled date, or Save stays disabled
+  validationMessage?: string; // not read
+}
+
+interface SeriesEndDetails {
+  type: SeriesEndType;
+  date?: string;
+  occurrences?: number;
+}
+interface OnDetails {
+  type: 'date' | 'day';
+  dateNumber?: number; // 1-31, for 'date'
+  weekType?: WeekLabel; // for 'day'
+  day?: number; // 0 = Sunday, for 'day'
+}
+
+interface RecurrenceEvent {
+  eventTitle: string;
+  startDate: string;
+  toDate: string;
+  allDay: boolean;
+  fromTime: string; // user edits are stored as 'HH:mm'
+  toTime: string;
+  selectedTimezone: string;
+  repeats: RepeatType;
+  dayDetails: {every: number; seriesEndDetails: SeriesEndDetails};
+  weekDetails: {
+    every: number;
+    daysInWeek: number[];
+    seriesEndDetails: SeriesEndDetails;
+  };
+  monthDetails: {
+    every: number;
+    onDetails: OnDetails;
+    seriesEndDetails: SeriesEndDetails;
+  };
+  yearDetails: {
+    every: number;
+    onDetails: OnDetails;
+    seriesEndDetails: SeriesEndDetails;
+  }; // the month comes from startDate
+  dueIn?: number;
+}
+
+interface RecurrenceException extends RecurrenceEvent {
+  index: number;
+  key: string; // unique
+  collapsed?: boolean; // form collapsed in Advanced settings
+}
+
+interface ValidationMessage {
+  type: 'error' | 'warning' | 'info';
+  message: string;
+  header?: string;
+}
+
+// ---- Event details ----
+interface ChangeEventDetail {
+  field: string; // e.g. 'eventTitle', 'repeats', 'weekDetails.daysInWeek',
+  // 'monthDetails.onDetails.day', 'dayDetails.seriesEndDetails.type', 'skipDates', 'exceptions'
+  value: unknown; // for 'skipDates' / 'exceptions': the whole current list
+  event: RecurrenceEvent; // copy of the full current main event
+}
+
+interface InvalidEventDetail {
+  isValid: boolean;
+  errors: {field: string; message: string}[];
+  // field: 'eventTitle', 'startDate', 'toDate', 'fromTime', 'toTime', 'daysInWeek',
+  // 'seriesEndDate', 'occurrences', 'skipDates[i].startDate', 'exceptions[i].<field>'
+}
+
+interface SaveEventDetail {
+  eventRecurrence: {
+    event: SavedEvent;
+    skipDates: SavedSkipDate[]; // empty rows removed
+    exceptions: SavedException[];
+    summary: string; // same text as the Summary panel; '\n\n' between sections
+  };
+}
+
+interface SavedEvent {
+  eventOrRuleName: string; // the title
+  startDate: string;
+  toDate?: string; // only when allDay and not hideEndDateOnAllDay
+  fromTime?: string; // only when not allDay; formatted per timeFormat
+  toTime?: string;
+  repeats: RepeatType;
+  selectedTimezone: string;
+  allDay: boolean;
+  dueIn?: number; // only when showDueInField
+  // Only the one key that matches `repeats`:
+  dayDetails?: {every: number; seriesEndDetails: SavedSeriesEnd};
+  weekDetails?: {
+    every: number;
+    daysInWeek: number[];
+    seriesEndDetails: SavedSeriesEnd;
+  };
+  monthDetails?: {
+    every: number;
+    onDetails: SavedOnDetails;
+    seriesEndDetails: SavedSeriesEnd;
+  };
+  yearDetails?: {
+    every: number;
+    onDetails: SavedOnDetails;
+    seriesEndDetails: SavedSeriesEnd;
+  };
+}
+
+type SavedSeriesEnd =
+  | {type: 'never'}
+  | {type: 'on'; date: string}
+  | {type: 'after'; occurrences: number};
+
+type SavedOnDetails =
+  | {type: 'date'; dateNumber: number}
+  | {type: 'day'; day: number; weekType: WeekLabel};
+
+interface SavedSkipDate {
+  startDate: string;
+  toDate: string; // same as startDate
+  index: number;
+  eventOrRuleName: string; // 'Skip Date <index>'
+  repeats: 'never';
+  allDay: true;
+  key: string; // 'key<index>'
+}
+
+// Same rules as SavedEvent, without dueIn; selectedTimezone is the main event's.
+type SavedException = Omit<SavedEvent, 'dueIn'> & {index: number; key: string};
 ```
 
-## Public Exports
+The package does not export these types. The saved shapes differ from the
+input shapes: `eventOrRuleName` instead of `eventTitle`, and only the active
+detail object, whose `every`, `daysInWeek`, `onDetails`, and
+`seriesEndDetails` map to `repeatCount`, `daysInWeek`, `monthType`/`yearType`,
+`weekIndex`, `dayOfWeek`, `occurrences`, and `repeatUntil`. Map them back
+before reloading saved data; exceptions need all four detail objects again.
 
-The package entry point exports the component class only:
+## Integration details
 
-```typescript
-import { ScheduleRecurrence } from '@servicenow/aiux-schedule-recurrence';
-```
+### SSR
 
-Internal types, render functions, controllers, utilities, and constants are not exported from the package entry point. Consumers should use the `<aiux-schedule-recurrence>` component API, properties, and custom events documented above.
+The card renders on the server. The default date, times, and timezone are
+computed only in the browser. Server output leaves them empty unless you set
+them.
 
-## Styling & Theming
+### Lifecycle
 
-The component uses **Tailwind CSS** utility classes and **DaisyUI** semantic tokens. It inherits theming from the Karuna design system via `AIUXElement`.
+- State initializes on the first update and survives disconnect and
+  reconnect.
+- Re-setting properties never resets the whole form. To start over, render a
+  new element.
 
-DaisyUI theme variables respected:
+### Sizing and layout
 
-- `--color-base-100`, `--color-base-200`, `--color-base-300` — Background surfaces
-- `--color-base-content` — Text color
-- `--color-primary`, `--color-primary-content` — Primary actions and calendar accents
-- `--color-error` — Validation errors
+- `display: block; width: 100%`. The host is a size container, so its width
+  must come from its parent. It collapses inside a shrink-to-fit parent.
+- The layout is based on the element's own width: labels stack below 640px,
+  and the footer stacks below 320px. Height grows with content; the element
+  does not scroll internally.
+- The card has its own border, rounded corners, padding, and large shadow.
 
-Dark mode is supported out of the box through DaisyUI theme switching.
+## Accessibility, localization, and customization
 
-## Accessibility
-
-- **WCAG 2.1 Level A and AA** verified -- automated axe-core scans run across all repeat modes and UI states as part of the functional test suite
-- Form labels are programmatically associated with inputs via `for`/`id`, `aria-label`, and `aria-labelledby`
-- Required fields are marked with visual asterisks
-- Error states are communicated visually and programmatically (`role="alert"` on external validation messages; inline `.text-error` spans for field-level errors)
-- Calendar navigation buttons have descriptive `aria-label` attributes
-- Advanced settings accordion toggle carries an `aria-label` via the DaisyUI collapse pattern
-- All interactive elements (inputs, selects, buttons, day-of-week toggles) are keyboard accessible and focusable
-- Save and Cancel buttons respond to keyboard activation (Enter/Space) via native browser button behaviour
-
-## Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-
-## Development
-
-```bash
-# Run unit tests (Node, fast)
-cd packages/schedule-recurrence && pnpm test
-
-# Run unit tests with coverage
-cd packages/schedule-recurrence && pnpm test:coverage
-
-# Run functional tests (Vitest browser mode, Chromium)
-# Requires one-time: npx playwright install chromium
-cd packages/schedule-recurrence && pnpm test:functional
-
-# Storybook
-cd components && pnpm storybook
-```
-
-## Dependencies
-
-**Runtime:**
-
-- `@lit/localize` — Internationalization
-- `@servicenow/aiux-components-core` — Base element class
-- `@servicenow/aiux-sn-popover` — Calendar popovers
-- `@servicenow/aiux-components-icon` — Icons
-- `cally` — Calendar date picker
-
-**Peer:** `lit ^3.0.0`
-
-**Dev:** `@vitest/browser-playwright`, `playwright`, `vitest` — drive the
-functional test suite in Chromium. `axe-core` — WCAG 2.1 A/AA automated
-accessibility audits within the functional suite.
-
-## License
-
-ISC
+- **Accessibility:** every control has a label, and required fields announce
+  "required". Dropdowns support arrow keys, Enter/Space, and Escape. The card
+  has no heading; provide one if the page needs it.
+- **Localization:** labels, validation messages, and the summary are localized.
+  The following are hard-coded English: the "Floating time" option and its
+  description, ordinal suffixes in the summary ("1st", "2nd"), and the
+  payload's `Skip Date N` names. Host strings (`alertTitle`, `alertMessage`,
+  `validationMessages`, timezone labels) are shown as given.
+- **Customization:** no parts or custom properties. Colors come from the page's
+  DaisyUI theme (`base-100`, `base-200`, `base-300`, and text tokens).

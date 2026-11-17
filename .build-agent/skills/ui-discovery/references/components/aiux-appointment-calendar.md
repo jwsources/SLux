@@ -1,4 +1,17 @@
-# @servicenow/aiux-appointment-calendar
+# Appointment calendar
+
+> Source: `@servicenow/aiux-appointment-calendar@4.0.2` · `components/external/appointment-calendar/docs/usage/aiux-appointment-calendar.md`
+
+`<aiux-appointment-calendar>` shows the slots in `events` on a week or day grid
+and reports the user's choice through Schedule, Reschedule, Propose, and Cancel
+events. It never loads slots or books anything: the host supplies `events`,
+performs the booking, and updates `events` afterwards.
+
+Built in: Today/previous/next navigation, a date-range picker (week view), a
+mini calendar (day view), an optional Day/Week selector, single or multi-slot
+selection with a selected-slots popover, a "Next available time slot" link,
+category grouping with "+N more", slot badges and tooltips, a timezone and
+duration summary, and a footer with Cancel/Propose/Schedule buttons.
 
 ## Import
 
@@ -6,604 +19,289 @@
 import '@servicenow/aiux-appointment-calendar';
 ```
 
-
-An appointment calendar component for scheduling, rescheduling, and proposing appointment slots. Supports week and day views, multi-slot selection, event categorisation, and timezone-aware rendering. Built with Lit 3, fully SSR-compatible.
-
-## Installation
-
-```bash
-pnpm add @servicenow/aiux-appointment-calendar
-```
-
-```js
-import '@servicenow/aiux-appointment-calendar';
-```
-
-### Peer dependencies
-
-Consumers must provide:
-
-| Package                                | Version    |
-| -------------------------------------- | ---------- |
-| `lit`                                  | `^3.0.0`   |
-| `@lit/localize`                        | `^0.12.2`  |
-| `@servicenow/aiux-components-core`     | `^4.10.1`  |
-| `@servicenow/aiux-directive-icon`      | `^1.1.1`   |
-
 ## Usage
 
-### Minimal
+### Minimal complete example
 
-```html
-<aiux-appointment-calendar></aiux-appointment-calendar>
+```ts
+import {html} from 'lit';
+import {customElement, state} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
+import '@servicenow/aiux-appointment-calendar';
+
+type Slot = {
+  start: string;
+  end: string;
+  type: 'available' | 'unavailable' | 'selected';
+};
+
+@customElement('my-appointment-picker')
+export class MyAppointmentPicker extends AIUXElement {
+  @state() private _slots: Slot[] = [
+    {
+      start: '2026-09-28 09:00:00',
+      end: '2026-09-28 09:30:00',
+      type: 'available'
+    },
+    {
+      start: '2026-09-28 10:00:00',
+      end: '2026-09-28 10:30:00',
+      type: 'unavailable'
+    },
+    {
+      start: '2026-09-29 14:00:00',
+      end: '2026-09-29 14:30:00',
+      type: 'available'
+    }
+  ];
+
+  // Assumes start/end are unique per slot; otherwise match on your own id field.
+  private _same(a: Slot, b: Slot) {
+    return a.start === b.start && a.end === b.end;
+  }
+
+  private _onSchedule(e: CustomEvent<{event: Slot}>) {
+    // Local-state demo: book on your backend first; update only on success.
+    this._slots = this._slots.map(s =>
+      this._same(s, e.detail.event) ? {...s, type: 'selected'} : s
+    );
+  }
+
+  private _onReschedule(e: CustomEvent<{event: Slot; previousEvent: Slot}>) {
+    // Local-state demo: reschedule on your backend first; update only on success.
+    this._slots = this._slots.map(s => {
+      if (this._same(s, e.detail.previousEvent))
+        return {...s, type: 'available'};
+      if (this._same(s, e.detail.event)) return {...s, type: 'selected'};
+      return s;
+    });
+  }
+
+  render() {
+    return html`
+      <div style="height: 640px">
+        <aiux-appointment-calendar
+          .events=${this._slots}
+          context-date="2026-09-28 00:00:00"
+          timezone="America/New_York"
+          app-title="Book a visit"
+          show-view-selector
+          @aiux-appointment-calendar:schedule-appointment=${this._onSchedule}
+          @aiux-appointment-calendar:reschedule-appointment=${this._onReschedule}
+        ></aiux-appointment-calendar>
+      </div>
+    `;
+  }
+}
 ```
 
-### With events and timezone
+**What happens:** once a slot has `type: 'selected'`, the footer shows it as
+the booked slot and the Schedule button becomes Reschedule. Only slots with
+`type: 'available'` can be selected.
+
+### Additional patterns
+
+Multi-slot proposal:
 
 ```js
-const events = [
-  {start: '2024-06-10 09:00:00', end: '2024-06-10 09:30:00', type: 'available'},
-  {start: '2024-06-10 10:00:00', end: '2024-06-10 10:30:00', type: 'available'},
-  {
-    start: '2024-06-10 11:00:00',
-    end: '2024-06-10 11:30:00',
-    type: 'unavailable'
-  }
-];
+html`
+  <aiux-appointment-calendar
+    .events=${slots}
+    context-date=${date}
+    enable-multi-select-slot
+    @aiux-appointment-calendar:propose-appointment=${e => propose(e.detail.events)}
+  ></aiux-appointment-calendar>
+`;
 ```
 
-```html
-<aiux-appointment-calendar
-  app-title="Book an Appointment"
-  context-date="2024-06-10 00:00:00"
-  timezone="America/New_York"
-  .events="${events}"
-  @aiux-appointment-calendar:schedule-appointment="${onSchedule}"
-  @aiux-appointment-calendar:range-updated="${onRangeUpdated}"
-></aiux-appointment-calendar>
-```
-
-### Localized weekday/month names
-
-```html
-<aiux-appointment-calendar
-  .contextDate="${new Date()}"
-  locale="fr"
-></aiux-appointment-calendar>
-```
-
-Binding `locale` to `session.user.language` keeps weekday names, month names, and AM/PM in sync with the instance's active language.
-
-Non-`en` locale data is loaded lazily via `import('moment/locale/<code>.js')` from a static, fully-enumerated map in `locale-loaders.ts` (required so bundlers can statically discover each locale file; a single runtime-templated dynamic import cannot be resolved by Vite's dev server). An esbuild plugin in `.storybook/main.js` rewrites each locale file's `require('../moment')` to `require('moment-timezone')` during Vite's pre-bundling, ensuring all locale data registers on the same moment instance — so locale changes are reflected correctly in Storybook as well.
-
-### Day view with multi-slot selection
-
-```html
-<aiux-appointment-calendar
-  view="DAY"
-  enable-multi-select-slot
-  show-view-selector
-  timezone="UTC"
-  .events="${events}"
-  @aiux-appointment-calendar:propose-appointment="${onPropose}"
-></aiux-appointment-calendar>
-```
-
-### With categories
+Categories, badges, and a next-available link:
 
 ```js
 const categories = [
-  {id: 'morning', label: 'Morning', icon: 'sun', order: 0},
-  {id: 'afternoon', label: 'Afternoon', icon: 'partly-cloudy', order: 1}
+  {id: 'am', label: 'Morning', order: 1},
+  {id: 'pm', label: 'Afternoon', order: 2}
 ];
-
 const events = [
   {
-    start: '2024-06-10 09:00:00',
-    end: '2024-06-10 09:30:00',
+    start: '2026-09-28 09:00:00',
+    end: '2026-09-28 09:30:00',
     type: 'available',
-    category: 'morning'
-  },
-  {
-    start: '2024-06-10 14:00:00',
-    end: '2024-06-10 14:30:00',
-    type: 'available',
-    category: 'afternoon'
+    category: 'am',
+    primaryInfoData: [{label: 'Recommended', color: 'success'}],
+    secondaryInfoData: [{label: 'Dr. Lee'}],
+    tooltip: 'Bring your ID'
   }
 ];
+
+html`
+  <aiux-appointment-calendar
+    .events=${events}
+    .categories=${categories}
+    .nextAvailableEvent=${events[0]}
+    enable-categories
+    view="DAY"
+  ></aiux-appointment-calendar>
+`;
 ```
 
-```html
-<aiux-appointment-calendar
-  enable-categories
-  .categories="${categories}"
-  .events="${events}"
-></aiux-appointment-calendar>
-```
+## API
 
-### With slot info tags
+### Properties and attributes
 
-Decorate individual slots with `primaryInfoData` (up to two badges on a single line, centered and floating on the slot's top border, showing their full labels) and `secondaryInfoData` (one line of supporting text under the title). When any slot in the view carries tags, all slots reserve the same top space so the grid stays aligned.
+Bind arrays and objects as properties. An admin's Config Editor value overrides
+the host's for every property except `events`, `contextDate`, `categories`,
+`nextAvailableEvent`, `configAria`, and `enableMultiSelectSlot`.
 
-```js
-const events = [
-  {
-    start: '2024-06-10 09:00:00',
-    end: '2024-06-10 09:30:00',
-    type: 'available',
-    primaryInfoData: [
-      {label: 'Recommended', color: 'success'},
-      {label: 'Limited', color: 'warning', icon: 'triangle-exclamation'}
-    ],
-    secondaryInfoData: [{label: '3 of 5 slots left'}]
-  }
-];
-```
+| Property                       | Attribute                                     | Type                 | Default        | Update behavior                                                          | Description                                                                                                                                                                                                                                                                     |
+| ------------------------------ | --------------------------------------------- | -------------------- | -------------- | ------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `events`                       | property only                                 | `CalendarEvent[]`    | `[]`           | Updates immediately; keeps current selections that are still `available` | All slots, for any dates; only the visible days are drawn. Each `start` must be `YYYY-MM-DD HH:mm:ss` in `timezone`; other formats parse but the slot appears in no day.                                                                                                        |
+| `contextDate`                  | `context-date` (reflects)                     | `string`             | `''`           | Navigates immediately; fires `context-date-changed`                      | Date whose week/day is shown. `YYYY-MM-DD HH:mm:ss` or ISO 8601, in `timezone`; empty or invalid means today. The element writes it back (as `YYYY-MM-DD HH:mm:ss`) when the user navigates. While it is empty, view and `timezone` changes do not recompute the visible dates. |
+| `view`                         | `view` (reflects)                             | `'WEEK' \| 'DAY'`    | `'WEEK'`       | Updates immediately; fires `view-updated`, clears selection              | Shown view. Invalid values fall back to `WEEK` initially and are ignored later. The Day/Week selector does not write back to `view`, so re-setting the value it already has does nothing.                                                                                       |
+| `timezone`                     | `timezone` (reflects)                         | `string` (IANA)      | `'GMT'`        | Updates immediately                                                      | Timezone that slot times are read and shown in. Displayed as-is in the header.                                                                                                                                                                                                  |
+| `appTitle`                     | `app-title`                                   | `string`             | `''`           | Updates immediately                                                      | Title above the controls (`<h2>`). None when empty.                                                                                                                                                                                                                             |
+| `showViewSelector`             | `show-view-selector`                          | `boolean`            | `false`        | Updates immediately                                                      | Shows the Day/Week selector in the header.                                                                                                                                                                                                                                      |
+| `enableMultiSelectSlot`        | `enable-multi-select-slot`                    | `boolean`            | `false`        | Updates immediately; turning it off keeps only the first selection       | Lets users select several slots; adds the selected-slots popover and a Propose button. Schedule is enabled only with exactly one selection.                                                                                                                                     |
+| `enableCategories`             | `enable-categories`                           | `boolean`            | `false`        | Updates immediately                                                      | Groups slots under `categories`. No effect when `categories` is empty. Week view then shows up to 5 slots per category and day before "+N more"; without categories every slot shows and the column scrolls.                                                                    |
+| `categories`                   | property only                                 | `Category[]`         | `[]`           | Updates immediately                                                      | Category headings, sorted by `order`. Slots whose `category` matches no `id` go to an added "Other" category. The English labels Morning/Afternoon/Evening/Night get a default icon.                                                                                            |
+| `nextAvailableEvent`           | property only                                 | `CalendarEvent`      | `{}`           | Updates immediately                                                      | Shows "Next available time slot: <date>" when it has `start`. Clicking it selects the slot in `events` with the same `start` and `end` (or this object if none match) and navigates to its date.                                                                                |
+| `numberOfEventsInEachRow`      | `number-of-events-in-each-row`                | `number`             | `5`            | Updates immediately                                                      | Day view only: slot columns (2–5; other values give one column). With categories, slots beyond two rows collapse behind "+N more".                                                                                                                                              |
+| `firstDayOfWeek`               | `first-day-of-week`                           | `number`             | `0`            | Updates immediately                                                      | Week start, `0` = Sunday … `6` = Saturday; clamped to 0–6. Also applies to the picker and mini calendar.                                                                                                                                                                        |
+| `locale`                       | `locale`                                      | `string`             | `'en'`         | After locale data loads                                                  | Weekday/month names and AM/PM. Must be a moment.js locale code (`fr`, `de`, `zh-cn`, `pt-br`); ServiceNow codes `pb`, `fq`, `zt` are mapped. Unknown codes render English.                                                                                                      |
+| `dateFormat`                   | `date-format`                                 | `string` (moment.js) | `'YYYY-MM-DD'` | Updates immediately                                                      | Only its month/day order is used (month-first vs day-first), unless `applyDateFormatGlobally` is `true`.                                                                                                                                                                        |
+| `applyDateFormatGlobally`      | `apply-date-format-globally`                  | `boolean`            | `false`        | Updates immediately                                                      | Uses `dateFormat` verbatim for the day heading, footer dates, and slot labels for screen readers (`dddd, <dateFormat>`, `ddd, <dateFormat>, <timeFormat>`). The week range label still uses only the order.                                                                     |
+| `timeFormat`                   | `time-format`                                 | `string` (moment.js) | `'h:mm A'`     | Updates immediately                                                      | Slot and footer times.                                                                                                                                                                                                                                                          |
+| `showEndTimeInEvents`          | `show-end-time-in-events`                     | `boolean`            | `false`        | Updates immediately                                                      | Slot label shows `start - end` instead of `start`. Ignored for slots with a `title`.                                                                                                                                                                                            |
+| `showDurationInEvents`         | `show-duration-in-events`                     | `boolean`            | `false`        | Updates immediately                                                      | Shows each slot's duration (e.g. `30 min`) inside the slot and hides the header duration.                                                                                                                                                                                       |
+| `disableTimeDuration`          | `disable-time-duration`                       | `boolean`            | `false`        | Updates immediately                                                      | Hides all duration text. Without it or `showDurationInEvents`, the header shows one duration when every slot has the same length.                                                                                                                                               |
+| `disablePreviousSlotDates`     | `disable-previous-slot-dates` (reflects)      | `boolean`            | `false`        | Updates immediately                                                      | Slots that have ended show as unavailable; the previous button is disabled while the visible range starts on or before today; past dates are disabled in the picker and mini calendar.                                                                                          |
+| `disableNonAvailableSlotDates` | `disable-non-available-slot-dates` (reflects) | `boolean`            | `false`        | Updates immediately                                                      | In the picker and mini calendar, disables dates with no available slot and dates outside the first-to-last available date. Previous/next buttons are not limited.                                                                                                               |
+| `configAria`                   | property only                                 | `AriaConfig`         | `{}`           | Updates immediately                                                      | Accessible names for the calendar region and its body.                                                                                                                                                                                                                          |
 
-```html
-<aiux-appointment-calendar
-  timezone="America/New_York"
-  .events="${events}"
-></aiux-appointment-calendar>
-```
+### Events
 
-### Disabling past slot dates
+Use the literal event names; they are not exported as constants.
 
-Set `disable-previous-slot-dates` to mark all events before today as unavailable and prevent navigation to past dates. Useful when the agent must always book in the future.
+| Event                                              | `detail`                                               | Delivery                          | Fires when                                                                                                                                                                                                                         | Notes                                                                                                                                  |
+| -------------------------------------------------- | ------------------------------------------------------ | --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `aiux-appointment-calendar:schedule-appointment`   | `{event: CalendarEvent}`                               | Bubbles, composed, not cancelable | The user clicks Schedule with one slot selected and no slot has `type: 'selected'`.                                                                                                                                                | Clears the selection. Update `events` after booking.                                                                                   |
+| `aiux-appointment-calendar:reschedule-appointment` | `{event: CalendarEvent, previousEvent: CalendarEvent}` | Bubbles, composed, not cancelable | The user clicks Reschedule (Schedule while a slot has `type: 'selected'`).                                                                                                                                                         | `previousEvent` is the first `selected` slot. Clears the selection.                                                                    |
+| `aiux-appointment-calendar:propose-appointment`    | `{events: CalendarEvent[]}`                            | Bubbles, composed, not cancelable | The user clicks Propose (multi-select only) with at least one slot selected.                                                                                                                                                       | Clears the selection.                                                                                                                  |
+| `aiux-appointment-calendar:cancel-clicked`         | `{}`                                                   | Bubbles, composed, not cancelable | The user clicks Cancel.                                                                                                                                                                                                            | Clears the selection; nothing else.                                                                                                    |
+| `aiux-appointment-calendar:event-clicked`          | `{event: CalendarEvent, isActive: boolean}`            | Bubbles, composed, not cancelable | The user selects (`isActive: true`) or deselects (`false`) a slot, removes one in the selected-slots popover, clicks Deselect all (once per slot), or clicks the next-available link (only if that slot was not already selected). | Not fired when Schedule, Propose, Cancel, or a view change clears the selection.                                                       |
+| `aiux-appointment-calendar:context-date-changed`   | `ContextDateChangedDetail`                             | Bubbles, composed, not cancelable | Today/previous/next, a picker or mini-calendar date, the next-available link, a host change to `contextDate`, and after every view change or `timezone` change while `contextDate` is set.                                         | Not fired on first render. Also fires when the date did not change (e.g. after a view change). Use it to load slots for the new dates. |
+| `aiux-appointment-calendar:range-updated`          | `RangeUpdatedDetail`                                   | Bubbles, composed, not cancelable | Once, after the first render.                                                                                                                                                                                                      | Not fired on later navigation; use `context-date-changed`.                                                                             |
+| `aiux-appointment-calendar:view-updated`           | `{from: 'WEEK' \| 'DAY' \| null, to: 'WEEK' \| 'DAY'}` | Bubbles, composed, not cancelable | The user picks a view in the selector (even the current one), or the host changes `view`.                                                                                                                                          | Echoing `to` back into `view` fires it again and clears the selection again.                                                           |
 
-```html
-<aiux-appointment-calendar
-  disable-previous-slot-dates
-  timezone="America/New_York"
-  .events="${events}"
-></aiux-appointment-calendar>
-```
+Event objects in details are shallow copies of your `events` entries (same
+fields, not the same object reference).
 
-### Disabling dates with no available slots
+### Slots
 
-Set `disable-non-available-slot-dates` to grey out dates that contain only `unavailable` events — signalling to the user that those days cannot be booked. Requires your `events` array to include events with `type: 'unavailable'`.
+- `left-footer`: content at the start of the footer button row.
+- `right-footer-btns`: replaces the Cancel, Propose, and Schedule buttons.
+  There are no methods to trigger those actions, so the replaced actions and
+  their events are unavailable.
 
-```js
-const events = [
-  {start: '2024-06-10 09:00:00', end: '2024-06-10 09:30:00', type: 'available'},
-  {
-    start: '2024-06-11 09:00:00',
-    end: '2024-06-11 09:30:00',
-    type: 'unavailable'
-  }
-];
-```
+### Methods
 
-```html
-<aiux-appointment-calendar
-  disable-non-available-slot-dates
-  timezone="America/New_York"
-  .events="${events}"
-></aiux-appointment-calendar>
-```
+None.
 
-### Showing duration and end time in event chips
-
-Use `show-duration-in-events` to display a duration label (e.g. `30 min`) inside each event chip. Use `show-end-time-in-events` to show the end time alongside the start time. Both can be enabled independently or together.
-
-```html
-<!-- Show duration only -->
-<aiux-appointment-calendar
-  show-duration-in-events
-  .events="${events}"
-></aiux-appointment-calendar>
-
-<!-- Show end time only -->
-<aiux-appointment-calendar
-  show-end-time-in-events
-  .events="${events}"
-></aiux-appointment-calendar>
-
-<!-- Show both -->
-<aiux-appointment-calendar
-  show-duration-in-events
-  show-end-time-in-events
-  .events="${events}"
-></aiux-appointment-calendar>
-```
-
-### Rescheduling — marking the currently booked slot
-
-Set `type: 'selected'` on the existing appointment. The component will dispatch `aiux-appointment-calendar:reschedule-appointment` (instead of `aiux-appointment-calendar:schedule-appointment`) when the user picks a new slot.
-
-```js
-const events = [
-  {start: '2024-06-10 09:00:00', end: '2024-06-10 09:30:00', type: 'selected'},
-  {start: '2024-06-10 10:00:00', end: '2024-06-10 10:30:00', type: 'available'}
-];
-```
-
-### Handling events
-
-```js
-function onSchedule(e) {
-  const {event} = e.detail;
-  // event = { start, end, type, ... }
-  await fetch('/api/appointments', {method: 'POST', body: JSON.stringify(event)});
-}
-
-function onPropose(e) {
-  const {events} = e.detail;
-  // events = [{ start, end, ... }, ...]
-  await fetch('/api/proposals', {method: 'POST', body: JSON.stringify(events)});
-}
-
-function onRangeUpdated(e) {
-  const {startMS, endMS} = e.detail;
-  // fetch events for the new visible range
-  loadEvents(startMS, endMS);
-}
-```
-
-## Properties
-
-| Property                       | Attribute                          | Type              | Default        | Description                                                                       |
-| ------------------------------ | ---------------------------------- | ----------------- | -------------- | --------------------------------------------------------------------------------- |
-| `appTitle`                     | `app-title`                        | `string`          | `''`           | Title displayed in the calendar header                                            |
-| `categories`                   | —                                  | `Category[]`      | `[]`           | Category definitions used to group events (requires `enableCategories`)           |
-| `configAria`                   | —                                  | `AriaConfig`      | `{}`           | ARIA label overrides for the component region and body                            |
-| `contextDate`                  | `context-date`                     | `string`          | `''`           | Date that determines the visible week/day. Format: `YYYY-MM-DD HH:mm:ss`          |
-| `dateFormat`                   | `date-format`                      | `string`          | `'YYYY-MM-DD'` | Date format used in the header and labels                                         |
-| `applyDateFormatGlobally`      | `apply-date-format-globally`       | `boolean`         | `false`        | When `true`, uses `dateFormat` and `timeFormat` for all date/time display strings |
-| `disableNonAvailableSlotDates` | `disable-non-available-slot-dates` | `boolean`         | `false`        | Disables calendar dates that have no available slots                              |
-| `disablePreviousSlotDates`     | `disable-previous-slot-dates`      | `boolean`         | `false`        | Marks past events as unavailable and disables navigation to past dates            |
-| `enableCategories`             | `enable-categories`                | `boolean`         | `false`        | Groups events by category within each day                                         |
-| `enableMultiSelectSlot`        | `enable-multi-select-slot`         | `boolean`         | `false`        | Allows selecting multiple slots at once (for propose flow)                        |
-| `events`                       | —                                  | `CalendarEvent[]` | `[]`           | Appointment slots to display                                                      |
-| `firstDayOfWeek`               | `first-day-of-week`                | `number`          | `0` (Sunday)   | Start day of the week: `0`=Sunday … `6`=Saturday                                  |
-| `locale`                       | `locale`                           | `string`          | `'en'`         | Locale used to render weekday/month names and AM/PM in dates and times. Accepts moment.js/BCP-47 locale codes (e.g. `'fr'`, `'es'`, `'pt-BR'`); the legacy ServiceNow codes `'pb'`, `'fq'`, `'zt'` are automatically normalized to `'pt-BR'`, `'fr-CA'`, `'zh-TW'`. Bind to `session.user.language` for full instance-language coverage |
-| `nextAvailableEvent`           | —                                  | `CalendarEvent`   | `{}`           | The next available event, used by the "Next available" footer action              |
-| `numberOfEventsInEachRow`      | `number-of-events-in-each-row`     | `number`          | `5`            | Maximum slots shown per row before a "Show more" link appears                     |
-| `showDurationInEvents`         | `show-duration-in-events`          | `boolean`         | `false`        | Shows the duration label (e.g. `30 min`) inside each event chip                   |
-| `showEndTimeInEvents`          | `show-end-time-in-events`          | `boolean`         | `false`        | Shows the end time alongside the start time in each event chip                    |
-| `disableTimeDuration`          | `disable-time-duration`            | `boolean`         | `false`        | Hides all time/duration labels from event chips                                   |
-| `showViewSelector`             | `show-view-selector`               | `boolean`         | `false`        | Displays the Week / Day toggle in the header                                      |
-| `timeFormat`                   | `time-format`                      | `string`          | `'hh:mm A'`    | Time format used in event chips and the footer                                    |
-| `timezone`                     | `timezone`                         | `string`          | `'GMT'`        | IANA timezone identifier (e.g. `'America/New_York'`, `'Asia/Tokyo'`)              |
-| `view`                         | `view`                             | `'WEEK' \| 'DAY'` | `'WEEK'`       | Initial calendar view                                                             |
-
-Properties with no attribute must be set as JavaScript properties, not as HTML attributes.
-
-## Config Properties
-
-Set via the platform Config Editor (`configSchema`), not as HTML attributes.
-
-| Property                        | Type      | Label                        | Default     | Description                                                                       |
-| -------------------------------- | --------- | ----------------------------- | ----------- | ---------------------------------------------------------------------------------- |
-| `configAppTitle`                 | `String`  | App Title                     | `undefined` | Optional heading title rendered above the calendar body.                          |
-| `configDateFormat`                | `String`  | Date Format                   | `undefined` | Moment.js format string used to display dates.                                    |
-| `configApplyDateFormatGlobally`   | `Boolean` | Apply Date Format Globally    | `undefined` | Apply the configured date format to all displayed dates rather than only specific fields. |
-| `configFirstDayOfWeek`            | `Number`  | First Day Of Week             | `undefined` | The day of week (0 = Sunday .. 6 = Saturday) the calendar week starts on.          |
-| `configNumberOfEventsInEachRow`   | `Number`  | Number Of Events In Each Row  | `undefined` | Maximum number of events shown per row before overflow.                           |
-| `configShowDurationInEvents`      | `Boolean` | Show Duration In Events       | `undefined` | Show the event duration on each event chip.                                       |
-| `configShowEndTimeInEvents`       | `Boolean` | Show End Time In Events       | `undefined` | Show each event's end time in addition to its start time.                         |
-| `configDisableTimeDuration`       | `Boolean` | Disable Time Duration         | `undefined` | Suppress duration calculation/display for events entirely.                        |
-| `configShowViewSelector`          | `Boolean` | Show View Selector            | `undefined` | Show the Day/Week view selector control in the header.                            |
-| `configView`                      | `String`  | View                           | `undefined` | Default calendar view. Choices: `DAY` (Day), `WEEK` (Week)                        |
-| `configEnableCategories`          | `Boolean` | Enable Categories             | `undefined` | Show category grouping/legend for events.                                         |
-| `configLocale`                    | `String`  | Locale                        | `undefined` | Locale used to render weekday/month names and AM/PM. Accepts moment.js/BCP-47 locale codes. |
-| `configTimeFormat`                | `String`  | Time Format                   | `undefined` | Moment.js format string used for the time portion of event chips and the footer.  |
-| `configTimezone`                  | `String`  | Timezone                      | `undefined` | IANA timezone identifier (e.g. `America/New_York`, `Asia/Tokyo`) used to render event times. |
-| `configDisableNonAvailableSlotDates` | `Boolean` | Disable Non Available Slot Dates | `undefined` | Disables calendar dates that have no available slots.                          |
-| `configDisablePreviousSlotDates`  | `Boolean` | Disable Previous Slot Dates   | `undefined` | Marks past events as unavailable and disables navigation to past dates.           |
-
-## Events
-
-All events bubble and are composed.
-
-### `aiux-appointment-calendar:range-updated`
-
-Fired once on initial render (during `firstUpdated`) after the calendar bootstraps and calculates the initial visible date range. Use this to fetch the initial set of events for the visible window.
+### Data shapes
 
 ```ts
-detail: {
-  startMoment: Moment;
-  endMoment: Moment;
-  startMS: number; // Unix ms
-  endMS: number; // Unix ms
-}
-```
-
-### `aiux-appointment-calendar:context-date-changed`
-
-Fired when the focused date changes.
-
-```ts
-detail: {
-  fromMoment: Moment | null;
-  toMoment: Moment;
-  fromMS: number | null;
-  toMS: number;
-}
-```
-
-### `aiux-appointment-calendar:event-clicked`
-
-Fired when the user clicks an event chip (selects or deselects it).
-
-```ts
-detail: {
-  event: CalendarEvent;
-  isActive: boolean; // true = selected, false = deselected
-}
-```
-
-### `aiux-appointment-calendar:schedule-appointment`
-
-Fired when the user confirms a single slot selection and no prior booking exists.
-
-```ts
-detail: {
-  event: ParsedCalendarEvent;
-}
-```
-
-### `aiux-appointment-calendar:reschedule-appointment`
-
-Fired when the user picks a new slot and a `type: 'selected'` event already exists in the `events` array.
-
-```ts
-detail: {
-  event: ParsedCalendarEvent; // newly selected slot
-  previousEvent: ParsedCalendarEvent; // the existing booked slot
-}
-```
-
-### `aiux-appointment-calendar:propose-appointment`
-
-Fired when the user confirms a multi-slot selection.
-
-```ts
-detail: {
-  events: Omit<ParsedCalendarEvent, '_id'>[]; // _id is stripped from each event
-}
-```
-
-### `aiux-appointment-calendar:cancel-clicked`
-
-Fired when the user clicks the Cancel button in the footer.
-
-```ts
-detail: {
-}
-```
-
-### `aiux-appointment-calendar:view-updated`
-
-Fired when the user switches between Week and Day views.
-
-```ts
-detail: {
-  from: 'WEEK' | 'DAY' | null;
-  to: 'WEEK' | 'DAY';
-}
-```
-
-## Data types
-
-```ts
-interface ParsedCalendarEvent extends CalendarEvent {
-  _id: string; // internal identifier (stripped from aiux-appointment-calendar:propose-appointment detail)
-  startMoment: Moment; // parsed start as a moment-timezone object
-  endMoment: Moment; // parsed end as a moment-timezone object
-  label?: string; // formatted display label
-}
-
 interface CalendarEvent {
-  start: string | number; // 'YYYY-MM-DD HH:mm:ss' or Unix ms timestamp
-  end: string | number;
-  type?: 'available' | 'unavailable' | 'selected';
-  hasConflict?: boolean;
-  tooltip?: string;
-  title?: string;
-  category?: string | number; // must match a Category.id when enableCategories=true
-  primaryInfoData?: PrimaryInfoTag[]; // up to 2 badges shown above the slot title
-  secondaryInfoData?: SecondaryInfoTag[]; // 1 line of supporting text under the title
+  start: string; // 'YYYY-MM-DD HH:mm:ss' in `timezone` (see `events`)
+  end: string | number; // 'YYYY-MM-DD HH:mm:ss', ISO 8601, or epoch ms; must be after start or the slot is dropped
+  type?: 'available' | 'unavailable' | 'selected'; // only 'available' is selectable; 'selected' = currently booked
+  title?: string; // replaces the time label
+  hasConflict?: boolean; // warning icon
+  tooltip?: string; // info icon with this tooltip
+  category?: string | number; // matches Category.id
+  primaryInfoData?: PrimaryInfoTag[]; // first 2 shown as badges on the slot's top edge
+  secondaryInfoData?: SecondaryInfoTag[]; // first 1 shown as a line under the label
 }
-
-// Semantic color mapped to a DaisyUI aiux-badge variant so tags theme correctly.
-type SlotTagColor =
-  | 'info'
-  | 'success'
-  | 'warning'
-  | 'error'
-  | 'primary'
-  | 'secondary'
-  | 'accent'
-  | 'neutral';
 
 interface PrimaryInfoTag {
-  label: string; // caller must pre-localise; the component renders this verbatim
-  icon?: IconNameWithVariant; // icon name from aiux-directive-icon
-  color?: SlotTagColor; // defaults to 'neutral'
+  label: string; // shown verbatim; empty labels are skipped
+  icon?: string; // icon name from @servicenow/aiux-directive-icon
+  color?:
+    | 'info'
+    | 'success'
+    | 'warning'
+    | 'error'
+    | 'primary'
+    | 'secondary'
+    | 'accent'
+    | 'neutral'; // default 'neutral'
 }
 
 interface SecondaryInfoTag {
-  label: string; // caller must pre-localise; the component renders this verbatim
+  label: string;
 }
 
 interface Category {
   id: string | number;
   label: string;
-  icon?: string; // icon name rendered via aiux-directive-icon
-  order?: number; // sort order (lower = first)
+  order?: number;
+  icon?: string; // icon name; overrides the default time-of-day icon
 }
 
 interface AriaConfig {
-  ariaTitle?: string; // aria-label on the outer region element
-  ariaBodyTitle?: string; // aria-label on the body content area
+  ariaTitle?: string; // region name; default "Appointment Calendar"
+  ariaBodyTitle?: string; // name of the slot area
+}
+
+interface ContextDateChangedDetail {
+  fromMoment: Moment | null; // moment-timezone Moment, in `timezone`
+  toMoment: Moment;
+  fromMS: number | null; // epoch ms
+  toMS: number;
+}
+
+interface RangeUpdatedDetail {
+  startMoment: Moment; // start of first visible day
+  endMoment: Moment; // end of last visible day
+  startMS: number;
+  endMS: number;
 }
 ```
 
-### Event start/end formats
+The package does not export these types.
 
-| Format                    | Example                 |
-| ------------------------- | ----------------------- |
-| ISO-style datetime string | `'2024-06-10 09:00:00'` |
-| Unix milliseconds         | `1718006400000`         |
-| ISO 8601 date string      | `'2024-06-10'`          |
+## Integration details
 
-> All times are interpreted in the `timezone` property. When passing Unix ms, the component converts them to the given timezone automatically.
+### SSR
 
-## File structure
+The server renders an empty region shell; the calendar renders after the
+first client update. Locale data loads in the browser.
 
-```
-appointment-calendar/
-├── index.js                                         # Package entry point (version-routing shim)
-├── package.json
-├── vitest.config.js                                 # Unit/render tests (happy-dom)
-├── vitest.config.browser.mjs                        # Functional tests (Playwright + chromium)
-├── src/
-│   ├── index.ts                                     # Public exports
-│   ├── appointment-calendar.ts                      # <aiux-appointment-calendar> element
-│   ├── constants/
-│   │   └── appointment-calendar-constants.ts        # Event names, view names, format strings
-│   ├── controllers/
-│   │   ├── CalendarStateController.ts               # Core state: moments, event map, selected slots
-│   │   ├── CalendarNavigationController.ts          # Navigation: arrows, today, date picker, view switch
-│   │   └── CalendarEventController.ts               # Selection: click, schedule, propose, cancel
-│   ├── renders/
-│   │   ├── header.render.ts                         # Month/week label, nav arrows, date picker, view toggle
-│   │   ├── week-view.render.ts                      # 7-column week grid with event chips
-│   │   ├── day-view.render.ts                       # Single-day list with inline calendar picker
-│   │   ├── event.render.ts                          # Individual event chip
-│   │   └── footer.render.ts                         # Schedule/Reschedule/Propose/Cancel actions
-│   ├── stories/
-│   │   └── appointment-calendar.stories.ts          # Storybook stories for local validation
-│   ├── styles/
-│   │   └── appointment-calendar.styles.ts           # All component styles
-│   ├── types/
-│   │   └── appointment-calendar.types.ts            # All TypeScript interfaces and type aliases
-│   └── utils/
-│       ├── appointment-calendar-helpers.ts          # Date math, event parsing, label formatting
-│       └── locale-loaders.ts                        # Lazy-loaded moment.js locale import map
-└── test/
-    ├── appointment-calendar.test.ts                 # Main component unit tests
-    ├── controllers/
-    │   ├── CalendarStateController.test.ts
-    │   ├── CalendarNavigationController.test.ts
-    │   └── CalendarEventController.test.ts
-    ├── renders/
-    │   ├── day-view.render.test.ts
-    │   ├── event.render.test.ts
-    │   ├── footer.render.test.ts
-    │   ├── header.render.test.ts
-    │   └── week-view.render.test.ts
-    ├── styles/
-    │   └── appointment-calendar.styles.test.ts
-    ├── utils/
-    │   └── appointment-calendar-helpers.test.ts
-    └── functional/                                  # Real-browser tests (Playwright)
-        ├── aiux-appointment-calendar.categories.spec.js
-        ├── aiux-appointment-calendar.date-picker.spec.js
-        ├── aiux-appointment-calendar.disabled-dates.spec.js
-        ├── aiux-appointment-calendar.event-click.spec.js
-        ├── aiux-appointment-calendar.multi-select.spec.js
-        ├── aiux-appointment-calendar.navigation.spec.js
-        ├── aiux-appointment-calendar.next-available.spec.js
-        ├── aiux-appointment-calendar.rendering.spec.js
-        ├── aiux-appointment-calendar.single-slot-flow.spec.js
-        ├── aiux-appointment-calendar.timezone-formats.spec.js
-        ├── aiux-appointment-calendar.view-toggle.spec.js
-        └── appointment-calendar-functional-helpers.js
-```
+### Lifecycle
 
-## Architecture
+Selection and "+N more" expansion are internal and not exposed as properties.
+"Today" advances at midnight in `timezone` while connected.
 
-`<aiux-appointment-calendar>` is the **single registered custom element**. All visual sections (header, week view, day view, event chips, footer) are implemented as **pure render helper functions** under `renders/`. Business logic is split across three Lit `ReactiveController` classes:
+### Sizing and layout
 
-| Controller                     | Responsibility                                                                                                                      |
-| ------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `CalendarStateController`      | Owns all derived state: parsed events, `eventStateMap` (events grouped by day), disabled dates, selected slots, date format strings |
-| `CalendarNavigationController` | Handles arrow navigation, "today" button, date picker open/select/close/done, view switching, and timezone changes                  |
-| `CalendarEventController`      | Handles event chip clicks, single/multi-slot selection, schedule, reschedule, propose, cancel, and next-available actions           |
+- `display: block; width: 100%; height: 100%`, with a minimum height of 510px
+  (body at least 326px).
+- With a bounded parent height the slot area scrolls and the footer stays
+  visible; with an auto-height parent the element grows to fit its slots.
+- Layout follows the element's own width: below 640px the week view becomes a
+  list of collapsible days (today expanded).
 
-The bootstrap sequence runs in `firstUpdated` to guarantee identical server and client HTML (no hydration mismatch):
+## Accessibility, localization, and customization
 
-1. `todayMoment` is set from `Date.now()` in the given `timezone`
-2. `contextMoment` is resolved from `contextDate` (defaults to today)
-3. `recalculateDateRange()` computes `startMoment`/`endMoment` for the visible window
-4. `aiux-appointment-calendar:range-updated` is dispatched so the parent can fetch the initial event set
-5. `componentInitialized` is set to `true` — subsequent `updated()` calls handle property changes
-
-## Views
-
-### Week view
-
-Displays a 7-column grid (one column per day). Events are grouped by day and rendered as chips. When more events exist than `numberOfEventsInEachRow`, a "Show more" / "Show less" toggle appears. When `enableCategories` is `true`, events are grouped within each day by category with accordion collapse support.
-
-### Day view
-
-Shows a single day's events in a vertical list alongside an inline mini-calendar for date selection. The mini-calendar respects `disablePreviousSlotDates` and `disableNonAvailableSlotDates`.
-
-## Footer actions
-
-| Condition                                              | Button shown       | Event dispatched                                   |
-| ------------------------------------------------------ | ------------------ | -------------------------------------------------- |
-| One slot selected, no existing booking                 | **Schedule**       | `aiux-appointment-calendar:schedule-appointment`   |
-| One slot selected, existing `type: 'selected'` event   | **Reschedule**     | `aiux-appointment-calendar:reschedule-appointment` |
-| Multiple slots selected (`enableMultiSelectSlot=true`) | **Propose**        | `aiux-appointment-calendar:propose-appointment`    |
-| Any slot selected                                      | **Cancel**         | `aiux-appointment-calendar:cancel-clicked`         |
-| `nextAvailableEvent` provided and no slot selected     | **Next available** | `aiux-appointment-calendar:event-clicked`          |
-
-## Accessibility
-
-| Feature            | Implementation                                                            |
-| ------------------ | ------------------------------------------------------------------------- |
-| Component region   | `role="region"`, `aria-label` from `configAria.ariaTitle`                 |
-| Body area          | `role="group"`, `aria-label` from `configAria.ariaBodyTitle`              |
-| Event chips        | `aria-label` includes formatted date/time from `ariaDateFormat`; `aria-pressed` reflects selection |
-| Navigation buttons | `aria-label` on prev/next/today controls                                  |
-| Date picker        | Delegates to the `cally` calendar library which has built-in ARIA support |
-| View selector      | Native `<select>` element with `aria-label="Calendar view"`               |
-
-## Styling
-
-All colors use DaisyUI semantic tokens which automatically adapt to light/dark themes. The component renders in a shadow DOM — use CSS custom properties or `::part()` selectors if exposed to override styles from the outside.
-
-## SSR compatibility
-
-This component is compatible with `@lit-labs/ssr`.
-
-| Constraint                        | How it is handled                                               |
-| --------------------------------- | --------------------------------------------------------------- |
-| No browser globals in `render()`  | `render()` uses only Lit templates and controller state         |
-| No DOM access during construction | All DOM-dependent setup deferred to `firstUpdated()`            |
-| All properties have safe defaults | Every `@property` has an explicit default value                 |
-| Hydration-safe initial render     | Before `firstUpdated`, `render()` returns a minimal empty shell |
-
-## Dependencies
-
-| Package           | Size impact | Why it's needed                                                                                                                                                                              |
-| ----------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `moment-timezone` | ~600 KB     | IANA timezone resolution (`moment.tz()`), DST-safe date arithmetic (`add`/`subtract` across spring-forward boundaries), and timezone-aware formatting across 9 source files (70+ call sites) |
-| `cally`           | ~15 KB      | Lightweight `<calendar-date>` custom element used for the inline date picker in day view and the header date picker dropdown                                                                 |
-
-### Bundle-size mitigation
-
-This package publishes raw TypeScript `src/` plus a small `index.js` version-routing shim — no bundle step in this repo. Consumer applications (e.g. karuna) install the published tarball and run their own Rollup build, which externalizes `moment-timezone` from the SSR bundle and code-splits it on the client so it is fetched only when `<aiux-appointment-calendar>` actually renders.
-
-### Long-term migration path
-
-Once the [TC39 Temporal proposal](https://tc39.es/proposal-temporal/docs/) reaches Stage 4 and ships in all supported browsers, `moment-timezone` can be replaced with the built-in `Temporal.ZonedDateTime` API — eliminating the timezone data bundle entirely. Until then, `moment-timezone` remains the most battle-tested option for timezone-correct calendar arithmetic.
-
-## Running tests
-
-```bash
-# Unit + render tests (happy-dom)
-pnpm test
-
-# With coverage
-pnpm test:coverage
-
-# Functional tests (real Chromium via Playwright)
-pnpm test:functional
-
-# Run functional tests in headed mode (visible browser window)
-HEADLESS=false pnpm test:functional
-```
+- **Accessibility:** the element is a labelled region (see `configAria`) and
+  announces the visible view and dates on navigation. Slots are toggle
+  buttons with full spoken labels; unavailable and booked slots are skipped by
+  Tab. The date picker traps focus and closes on Escape; the view menu uses
+  Arrow Up/Down and Escape; the selected-slots popover closes on Escape. Focus
+  returns to the trigger on close. Mirrors for `dir="rtl"` inherited from an
+  ancestor.
+- **Localization:** built-in labels are localized; weekday and month names
+  follow `locale`. Slot `title`, `tooltip`, tag labels, and category labels
+  are shown verbatim, so pass translated text.
+- **Customization:** `--aiux-appointment-calendar-min-height` (default
+  `510px`) and `--aiux-appointment-calendar-body-min-height` (default
+  `326px`) on the element. Colors come from the DaisyUI theme; no parts are
+  exposed.

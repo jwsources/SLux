@@ -147,7 +147,7 @@ import {cache} from 'lit/directives/cache.js';
 render() {
   return html`${cache(this._view === 'list'
     ? html`<list-view .items=${this._items}></list-view>`
-    : html`<detail-view .record=${this._record}></detail-view>`
+    : html`<detail-view .item=${this._selectedItem}></detail-view>`
   )}`;
 }
 ```

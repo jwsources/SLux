@@ -1,17 +1,17 @@
----
-argus-naming-exceptions:
-  - rule: package_name_aiux_sn_prefix
-    identifiers:
-      - '@servicenow/aiux-components-alert'
-  - rule: aiux_prefix_for_custom_elements
-    identifiers:
-      - aiux-alert-message
-  - rule: event_name_namespaced_with_component
-    identifiers:
-      - alert-dismiss
----
+# Alert message
 
-# @servicenow/aiux-components-alert
+> Source: `@servicenow/aiux-components-alert@2.5.3` · `components/external/alert/docs/usage/aiux-alert-message.md`
+
+`<aiux-alert-message>` shows a title, a message, and optional slotted content
+with a type-specific color and icon, and announces them to screen readers.
+When `dismissible`, it can close itself (button or timer) and reports it with
+`alert-dismiss`. A dismissed alert only fades out; removing it is the host's
+job. The event fires as the fade starts, not when it ends.
+
+Built in: close button, auto-dismiss with a progress bar and a pause/resume
+button, initial focus on the first control, and reduced-motion handling that
+follows the user's animation preference. `message` is plain text; links and
+other HTML go in the default slot.
 
 ## Import
 
@@ -19,150 +19,162 @@ argus-naming-exceptions:
 import '@servicenow/aiux-components-alert';
 ```
 
-
-A typed notification alert (info, success, warning, error, and Horizon severity variants) with an optional title, message, dismiss button, and an auto-dismiss timer that can be paused, resumed, and shows a progress bar. Built with Lit 3 and SSR-compatible.
-
 ## Usage
 
-```html
-<aiux-alert-message
-  type="success"
-  alert-title="Saved"
-  message="Your changes have been saved."
-  dismissible
-></aiux-alert-message>
+### Minimal complete example
+
+```ts
+import {html} from 'lit';
+import {customElement, state} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
+import '@servicenow/aiux-components-alert';
+
+@customElement('my-save-status')
+export class MySaveStatus extends AIUXElement {
+  @state() private _showAlert = true;
+
+  render() {
+    return this._showAlert
+      ? html`
+          <aiux-alert-message
+            type="success"
+            alert-title="Saved"
+            message="Changes saved."
+            dismissible
+            duration="8000"
+            @alert-dismiss=${() => (this._showAlert = false)}
+          >
+            <a class="aiux-link" href="/now/history">View history</a>
+          </aiux-alert-message>
+        `
+      : null;
+  }
+}
 ```
 
-Auto-dismiss example:
+**What happens:** on first render, focus moves to the "View history" link.
+After 8 seconds (unless paused), the alert starts hiding and fires
+`alert-dismiss` immediately; this host removes it at once, so no fade shows.
 
-```html
-<aiux-alert-message
-  type="info"
-  alert-title="Notification"
-  message="This will dismiss in 5 seconds."
-  dismissible
-  duration="5000"
-></aiux-alert-message>
+### Additional patterns
+
+Ambient alert that must not take focus, with an action button (`_retry` is
+your application's handler):
+
+```js
+html`
+  <aiux-alert-message
+    type="warning"
+    alert-title="Connection lost"
+    message="Changes will sync when you are back online."
+    .autofocusControls=${false}
+  >
+    <button class="aiux-btn aiux-btn-sm mt-2" @click=${this._retry}>
+      Retry
+    </button>
+  </aiux-alert-message>
+`;
 ```
 
-Slotted action example:
+Re-show a dismissed alert, or restart its timer when the same event repeats:
 
-```html
-<aiux-alert-message
-  type="warning"
-  alert-title="Connection issue"
-  message="Some updates may not be saved."
-  dismissible
->
-  <button class="aiux-btn aiux-btn-sm">Retry</button>
-</aiux-alert-message>
+```js
+html`<aiux-alert-message .resetKey=${this._resetKey} ...></aiux-alert-message>`;
+this._resetKey += 1; // when the event repeats; not a method on the element
 ```
 
-## Properties
+## API
 
-| Property            | Attribute            | Type      | Default  | Description                                                                                                                                                                                                               |
-| ------------------- | -------------------- | --------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `type`              | `type`               | `string`  | `'info'` | Alert type: `'info'`, `'success'`, `'warning'`, `'error'`, `'primary'`, `'accent'`, or Horizon severity types (`'critical'`, `'high'`, `'moderate'`, `'positive'`, `'low'`, `'ai'`). Unknown values fall back to `'info'` |
-| `alertTitle`        | `alert-title`        | `string`  | `''`     | Optional title text displayed above the message                                                                                                                                                                           |
-| `message`           | `message`            | `string`  | `''`     | Alert message text                                                                                                                                                                                                        |
-| `dismissible`       | `dismissible`        | `boolean` | `false`  | Whether the alert can be manually dismissed. Also required for the auto-dismiss timer, pause/resume button, and progress bar                                                                                              |
-| `icon`              | `icon`               | `string`  | `''`     | Custom icon name (overrides the default type icon)                                                                                                                                                                        |
-| `duration`          | `duration`           | `number`  | `0`      | Auto-dismiss duration in milliseconds; `0` disables auto-dismiss. Only takes effect when `dismissible` is `true`                                                                                                          |
-| `resetKey`          | `reset-key`          | `number`  | `0`      | Increment to restart the timer, clear pause state, and re-show if dismissed (for coalesced notifications)                                                                                                                 |
-| `autofocusControls` | `autofocus-controls` | `boolean` | `true`   | Move focus to the first interactive element on render (pause button or slotted button); set to `false` for ambient alerts (toasts, sidebars)                                                                              |
+### Properties and attributes
 
-## Events
+| Property            | Attribute            | Type                 | Default  | Update behavior                                                        | Description                                                                                                                                                                                                     |
+| ------------------- | -------------------- | -------------------- | -------- | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `type`              | `type`               | `AlertType`          | `'info'` | Updates immediately                                                    | Color and default icon. Unknown values render as `info`.                                                                                                                                                        |
+| `alertTitle`        | `alert-title`        | `string`             | `''`     | Updates immediately                                                    | Bold title above the message.                                                                                                                                                                                   |
+| `message`           | `message`            | `string`             | `''`     | Updates immediately                                                    | Plain text. Any markup, `<a>` and `<br />` included, shows as literal text. Put HTML in the default slot (see below).                                                                                           |
+| `icon`              | `icon`               | `string` (icon name) | `''`     | Updates immediately                                                    | Replaces the type's default icon.                                                                                                                                                                               |
+| `dismissible`       | `dismissible`        | `boolean`            | `false`  | Buttons immediately; timer when first rendered or on `resetKey` change | Shows the close button. Required for auto-dismiss.                                                                                                                                                              |
+| `duration`          | `duration`           | `number` (ms)        | `0`      | Buttons immediately; timer when first rendered or on `resetKey` change | With `dismissible`, dismisses after this time and shows the pause button and progress bar. `0` disables. Changing it later does not start or restart the timer.                                                 |
+| `resetKey`          | `reset-key`          | `number`             | `0`      | On change                                                              | Changing it to a new value > 0 re-shows a dismissed alert, clears the paused state, restarts the timer and progress bar, and re-applies initial focus. The value present at first render does not trigger this. |
+| `autofocusControls` | `autofocus-controls` | `boolean`            | `true`   | First render and `resetKey` changes                                    | Moves focus to the first focusable slotted element, else the pause or close button. Set `false` with a property binding for alerts the user did not trigger.                                                    |
 
-All events bubble and are composed.
+HTML content (links, line breaks, lists) goes in the default slot. The host
+owns it:
 
-| Event           | Detail             | Description                                                |
-| --------------- | ------------------ | ---------------------------------------------------------- |
-| `alert-dismiss` | `{ type: string }` | Fired when the alert is dismissed (manually or by timeout) |
+- Sanitize HTML from a server, script, or user input before rendering it;
+  never pass an unsanitized string to `unsafeHTML()` or `innerHTML`.
+- Style it: slotted content uses the host's CSS, not the alert's.
+- Announce it: the alert announces only `alertTitle` and `message`, so add a
+  visually hidden `role="alert"` element with the slotted text.
 
-## Methods
+### Events
 
-| Method      | Description                                                              |
-| ----------- | ------------------------------------------------------------------------ |
-| `dismiss()` | Programmatically dismisses the alert and fires the `alert-dismiss` event |
+| Event           | `detail`                             | Delivery                          | Fires when                                                             | Notes                                                                    |
+| --------------- | ------------------------------------ | --------------------------------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `alert-dismiss` | `{type}`: the `type` property as set | Bubbles, composed, not cancelable | The close button is clicked, the timer ends, or `dismiss()` is called. | Fires again on each later `dismiss()` call, even when already dismissed. |
 
-## Slots
+### Slots
 
-| Slot      | Description                                                                                     |
-| --------- | ----------------------------------------------------------------------------------------------- |
-| (default) | Custom content rendered below the title/message (e.g. action buttons or links inside the alert) |
+- Default: extra content below the message, such as action buttons, links, or
+  other HTML (see the host's responsibilities above).
 
-## CSS Parts
+### Methods
 
-| Part             | Description                |
-| ---------------- | -------------------------- |
-| `alert`          | The alert container        |
-| `content`        | The alert content area     |
-| `dismiss-button` | The dismiss (close) button |
+| Method      | Effect                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------ |
+| `dismiss()` | Starts the fade-out, stops the timer, and fires `alert-dismiss` synchronously. Works when not `dismissible`. |
 
-## File Structure
+### Data shapes
 
-```
-src/
-├── alert-message.ts              # Component class (AIUXElement)
-├── index.ts                      # Public entry point (re-exports)
-├── types/
-│   └── alert-message.types.ts    # TypeScript types, alert config, constants
-└── stories/
-    └── alert-message.stories.ts  # Storybook stories
-```
-
-## Accessibility
-
-- **Live regions:** An `aria-live="assertive"` region announces the alert type, title, message, and available actions to screen readers on render
-- **Pause/resume control:** The pause button dynamically announces `aria-label` based on state ('Pause auto-dismiss' / 'Resume auto-dismiss')
-- **Progress bar:** A hidden `role="progressbar"` with `aria-valuenow` updates every second while the timer runs, for screen-reader announcements of remaining time
-- **Focus management:** When `autofocusControls` is `true` (default), focus moves to the first interactive element (slotted button if present, otherwise pause or close button)
-- **Icon accessibility:** Type indicator icons have `aria-hidden="true"`; button icons are also hidden from the accessibility tree
-
-## Localization
-
-All user-facing strings are wrapped with `msg()` and `str` from
-[`@lit/localize`](https://lit.dev/docs/localization/overview/), making the
-component ready for the Karuna translation pipeline:
-
-- `'Close alert'` — dismiss button label
-- `'Pause auto-dismiss'` / `'Resume auto-dismiss'` — pause button labels
-- `'Auto-dismiss timer'` — progress bar label
-- `'Auto-dismiss paused'` / `'Auto-dismiss resumed'` — live region announcements
-
-## Exports
-
-The package entry point (`index.ts`) re-exports:
-
-```typescript
-import {
-  Alert,
-  ALERT_CONFIG,
-  DEFAULT_TYPE,
-  type AlertType,
-  type AlertDismissDetail,
-} from '@servicenow/aiux-components-alert';
+```ts
+type AlertType =
+  | 'info'
+  | 'success'
+  | 'warning'
+  | 'error'
+  | 'critical'
+  | 'high'
+  | 'moderate'
+  | 'positive'
+  | 'low'
+  | 'ai'
+  | 'primary'
+  | 'accent';
 ```
 
-- **`Alert`:** The component class
-- **`ALERT_CONFIG`:** Object mapping alert types to their icon names
-- **`DEFAULT_TYPE`:** The default alert type (`'info'`)
-- **`AlertType`:** TypeScript union of all valid alert types
-- **`AlertDismissDetail`:** Shape of the `alert-dismiss` event detail
+This type is not exported from the package entry.
 
-## Caveats
+## Integration details
 
-- **Auto-dismiss requires dismissible.** The timer only starts if both `dismissible` and `duration > 0` are set.
-- **resetKey must change.** Setting `resetKey` to the same value does not trigger a reset; only a change (old value !== new value) restarts the timer.
-- **Pause/resume buttons only visible when duration > 0.** If `duration` is `0` or missing, the pause/resume button is not rendered.
-- **Icon directive limitation.** The icon is rendered via the `icon()` directive from `@servicenow/aiux-directive-icon`, which requires the platform sprite system at runtime. Custom icons must match icon names in the sprite.
+### SSR
 
-## SSR Behavior
+The alert renders on the server. The timer and initial
+focus start in the browser.
 
-`render()` is deterministic — it produces the same output given the same props on server and client. No dynamic values are computed in the render path.
+### Lifecycle
 
-This follows Karuna SSR rules:
+Removing the element stops the timer. Re-attaching a visible alert restarts
+the timer with the full `duration`.
 
-- **Rule 2** (no browser APIs in render) — no `window`, `document`, or `Date` in `render()`
-- **Rule 3** (deterministic render) — no `Math.random()`, `Date.now()`, or other non-deterministic values
-- **Rule 4** (pure constructor) — only default values set; timers start in `connectedCallback()`
+### Sizing and layout
+
+- `display: block`; the alert fills its container's width and wraps long
+  text.
+- A dismissed alert is transparent but still in the DOM and keeps its space
+  until the host removes it.
+
+## Accessibility, localization, and customization
+
+- **Accessibility:** the title, message text, and control names are
+  announced assertively on render and when they change; pausing and resuming
+  are announced politely. Slotted content is not announced. Pause is
+  available only through the pause button.
+  Use `.autofocusControls=${false}` for alerts not caused by the user's
+  action.
+- **Localization:** control labels and announcements are localized.
+  `alertTitle` and `message` are the caller's to translate.
+- **Customization:** CSS parts `alert` (container), `content` (title,
+  message, and slot), and `dismiss-button`. The pause button has no part.
+  Colors come from the DaisyUI theme. With the `staggered` attribute on the
+  host, the entry transition is delayed by `--stagger-tight` ×
+  `--stagger-index`.

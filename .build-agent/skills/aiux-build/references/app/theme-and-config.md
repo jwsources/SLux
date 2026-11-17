@@ -11,6 +11,7 @@ App configuration — MUST exist at the project root.
   "landing": "/home",
   "systemPropertyAllowlist": true,
   "chatDeploymentChannelSysId": "0c697083ffd803104846fffffffffffd",
+  "createAnalyticsApp": true,
   "development": {
     "token": "Basic YWRtaW46YWRtaW4="
   },
@@ -27,16 +28,19 @@ App configuration — MUST exist at the project root.
 | `landing`                    | Default landing page path        | Must be a valid page route                  |
 | `systemPropertyAllowlist`    | Enable sys prop allowlist file   | `true` when using `getSystemProperty()`     |
 | `chatDeploymentChannelSysId` | Chat widget channel sys_id       | Required for embedded chat integration      |
+| `createAnalyticsApp`         | Registers a `sys_analytics_app` record | Every app should set this. New apps get `true` by default from the templates. Existing apps should migrate: set it to the current hand-authored record's sys_id (and delete the old `.now.ts` file) to move onto the SDK-generated path. Absent/`false` only for apps not yet migrated |
 | `build.exclude`              | Glob patterns to exclude         | Always exclude test files                   |
 
 ---
 
-## `application.js` — App Lifecycle Module
+## `<srcDir>/application.js` — App Lifecycle Module
 
-The `application.js` file at the project root is the preferred way to configure the app shell, nav, and lifecycle hooks in production apps.
+`<srcDir>` is the value of `srcDir` in `aiux.json` (scaffolded as `src/lux`) — unlike `aiux.json` and `package.json`, which stay at the true project root, `application.js` lives under `<srcDir>`. If `srcDir` is not set in `aiux.json`, `application.js` lives at the project root.
+
+The `<srcDir>/application.js` file is the preferred way to configure the app shell, nav, and lifecycle hooks in production apps.
 
 ```js
-// application.js
+// <srcDir>/application.js
 import {MY_THEME} from './theme.js';
 
 export default {
@@ -58,10 +62,10 @@ export default {
 
 ---
 
-## `theme.js` — App Theme
+## `<srcDir>/theme.js` — App Theme
 
 ```js
-// theme.js — exported as a named const, imported by application.js
+// <srcDir>/theme.js — exported as a named const, imported by application.js
 export const MY_THEME = {
   primary_color: '#032D42',
   neutral_colors: {

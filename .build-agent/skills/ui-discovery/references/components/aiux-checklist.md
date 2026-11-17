@@ -1,4 +1,18 @@
-# `@servicenow/aiux-checklist`
+# Checklist
+
+> Source: `@servicenow/aiux-checklist@4.0.2` · `components/external/checklist/docs/usage/aiux-checklist.md`
+
+`<aiux-checklist>` renders the items in `checklistData`, sorted by `order`.
+It never changes `checklistData` itself: every check, add, edit, delete, and
+reorder is reported as an event, and the host must set a new `checklistData`
+(and save it, if needed). It loads and saves nothing.
+
+Built in: per-item checkbox, link, required marker, and error text; numeric
+or alphabetic prefixes; empty state; loading spinner. With `allow-editing`:
+an add-item input, a "More options" menu (Edit all, Select all, Delete all),
+per-item edit and delete buttons, double-click inline rename, a full-edit
+panel (label, link, state toggles), and drag or keyboard reorder. Do not
+build these yourself.
 
 ## Import
 
@@ -6,133 +20,190 @@
 import '@servicenow/aiux-checklist';
 ```
 
-
-A Lit web component providing a sorted, checkable item list with optional editing, prefixes, links, loading state, and empty state. Migrated from the Seismic/Snabbdom `now-checklist`.
-
-## Installation
-
-```bash
-pnpm add @servicenow/aiux-checklist
-```
-
 ## Usage
 
-```javascript
+### Minimal complete example
+
+```ts
+import {html} from 'lit';
+import {customElement, state} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
 import '@servicenow/aiux-checklist';
-```
 
-```html
-<aiux-checklist
-  .checklistData="${items}"
-  prefix-type="numeric"
-  allow-editing
-></aiux-checklist>
-```
-
-### Handling events
-
-```javascript
-import type {ChecklistItemClickedDetail} from '@servicenow/aiux-checklist';
-
-el.addEventListener('aiux-checklist:item-clicked', (e: CustomEvent<ChecklistItemClickedDetail>) => {
-  const {itemId, checked, item} = e.detail;
-  // update your data source
-});
-```
-
-## API
-
-### `<aiux-checklist>`
-
-#### Properties / Attributes
-
-| Property               | Attribute              | Type                                  | Default                   | Description                                                                                                                                                                |
-| ---------------------- | ---------------------- | ------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `checklistData`        | `checklist-data`       | `ChecklistItem[]`                     | `[]`                      | **Controlled.** Array of checklist items. Sorted by `order` on each render. The component does not mutate this — update it from mutation events to reflect changes.        |
-| `prefixType`           | `prefix-type`          | `'none' \| 'numeric' \| 'alphabetic'` | `'none'`                  | Label prefix rendered before each item. **`'alphabetic'` wraps at 26 items** (index 26 repeats `A.`); prefixes lose uniqueness beyond that. Intended for short lists only. |
-| `size`                 | `size`                 | `'sm' \| 'md'`                        | `'md'`                    | Controls input and checkbox sizing.                                                                                                                                        |
-| `opensWindow`          | `opens-window`         | `boolean`                             | `false`                   | When true, item links open in a new tab (`target="_blank"`).                                                                                                               |
-| `headerTitle`          | `header-title`         | `string`                              | `''`                      | Optional heading rendered above the checklist body (both populated and empty states), followed by a divider. Omitted entirely when empty.                                |
-| `emptyStateTitle`      | `empty-state-title`    | `string`                              | `'No items added yet'`    | Heading shown in the empty state.                                                                                                                                          |
-| `emptyStateMsg`        | `empty-state-msg`      | `string`                              | `''`                      | Optional sub-text shown below the empty state heading.                                                                                                                     |
-| `allowEditing`         | `allow-editing`        | `boolean`                             | `false`                   | Enables inline edit, full edit modal, delete, and footer input.                                                                                                            |
-| `hideBorder`           | `hide-border`          | `boolean`                             | `false`                   | Removes the card frame (background, border, radius, padding) for hosts that already provide their own container.                                                            |
-| `showLoadingSpinner`   | `show-loading-spinner` | `boolean`                             | `false`                   | Replaces list body with a loading spinner.                                                                                                                                 |
-| `disableAddLink`       | `disable-add-link`     | `boolean`                             | `false`                   | Hides the Add link control for link-less items in the single-item full-edit panel.                                                                                          |
-| `checklistEditOptions` | (none)                 | `ChecklistEditOptions`                | all `false`               | Controls which edit option checkboxes appear in the full edit modal. Property-only (no attribute).                                                                         |
-
-#### Config Properties
-
-Set via the platform Config Editor (`configSchema`), not as HTML attributes.
-
-| Property                 | Type      | Label                | Default     | Description                                                          |
-| ------------------------ | --------- | -------------------- | ----------- | ---------------------------------------------------------------------- |
-| `configPrefixType`       | `String`  | Prefix Type          | `undefined` | Overrides `prefixType`: `'none'`, `'numeric'`, or `'alphabetic'`.       |
-| `configSize`             | `String`  | Size                 | `undefined` | Overrides `size`: `'sm'` or `'md'`.                                     |
-| `configOpensWindow`      | `Boolean` | Opens Window         | `undefined` | Overrides `opensWindow`. Opens item links in a new browser tab.        |
-| `configHeaderTitle`      | `String`  | Header Title         | `undefined` | Overrides `headerTitle`. Optional heading displayed above the checklist body. |
-| `configEmptyStateTitle`  | `String`  | Empty State Title    | `undefined` | Overrides `emptyStateTitle`. Heading displayed in the empty state.     |
-| `configEmptyStateMsg`    | `String`  | Empty State Message  | `undefined` | Overrides `emptyStateMsg`. Sub-text displayed below the empty-state heading. |
-| `configAllowEditing`     | `Boolean` | Allow Editing        | `undefined` | Overrides `allowEditing`. Enables add / inline-edit / full-edit / delete functionality. |
-| `configHideBorder`       | `Boolean` | Hide Border          | `undefined` | Overrides `hideBorder`. Removes the card frame. |
-| `configDisableAddLink`   | `Boolean` | Disable Add Link     | `undefined` | Overrides `disableAddLink`. Hides the Add link control for link-less items in the single-item full-edit panel. |
-
-#### Events
-
-All events bubble and are composed (cross Shadow DOM boundaries).
-
-| Event                                 | Detail type                      | Description                                                                      |
-| ------------------------------------- | -------------------------------- | -------------------------------------------------------------------------------- |
-| `aiux-checklist:item-clicked`      | `ChecklistItemClickedDetail`     | Fired when a checkbox is toggled.                                                                                                                          |
-| `aiux-checklist:item-link-clicked` | `ChecklistItemLinkClickedDetail` | Fired when an item link is clicked (navigation prevented unless `opens-window`).                                                                           |
-| `aiux-checklist:item-added`        | `ChecklistItemAddedDetail`       | Fired when a new item is submitted via the footer input.                                                                                                   |
-| `aiux-checklist:item-edited`       | `ChecklistItemEditedDetail`      | Fired when a single item is saved via inline or full edit.                                                                                                 |
-| `aiux-checklist:all-items-edited`  | `ChecklistAllItemsEditedDetail`  | Fired once when Apply is used in bulk "Edit all" mode, after every item passes validation. `detail.items` is the full updated list in order. No per-item `item-edited` events are fired for a bulk apply. |
-| `aiux-checklist:item-deleted`      | `ChecklistItemDeletedDetail`     | Fired when a single item is deleted via the per-item trash button.                                                                                         |
-| `aiux-checklist:all-items-deleted` | `ChecklistAllItemsDeletedDetail` | Fired once when "Delete all" is used. `detail.items` contains all removed items. No per-item `item-deleted` events are fired for a delete-all.             |
-| `aiux-checklist:all-items-selected` | `ChecklistAllItemsSelectedDetail` | Fired once when "Select all" (kebab menu) is used. `detail.items` is every item with `checked` set to `true`. No per-item `item-clicked` events are fired.  |
-| `aiux-checklist:list-reordered`    | `ChecklistListReorderedDetail`   | Fired when a pointer drag or keyboard reorder is committed. `detail.checklistData` is the full reordered array; `detail.delta` describes what moved.       |
-
-## Types
-
-```typescript
+// Declared locally from Data shapes (trimmed to the fields used here).
 interface ChecklistItem {
   itemId: string;
   checked: boolean;
   label?: string;
   order?: number;
   required?: boolean;
-  disabled?: boolean;
-  readonly?: boolean;
-  invalid?: boolean;
-  errorMsgForLabel?: string;
-  link?: ChecklistItemLink | null;
+}
+
+@customElement('my-task-list')
+export class MyTaskList extends AIUXElement {
+  @state() private _items: ChecklistItem[] = [
+    {
+      itemId: 'review',
+      label: 'Review request',
+      checked: false,
+      order: 1,
+      required: true
+    },
+    {itemId: 'budget', label: 'Approve budget', checked: false, order: 2}
+  ];
+
+  private _replace(item: ChecklistItem) {
+    this._items = this._items.map(it =>
+      it.itemId === item.itemId ? item : it
+    );
+  }
+
+  render() {
+    return html`
+      <aiux-checklist
+        header-title="Tasks"
+        prefix-type="numeric"
+        allow-editing
+        .checklistData=${this._items}
+        @aiux-checklist:item-clicked=${(e: CustomEvent) =>
+          this._replace({...e.detail.item, checked: e.detail.checked})}
+        @aiux-checklist:item-added=${(e: CustomEvent) =>
+          (this._items = [...this._items, e.detail.item])}
+        @aiux-checklist:item-edited=${(e: CustomEvent) => this._replace(e.detail.item)}
+        @aiux-checklist:item-deleted=${(e: CustomEvent) =>
+          (this._items = this._items.filter(
+            it => it.itemId !== e.detail.item.itemId
+          ))}
+        @aiux-checklist:all-items-edited=${(e: CustomEvent) => (this._items = e.detail.items)}
+        @aiux-checklist:all-items-selected=${(e: CustomEvent) => (this._items = e.detail.items)}
+        @aiux-checklist:all-items-deleted=${() => (this._items = [])}
+        @aiux-checklist:list-reordered=${(e: CustomEvent) =>
+          (this._items = e.detail.checklistData)}
+      ></aiux-checklist>
+    `;
+  }
+}
+```
+
+**What happens:** rows are added, removed, renamed, and reordered only when
+`checklistData` changes. A clicked checkbox toggles on screen, but its state
+persists only through `checklistData`.
+
+### Additional patterns
+
+Non-editable labels, checkable items, links in a new tab (set item `readonly` to block checking):
+
+```js
+html`
+  <aiux-checklist
+    .checklistData=${items}
+    prefix-type="alphabetic"
+    opens-window
+    hide-border
+    @aiux-checklist:item-clicked=${onItemClicked}
+  ></aiux-checklist>
+`;
+```
+
+## API
+
+### Properties and attributes
+
+Set `checklistData` and `checklistEditOptions` with property bindings.
+Every property except `checklistData`, `showLoadingSpinner`, and
+`checklistEditOptions` is also admin-configurable: a value set in the
+element's configuration overrides the host's value until the override is
+cleared.
+
+| Property               | Attribute              | Type                                  | Default     | Update behavior     | Description                                                                                                                                       |
+| ---------------------- | ---------------------- | ------------------------------------- | ----------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `checklistData`        | `checklist-data`       | `ChecklistItem[]`                     | `[]`        | Updates immediately | Items, rendered in ascending `order` (missing `order` counts as `0`). Omitted optional fields get their defaults. Empty shows the empty state.    |
+| `allowEditing`         | `allow-editing`        | `boolean`                             | `false`     | Updates immediately | Shows the add-item input, the "More options" menu, per-item edit/delete buttons, reorder grips, and enables double-click rename and drag reorder. |
+| `prefixType`           | `prefix-type`          | `'none' \| 'numeric' \| 'alphabetic'` | `'none'`    | Updates immediately | Label prefix: `1.`, `2.` … or `A.` … `Z.`, then `A.` again.                                                                                       |
+| `size`                 | `size`                 | `'sm' \| 'md'`                        | `'md'`      | Updates immediately | Text size of items and the menu button size.                                                                                                      |
+| `opensWindow`          | `opens-window`         | `boolean`                             | `false`     | Updates immediately | `true`: links open in a new tab with an icon. `false`: clicking a link does not navigate; handle `item-link-clicked`.                             |
+| `headerTitle`          | `header-title`         | `string`                              | `''`        | Updates immediately | Heading with a divider above the list or empty state. None when empty.                                                                            |
+| `emptyStateTitle`      | `empty-state-title`    | `string`                              | `''`        | Updates immediately | Empty-state heading. Empty uses "No items added yet".                                                                                             |
+| `emptyStateMsg`        | `empty-state-msg`      | `string`                              | `''`        | Updates immediately | Empty-state text. Empty uses "Type and press Enter to add an item to the list" when editing is allowed, else no text.                             |
+| `hideBorder`           | `hide-border`          | `boolean`                             | `false`     | Updates immediately | Removes the card background, border, radius, and padding.                                                                                         |
+| `showLoadingSpinner`   | `show-loading-spinner` | `boolean`                             | `false`     | Updates immediately | Replaces everything, including the header and add-item input, with a spinner.                                                                     |
+| `disableAddLink`       | `disable-add-link`     | `boolean`                             | `false`     | Updates immediately | Hides "Add link" in a single item's edit panel, so link-less items cannot gain a link there. Edit all always shows the link fields.               |
+| `checklistEditOptions` | property only          | `ChecklistEditOptions`                | all `false` | Updates immediately | Which state toggles (Required, Disabled, Read only, Invalid) the edit panel shows.                                                                |
+
+Item fields change only the item's presentation:
+
+- `disabled`: disables the checkbox and dims the row.
+- `readonly`: disables the checkbox and dims it.
+- `required`: shows a red `*` and sets `aria-required` on the checkbox. Nothing is enforced.
+- `invalid`: error-styles the checkbox and shows `errorMsgForLabel`.
+- `link.errorMsgForLink`: shown under the link whenever set.
+- Link URLs starting with `javascript:` or `data:` render as `#`.
+
+### Events
+
+None fires for programmatic `checklistData` changes.
+
+| Event                               | `detail`                          | Delivery                          | Fires when                                                                                                                                                                                                                | Notes                                                                                                                                                                                                     |
+| ----------------------------------- | --------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `aiux-checklist:item-clicked`       | `ChecklistItemClickedDetail`      | Bubbles, composed, not cancelable | The user toggles a checkbox.                                                                                                                                                                                              | `checked` is the new state; `item` is the item as it was. Disabled and read-only items cannot be toggled.                                                                                                 |
+| `aiux-checklist:item-link-clicked`  | `ChecklistItemLinkClickedDetail`  | Bubbles, composed, not cancelable | The user clicks an item's link.                                                                                                                                                                                           | With `opensWindow` off, navigate yourself. With it on, the tab opens and the event still fires. `link` is the item's link as given; the `javascript:`/`data:` filter applies only to the rendered `href`. |
+| `aiux-checklist:item-added`         | `ChecklistItemAddedDetail`        | Bubbles, composed, not cancelable | The user presses `Enter` in the add-item input with non-blank text.                                                                                                                                                       | `item` has a random UUID `itemId`, the trimmed label, `checked: false`, and an `order` after the last item's. The input clears; append `item` to show it.                                                 |
+| `aiux-checklist:item-edited`        | `ChecklistItemEditedDetail`       | Bubbles, composed, not cancelable | Inline rename commits (`Enter` or blur, only when the label changed and is non-blank); the edit panel's Apply or `Enter` in its label field (even when nothing changed); or the item's Remove link button (`link: null`). | `item` is the complete updated item. The panel blocks Apply while the label is blank or link text has no URL. A link with blank URL and text is saved as `link: null`.                                    |
+| `aiux-checklist:all-items-edited`   | `ChecklistAllItemsEditedDetail`   | Bubbles, composed, not cancelable | Edit all, then Apply, with every panel valid.                                                                                                                                                                             | `items` is every item in list order, edited or not; replace `checklistData` with it. An invalid panel blocks Apply and nothing fires. Cancel fires nothing.                                               |
+| `aiux-checklist:item-deleted`       | `ChecklistItemDeletedDetail`      | Bubbles, composed, not cancelable | The user clicks an item's Delete button.                                                                                                                                                                                  | No confirmation.                                                                                                                                                                                          |
+| `aiux-checklist:all-items-deleted`  | `ChecklistAllItemsDeletedDetail`  | Bubbles, composed, not cancelable | The user chooses Delete all.                                                                                                                                                                                              | No confirmation. `items` is every item. `item-deleted` does not fire.                                                                                                                                     |
+| `aiux-checklist:all-items-selected` | `ChecklistAllItemsSelectedDetail` | Bubbles, composed, not cancelable | The user chooses Select all.                                                                                                                                                                                              | `items` is every item with `checked: true`, including disabled and read-only ones.                                                                                                                        |
+| `aiux-checklist:list-reordered`     | `ChecklistListReorderedDetail`    | Bubbles, composed, not cancelable | A drag or keyboard reorder drops an item at a new position.                                                                                                                                                               | `checklistData` is the full reordered list with reassigned `order` values; replace `checklistData` with it. Not fired when dropped in place.                                                              |
+
+### Slots
+
+None.
+
+### Methods
+
+None.
+
+### Data shapes
+
+```ts
+interface ChecklistItem {
+  itemId: string; // unique; rows are keyed by it
+  checked: boolean;
+  label?: string; // default ''
+  order?: number; // default 0; ascending display order
+  required?: boolean; // default false
+  disabled?: boolean; // default false
+  readonly?: boolean; // default false
+  invalid?: boolean; // default false
+  errorMsgForLabel?: string; // shown when invalid
+  link?: ChecklistItemLink | null; // default null
 }
 
 interface ChecklistItemLink {
   url: string;
-  text?: string;
+  text?: string; // displayed text; url when omitted
   errorMsgForLink?: string;
 }
 
 interface ChecklistEditOptions {
-  required: boolean; // show "Required" toggle in full edit modal
-  disabled: boolean; // show "Disabled" toggle in full edit modal
-  readonly: boolean; // show "Read only" toggle in full edit modal
-  invalid: boolean; // show "Invalid" toggle in full edit modal
+  required: boolean;
+  disabled: boolean;
+  readonly: boolean;
+  invalid: boolean;
 }
 
-// Event detail types
 interface ChecklistItemClickedDetail {
   checked: boolean;
   itemId: string;
   item: ChecklistItem;
 }
+
 interface ChecklistItemLinkClickedDetail {
   itemId: string;
   link: ChecklistItemLink;
   item: ChecklistItem;
 }
+
 interface ChecklistItemAddedDetail {
   item: ChecklistItem;
 }
@@ -142,6 +213,9 @@ interface ChecklistItemEditedDetail {
 interface ChecklistItemDeletedDetail {
   item: ChecklistItem;
 }
+interface ChecklistAllItemsEditedDetail {
+  items: ChecklistItem[];
+}
 interface ChecklistAllItemsDeletedDetail {
   items: ChecklistItem[];
 }
@@ -149,164 +223,51 @@ interface ChecklistAllItemsSelectedDetail {
   items: ChecklistItem[];
 }
 
-interface ChecklistReorderDelta {
-  /** Index the dragged item was at before the reorder (in the sorted array). */
-  reorderedFromIndex: number;
-  /** Index the dragged item occupies after the reorder. */
-  reorderedToIndex: number;
-  /** Indices of items that shifted up to fill the gap. */
-  movedUp: number[];
-  /** Indices of items that shifted down to fill the gap. */
-  movedDown: number[];
-  /** All items whose `order` value changed, with the updated `order`. */
-  updatedItems: ChecklistItem[];
-}
-
 interface ChecklistListReorderedDetail {
-  /** Full reordered checklist array. Apply this back to `checklist-data` to make the reorder visible. */
   checklistData: ChecklistItem[];
   delta: ChecklistReorderDelta;
 }
+
+interface ChecklistReorderDelta {
+  reorderedFromIndex: number; // moved item's old index
+  reorderedToIndex: number; // moved item's new index
+  movedUp: number[]; // old indices of items that shifted up one
+  movedDown: number[]; // old indices of items that shifted down one
+  updatedItems: ChecklistItem[]; // items whose order changed, moved item included, in new order
+}
 ```
 
-## Editing modes
+Items in event details have every optional field filled with its default.
+The package's only export is the element class `AIUXChecklist` (named and
+default).
 
-When `allow-editing` is set:
+## Integration details
 
-- **Inline edit** — double-click a label to edit it in place. `Enter` commits, `Escape` or blur cancels.
-- **Full edit modal**: click the pencil icon to open an expanded form with label, link, and option toggles. The Link text/URL fields are always shown (no separate "Add link" step); leaving both empty on Apply clears the link (`link: null`). Which state-toggle checkboxes appear is controlled by `checklistEditOptions`, rendered as a 2-column grid of compact (`xs`) checkboxes. Cancel/Apply are the only actions in the panel; delete is not available here (see below).
-- **Footer input** — type a label and press `Enter` to append a new item.
-- **Delete**: the per-item trash icon (shown on row hover/focus in read mode, not inside the full-edit panel) fires `aiux-checklist:item-deleted`; "Delete all" via the footer kebab menu fires a single `aiux-checklist:all-items-deleted` (with all removed items in `detail.items`), not per-item events.
-- **Select all**: the footer kebab menu also offers "Select all", which marks every item `checked` and fires a single `aiux-checklist:all-items-selected` (with all items, now checked, in `detail.items`), not per-item `item-clicked` events.
-- **Edit all** (the footer kebab menu also offers "Edit all", listed above "Select all") opens **every** item's full-edit panel at once, stacked vertically with a divider between panels, replacing the normal item list. A single Cancel/Apply pair at the bottom controls the whole batch (there are no per-item buttons in this mode): **Apply** validates every panel and, only if all pass, commits them together in one `aiux-checklist:all-items-edited` event (carrying the full updated list) and exits back to the normal list; if any item is invalid the commit is blocked, the offending panels stay highlighted, and focus moves to the first invalid field. **Cancel** discards all unsaved edits and exits. The footer add-item input and per-item drag/gripper handles are not rendered while in this mode.
-- **Reorder** — when `allow-editing` is set each item shows a grip handle. See [Reordering](#reordering) below.
+### SSR
 
-## Reordering
+The header, items, empty state, and add-item input render on the server.
+Announcements and right-to-left footer layout start in the browser.
 
-When `allow-editing` is set, each item exposes a grip handle on the left edge. Users can reorder items by pointer drag or keyboard.
+### Sizing and layout
 
-### Pointer drag
+`display: block`; fills its container's width and grows with its items (no
+internal scrolling).
 
-Click and drag any grip handle to a new position. Releasing the pointer commits the reorder and fires `aiux-checklist:list-reordered`.
+## Accessibility, localization, and customization
 
-### Keyboard reorder
-
-1. Tab to the grip handle for the item you want to move.
-2. Press **Enter** or **Space** to "grab" the item (the handle announces that it is grabbed).
-3. Press **ArrowUp** or **ArrowDown** to move the item one position at a time.
-4. Press **Enter** or **Space** to commit the new position and fire `aiux-checklist:list-reordered`.
-5. Press **Escape** to cancel and return the item to its original position.
-
-### Controlled reorder
-
-`aiux-checklist` is a controlled component: it does not apply the reorder internally. When `aiux-checklist:list-reordered` fires, apply `event.detail.checklistData` back to the `checklist-data` property so the new order is reflected in the UI.
-
-```typescript
-import type {ChecklistListReorderedDetail} from '@servicenow/aiux-checklist';
-
-el.addEventListener('aiux-checklist:list-reordered', (e: CustomEvent<ChecklistListReorderedDetail>) => {
-  this.items = e.detail.checklistData;
-});
-```
-
-## Data ownership model
-
-`aiux-checklist` is a **strictly controlled** component. `checklistData` is the sole source of truth: the component normalises and renders it on every `willUpdate` cycle. User actions (toggle, add, edit, delete) fire events but **do not mutate internal state** — the UI only updates when the parent passes a new `checklistData` value.
-
-**What this means in practice:** you must handle every mutation event and update your data store. The component will reflect those changes on the next `checklistData` binding.
-
-> **Array reference identity:** Lit's change detection compares property values by reference. Mutating an existing array in place (e.g. `items.push(...)` or `items[0].checked = true`) and re-assigning the same reference will **not** trigger a re-render. Always return a new array (e.g. `[...this.items, newItem]` or `this.items.map(...)`) so Lit sees a changed value.
-
-Treat every event as a command and update the source data accordingly:
-
-```javascript
-el.addEventListener('aiux-checklist:item-clicked', e => {
-  const {itemId, checked} = e.detail;
-  this.items = this.items.map(it =>
-    it.itemId === itemId ? {...it, checked} : it
-  );
-});
-
-el.addEventListener('aiux-checklist:item-added', e => {
-  this.items = [...this.items, e.detail.item];
-});
-
-el.addEventListener('aiux-checklist:item-edited', e => {
-  this.items = this.items.map(it =>
-    it.itemId === e.detail.item.itemId ? e.detail.item : it
-  );
-});
-
-el.addEventListener('aiux-checklist:item-deleted', e => {
-  this.items = this.items.filter(it => it.itemId !== e.detail.item.itemId);
-});
-
-// all-items-deleted fires once for a "Delete all" (no per-item events)
-el.addEventListener('aiux-checklist:all-items-deleted', () => {
-  this.items = [];
-});
-
-// all-items-selected fires once for a "Select all" (no per-item events)
-el.addEventListener('aiux-checklist:all-items-selected', e => {
-  this.items = e.detail.items;
-});
-
-// list-reordered: apply detail.checklistData to make the reorder visible
-el.addEventListener('aiux-checklist:list-reordered', e => {
-  this.items = e.detail.checklistData;
-});
-```
-
-## Dependencies
-
-| Package                                           | Role                                                                                   |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------- |
-| `@servicenow/aiux-components-core`                | `AIUXElement` base class, Tailwind/DaisyUI styles                                     |
-| `@servicenow/aiux-components-icon`                | `sn-aiux-icon` used for link, edit, delete icons                                      |
-| `@servicenow/aiux-components-empty-state-content`  | `aiux-empty-state-content` renders the empty state (heading, body text, illustration) |
-| `@servicenow/aiux-controller-aria-live`           | Aria live region announcements for screen readers                                     |
-| `lit` _(peer)_                                    | Reactive rendering                                                                     |
-
-## File structure
-
-```
-checklist/
-├── src/
-│   ├── checklist.ts            # aiux-checklist (public component)
-│   ├── checklist-item.ts       # aiux-checklist-item (internal, not public API)
-│   ├── controllers/
-│   │   ├── ChecklistController.ts
-│   │   └── ChecklistItemController.ts
-│   ├── types/
-│   │   └── checklist.types.ts
-│   ├── styles/
-│   │   └── checklist.styles.ts
-│   ├── utils/
-│   │   └── checklist-utils.ts
-│   └── index.ts                # Public re-exports
-├── test/
-│   ├── checklist.test.ts
-│   ├── ChecklistController.test.ts
-│   ├── checklist-item.test.ts
-│   ├── checklist-utils.test.ts
-│   └── checklist.styles.test.ts
-├── index.js
-├── package.json
-└── README.md
-```
-
-## Testing
-
-```bash
-# Run all checklist tests
-pnpm --filter @servicenow/aiux-checklist test
-
-# Or from package directory
-pnpm test
-```
-
-## Internal component
-
-`aiux-checklist-item` is registered as a custom element but is **not part of the public API**. It is rendered exclusively by `aiux-checklist` via prop drilling and internal events. Do not use it directly.
-
-Its `forceFullEdit` property (`attribute: false`, boolean, default `false`) is internal-only: when set, the item renders its full-edit panel unconditionally, seeding the edit buffer from its current `item` if not already seeded. `aiux-checklist` sets this on every item while in "Edit all" bulk mode (see [Editing modes](#editing-modes) above); it has no attribute and is not intended to be set directly by a consumer.
+- **Accessibility:** items form a list; each checkbox is named by its label
+  ("Checklist item" when blank). Edit and delete buttons show on hover or
+  focus. Double-click rename is mouse-only; the Edit item button is the
+  keyboard path. Reorder by keyboard on an item's grip: `Enter`/`Space` to
+  pick up, `ArrowUp`/`ArrowDown` to move, `Enter`/`Space` to drop, `Escape`
+  or moving focus to cancel. `Escape` in the rename input or the edit
+  panel's label field cancels the edit. The menu
+  supports arrow keys, `Home`/`End`, and `Escape` (focus returns to the menu
+  button). Adds, edits, deletes, reorders, Select all, Delete all, and Edit
+  all results are announced.
+- **Localization:** built-in labels, placeholders, validation messages, and
+  announcements are localized. Item labels, link text, error messages, and
+  the title properties are yours to translate. Prefixes are always Latin
+  `A`–`Z` or Western digits.
+- **Customization:** no CSS parts or custom properties; the element uses the
+  page's DaisyUI theme. Use `hide-border` to drop the card frame.

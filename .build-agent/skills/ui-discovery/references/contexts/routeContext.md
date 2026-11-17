@@ -1,4 +1,13 @@
-# @servicenow/aiux-context
+# Route context
+
+> Source: `@servicenow/aiux-context@1.2.161` · `context/docs/usage/routeContext.md`
+
+`routeContext` is a global context holding a frozen snapshot of the current
+route. `@servicenow/aiux-components-core` creates it when it loads, and the app
+layout replaces the snapshot on every client-side navigation. It is
+browser-only: on the server it always reads `{matched: false}`.
+In a page `static async loader(ctx)`, read route params from `ctx.params`
+instead; use `routeContext` when a widget or component needs the route in render.
 
 ## Import
 
@@ -6,265 +15,172 @@
 import {routeContext} from '@servicenow/aiux-context';
 ```
 
-
-Logical barrel exports for AIUX Lit contexts, including `routeContext` for the current navigation state, `experienceContext`/`experienceContextManager` for app/experience metadata, and `userPreferencesContext` for pre-fetched user preferences.
-
-## Installation
-
-```bash
-pnpm add @servicenow/aiux-context
-```
-
 ## Usage
 
-Import all contexts from a single package:
+### Minimal complete example
 
-```javascript
-import {
-  widgetRenderingContext,
-  mobileAppBridgeContext
-} from '@servicenow/aiux-context';
-
-// Or use shorter aliases
-import {widgetOrigin, mobileAppBridge} from '@servicenow/aiux-context';
-```
-
-## Available Exports
-
-| Export                     | Alias             | Description                                             | Source Package                               |
-| --------------------------- | ----------------- | ---------------------------------------------------------- | -------------------------------------------- |
-| `widgetRenderingContext`    | `widgetOrigin`    | Context for widget rendering origin                        | `@servicenow/aiux-context-widget-origin`     |
-| `mobileAppBridgeContext`    | `mobileAppBridge` | Context for mobile app bridge integration                   | `@servicenow/aiux-context-mobile-app-bridge` |
-| `routeContext`              | —                 | Reactive context exposing the current navigation state      | `./src/route-context.js` (this package)      |
-| `experienceContext`         | —                 | Reactive metadata for the current app/experience             | `./src/experience-context.js` (this package) |
-| `experienceContextManager`  | —                 | Imperative API for setting/reading `experienceContext`       | `./src/experience-context.js` (this package) |
-| `userPreferencesContext`    | —                 | Reactive context holding pre-fetched user preferences        | `@servicenow/aiux-components-core`           |
-
-## Examples
-
-### Consuming Contexts
-
-```javascript
-import {LitElement, html} from 'lit';
-import {consume} from '@lit/context';
-import {
-  widgetRenderingContext,
-  mobileAppBridgeContext
-} from '@servicenow/aiux-context';
-
-class MyWidget extends LitElement {
-  @consume({context: widgetRenderingContext})
-  origin;
-
-  @consume({context: mobileAppBridgeContext})
-  bridge;
-
-  render() {
-    return html`
-      <div>
-        <p>Rendering in: ${this.origin}</p>
-        <p>Platform: ${this.bridge ? 'Mobile App' : 'Web Browser'}</p>
-      </div>
-    `;
-  }
-}
-```
-
-### With ContextConsumer
-
-```javascript
-import {LitElement, html} from 'lit';
-import {ContextConsumer} from '@lit/context';
-import {widgetRenderingContext} from '@servicenow/aiux-context';
-
-class MyWidget extends LitElement {
-  constructor() {
-    super();
-    new ContextConsumer(this, {
-      context: widgetRenderingContext,
-      callback: value => {
-        this.origin = value;
-        this.requestUpdate();
-      }
-    });
-  }
-
-  render() {
-    return html`<div>Origin: ${this.origin}</div>`;
-  }
-}
-```
-
-### Conditional Rendering Based on Context
-
-```javascript
-import {LitElement, html} from 'lit';
-import {consume} from '@lit/context';
-import {
-  widgetRenderingContext,
-  mobileAppBridgeContext
-} from '@servicenow/aiux-context';
-
-class AdaptiveWidget extends LitElement {
-  @consume({context: widgetRenderingContext})
-  origin;
-
-  @consume({context: mobileAppBridgeContext})
-  bridge;
-
-  render() {
-    const isChatMode = this.origin === 'chat';
-    const isMobile = !!this.bridge;
-
-    return html`
-      <div
-        class="${isChatMode ? 'compact' : 'full'} ${isMobile
-          ? 'mobile'
-          : 'web'}"
-      >
-        ${isChatMode ? this.renderCompactView() : this.renderFullView()}
-      </div>
-    `;
-  }
-
-  renderCompactView() {
-    return html`<div class="compact">Compact chat view</div>`;
-  }
-
-  renderFullView() {
-    return html`<div class="full">Full page view</div>`;
-  }
-}
-```
-
-### Providing Context
-
-Use with `ContextProvider` or the `provideOrigin` directive:
-
-```javascript
-import {LitElement, html} from 'lit';
-import {ContextProvider} from '@lit/context';
-import {widgetRenderingContext} from '@servicenow/aiux-context';
-
-class ParentWidget extends LitElement {
-  constructor() {
-    super();
-    new ContextProvider(this, {
-      context: widgetRenderingContext,
-      initialValue: 'page'
-    });
-  }
-
-  render() {
-    return html`<child-widget></child-widget>`;
-  }
-}
-```
-
-Or use the `provideOrigin` directive:
-
-```javascript
+```js
 import {html} from 'lit';
-import {provideOrigin} from '@servicenow/aiux-directives';
+import {AIUXElement} from '@servicenow/aiux-components-core';
+import {routeContext} from '@servicenow/aiux-context';
 
-html`
-  <div ${provideOrigin('chat')}>
-    <child-widget></child-widget>
-  </div>
-`;
-```
-
-## Context Values
-
-### widgetRenderingContext (alias: widgetOrigin)
-
-Tracks where a widget is rendered:
-
-- `'page'` - Widget is rendered in a page context
-- `'chat'` - Widget is rendered in a chat/conversation context
-
-### mobileAppBridgeContext (alias: mobileAppBridge)
-
-Provides access to mobile app bridge functionality:
-
-- `undefined` - Running in web browser
-- `object` - Running in mobile app (provides native capabilities)
-
-### routeContext
-
-Exposes the current navigation state (`{path, matched, ...}`) as set by the app's router (`AIUXAppLayoutElement._initRouter` in `@servicenow/aiux-components-core`). Before the router initializes — very early module load, or on the server prior to routing — `get()` returns a frozen `{matched: false}` default rather than throwing.
-
-```javascript
-class MyWidget extends AIUXElement {
+export class RecordHeader extends AIUXElement {
   static contexts = [routeContext];
+  static properties = {_hydrated: {state: true}};
+
+  firstUpdated() {
+    this._hydrated = true; // server HTML has no route; keep the first client render identical
+  }
+
   render() {
     const route = routeContext.get();
-    return html`<div>${route.path}</div>`;
+    if (!this._hydrated || !route.matched) return html``;
+    const table = route.getParam('table');
+    const view = route.getUIState('view') ?? 'default';
+    return html`<h2 class="text-lg font-semibold">${table} (${view})</h2>`;
   }
 }
+customElements.define('record-header', RecordHeader);
 ```
 
-### experienceContext / experienceContextManager
+**What happens:** the first render matches the server HTML (empty); after
+`firstUpdated()` the header renders. Declaring `static contexts` re-renders the
+element each time the snapshot is replaced. Always read through `routeContext.get()` in
+`render()`; do not cache the snapshot in a field.
 
-`experienceContext` holds a frozen snapshot of the current app/experience metadata (`sysId`, `name`, `title`, `theme`, `properties`, `isLoaded`, etc.). Initially only `name` is populated (derived from the URL); the rest stay `null` and `isLoaded: false` until a layout loader calls `experienceContextManager.setExperienceConfig(config)` — Karuna does not auto-fetch this metadata the way aiux-kit does.
+## API
 
-```javascript
-class MyWidget extends AIUXElement {
-  static contexts = [experienceContext];
-  render() {
-    const experience = experienceContext.get();
-    return html`<div>${experience.title ?? experience.name}</div>`;
-  }
-}
+### Value
 
-// From a layout loader, once the metadata is available:
-experienceContextManager.setExperienceConfig({sysId, title, theme});
+A frozen `RouteSnapshot` (see Data shapes).
+
+| Field / method | Meaning |
+| --- | --- |
+| `matched` | `true` in the browser; `false` on the server (all other fields absent). |
+| `path` | Full browser pathname, including the base path (e.g. `/aiux/aict/list/incident`). Same as `fullPath`. |
+| `pathWithoutExperience` | Path with the base path removed (e.g. `/list/incident`). `/` becomes the app's landing path. |
+| `fullPath` | Full browser pathname. |
+| `page` | `pathWithoutExperience` without the leading `/` (e.g. `list/incident`). |
+| `pagePattern` | Route pattern of the matched page (e.g. `/list/:table`); `''` if unknown. |
+| `experience` | Last segment of the base path (e.g. `aict`); `''` for a single-segment base path. |
+| `params` / `patternParams` | Same object: dynamic route segments by name. |
+| `query` / `uiState` | Same object: URL query string as `{[key]: string}`; for repeated keys the last value wins. |
+| `state` | `history.state` at snapshot time, or `null`. Router navigations store `{path, query, ...state}` there, where `state` is the `state` option passed to navigate. |
+| `getParam(key)` / `getPatternParam(key)` | `params[key]`, or `null`. |
+| `getUIState(key)` | `query[key]`, or `null`. |
+| `hasUIState(key)` | Whether `key` is present in `query`. |
+| `getUIStates(keys)` | `{[key]: value \| null}` for each requested key. |
+| `getHashSegment(name)` | Raw remainder of hash segment `name` (e.g. `'/a/b?x=1'`), or `null` if absent. |
+| `hasHashSegment(name)` | Whether hash segment `name` exists. |
+| `getHashPath(name)` | Path part of segment `name` without its leading `/` and query (`'a/b'`); `''` if the segment has no `/` path; `null` if absent. |
+| `getHashQuery(name)` | `URLSearchParams` of segment `name`'s `?` part (empty if none); `null` if absent. |
+| `getHashQueryParam(name, key)` | One value from segment `name`'s query; `null` if the segment or its query is absent. |
+| `test(pattern)` | `URLPattern` pathname match against `pathWithoutExperience`; `false` if `URLPattern` is unavailable or the pattern is invalid. |
+| `toObject()` | Plain object `{path, pathWithoutExperience, fullPath, page, pagePattern, experience, params, query, state}`. Here `path` is the path **without** the base path. |
+
+Hash format: the hash (without `#`) is split on `&` into segments, each
+`name[/path][?query]`. Hash helpers read `window.location.hash` when called,
+not when the snapshot was built.
+
+### Providing
+
+Provided automatically by the platform. `@servicenow/aiux-components-core`
+creates it when the module loads, building the first snapshot from
+`window.location` and the route globals the server writes into the page, so it
+exists before any element connects. `AIUXAppLayoutElement` rebuilds it when it
+connects and on each `aiux:route-changed` window event from the router. Do not
+provide it yourself.
+
+### Consuming
+
+```js
+// AIUXElement (Karuna)
+static contexts = [routeContext];
+render() { const route = routeContext.get(); /* ... */ }
 ```
 
-`experienceContextManager` also exposes `get(key)`, `subscribe(callback)` (fires immediately with the current value, then on every update), and getters for `sysId`/`name`/`isLoaded`.
+```js
+// @lit/context ContextConsumer (aiux-kit style), browser only
+import {ContextConsumer} from '@lit/context';
 
-### userPreferencesContext
-
-Re-exported from `@servicenow/aiux-components-core`. Holds all pre-fetched user preferences as a flat `Record<string, string>`, seeded at request time from build-time-extracted `getUserPreference()` call sites. Components that declare `static contexts = [userPreferencesContext]` re-render automatically when a preference changes.
-
-```javascript
-import {LitElement, html} from 'lit';
-import {userPreferencesContext} from '@servicenow/aiux-components-core';
-
-class MyWidget extends LitElement {
-  static contexts = [userPreferencesContext];
-
-  render() {
-    const prefs = userPreferencesContext.get();
-    return html`<div>${prefs['glide.ui.accessibility.voice_input']}</div>`;
-  }
-}
+this._route = new ContextConsumer(this, {
+  context: routeContext,
+  subscribe: true,
+  callback: route => { /* called with the current value, then on every change */ }
+});
 ```
 
-## Benefits
+- `get()` never returns `undefined`. On the server it returns a frozen
+  `{matched: false}`; in the browser `matched` is `true` from the start.
+  Check `matched` before reading other fields in code that also runs on the
+  server.
+- The subscription is made when the consumer connects, and elements connected
+  before the app layout still receive every later update.
+- Updates on router navigations: link clicks, programmatic full navigation,
+  and back/forward. The snapshot is replaced after the URL and params are
+  committed and before the new page renders.
+- Not updated by shallow navigations (`shallow: true`), hash-only changes,
+  or the initial landing-path `replaceState`.
+- `subscribe(callback)` is also available and returns an unsubscribe
+  function; it does not call `callback` with the current value.
 
-- **Single dependency**: Install one package instead of two separate context packages
-- **Convenience**: Import multiple contexts from one location
-- **Tree-shaking**: Only imports what you use
-- **Discoverability**: Easy to find all available contexts
-- **Type safety**: Works with TypeScript decorators
+### Updating
 
-## Individual Packages
+Read-only for consumers. The snapshot is frozen. `routeContext.set(value)`
+exists: it replaces the value for all subscribers, does not change the URL,
+and is overwritten on the next navigation. To change the route, navigate.
 
-If you prefer granular dependencies, you can still install individual packages:
+### Data shapes
 
-- `@servicenow/aiux-context-widget-origin`
-- `@servicenow/aiux-context-mobile-app-bridge`
+```ts
+type RouteSnapshot =
+  | Readonly<{matched: false}>
+  | Readonly<{
+      matched: true;
+      path: string;
+      pathWithoutExperience: string;
+      fullPath: string;
+      page: string;
+      pagePattern: string;
+      experience: string;
+      params: Record<string, string>;
+      patternParams: Record<string, string>;
+      query: Record<string, string>;
+      uiState: Record<string, string>;
+      state: unknown | null;
+      getParam(key: string): string | null;
+      getPatternParam(key: string): string | null;
+      getUIState(key: string): string | null;
+      hasUIState(key: string): boolean;
+      getUIStates(keys: string[]): Record<string, string | null>;
+      getHashSegment(name: string): string | null;
+      hasHashSegment(name: string): boolean;
+      getHashPath(name: string): string | null;
+      getHashQuery(name: string): URLSearchParams | null;
+      getHashQueryParam(name: string, key: string): string | null;
+      test(pattern: string): boolean;
+      toObject(): {
+        path: string; // without base path
+        pathWithoutExperience: string;
+        fullPath: string;
+        page: string;
+        pagePattern: string;
+        experience: string;
+        params: Record<string, string>;
+        query: Record<string, string>;
+        state: unknown | null;
+      };
+    }>;
+```
 
-## Related Packages
+## Integration details
 
-- `@servicenow/aiux-directives` - Logical exports for AIUX directives
-- `@servicenow/aiux-directive-provider-origin` - Directive for providing widget origin context
+### SSR
 
-## SSR Compatibility
-
-✅ All contexts are SSR-safe and work in both server-side and client-side rendering environments.
-
-## License
-
-See the main repository LICENSE file.
+- Server render and `static loader(ctx)` always see `{matched: false}`. In a
+  loader, read route data from `ctx.params` and `ctx.query`.
+- The first client render already sees the real snapshot. Render output that
+  depends on it only after `firstUpdated()` (as in the example) so the first
+  client render matches the server HTML. Data the server must render belongs
+  in the page loader (`ctx.params`, `ctx.query`).
+- The `ContextConsumer` bridge is installed only in the browser.

@@ -15,7 +15,11 @@ metadata:
 > - **Discovery:** `find pages -name "headerConfig.js" …` → **`fs_glob`** with `**/headerConfig.{js,ts}`
 >   (search `src/extensions/**` as well when the project extends a host). Both `grep -rn …` commands →
 >   **`fs_grep`** with `-n`; the same regex alternation works. `grep -v node_modules` needs no analogue —
->   scope the glob to `src/**`.
+>   scope the glob to `src/**`. **There is no `jq` either:** pack v3.0.0 resolves the search root from
+>   `aiux.json`'s `srcDir` (`jq -r '.srcDir // "."'`) — read `aiux.json` with **`fs_read_file`** instead.
+>   v3.0.0 is authoritative here: `application.js` and `pages/` live under the configured `srcDir`
+>   (scaffolded as `src/lux`), but **"most existing apps predate `srcDir` and keep it unset"**, in which
+>   case it resolves to the project root. Glob both shapes rather than assuming one.
 > - **The Category 5 "must be empty" re-check: an empty result is not proof.** Broaden the pattern once
 >   (drop the extension, widen the directory) and then **open the surviving files** — a grep can miss in a
 >   file that really does contain the string.
@@ -23,11 +27,14 @@ metadata:
 >   whether the pattern is present — use the globs. Never claim the migration succeeded because a build
 >   "would now pass": hand the build to the user and report their result.
 > - **Dead links resolved:** `docs/arch-header-config.md` and `../../../docs/arch-header-config.md` are
->   vendor monorepo paths, **not shipped in this package**. Do not hunt for them. The data shape is
->   authored in **`references/header-config-contract.md`** (load it with `load_skill_resource`), which
->   tags every field by evidence tier — ✅ attested in shipped code, 🟡 named only in this skill's prose,
->   ⬜ unverified. Category 4's key list is a *comparison checklist, not a shape definition*, and it omits
->   `metadata`.
+>   vendor monorepo paths, **not shipped in this package** (still true at v3.0.0). Do not hunt for them.
+>   v3.0.0 *does* now inline a `### Header-config data shape` section in its own SKILL.md; that field list
+>   (including `metadata` and `icon`, and the `l3` entry `id`) has been **merged into**
+>   **`references/header-config-contract.md`** (load it with `load_skill_resource`), which stays the
+>   authority because it adds what the pack section lacks: per-field evidence tiers — ✅ attested in
+>   shipped code, 🟡 documented in pack prose, ⬜ unverified — the precedence ordering, the meaning of
+>   `null`, and the scope-creep guard. Category 4's key list remains a *comparison checklist, not a shape
+>   definition*.
 > - **`AGENTS.md` is authoritative on the project's shape**, and the shape decides where to search: an
 >   experience-owning app keeps pages in `pages/<route>/page.js` with a root `application.js`, while an
 >   extension app keeps them under `src/extensions/<host_scope>/<host_route_id>/pages/`. Header
@@ -37,7 +44,7 @@ metadata:
 > Note: this skill's registered name is **`migrate-header-config-review`** (its frontmatter `name`), which
 > differs from its folder name — activate it by the registered name.
 
-Use this skill to migrate an app off the **legacy** header-config patterns onto the **current** app-owned model (STRY64218924), and to review the result. There is no codemod — migration is manual. The vendor's `docs/arch-header-config.md` is not shipped; the contract is authored in **`references/header-config-contract.md`** — read it before writing a resolver.
+Use this skill to migrate an app off the **legacy** header-config patterns onto the **current** app-owned model (STRY64218924), and to review the result. There is no codemod — migration is manual. The vendor's `docs/arch-header-config.md` is still not shipped; pack v3.0.0's own inline data-shape section has been merged into **`references/header-config-contract.md`**, which is the contract — read it before writing a resolver.
 
 You may edit files when asked to migrate. When asked only to review, **read and report, do not modify.**
 
@@ -100,18 +107,22 @@ Per-page enrichment still works: a layout/page loader returning `{headerConfig: 
 
 ### Step 1 — find the legacy surface
 
+`application.js`/`pages/` live under the app's configured `srcDir` (`aiux.json`; scaffolded as `src/lux`, but **most existing apps predate `srcDir` and keep it unset**, resolving to the project root). Resolve it the same way the build does rather than hard-coding a path — in this IDE that means `fs_read_file` on `aiux.json`, then `fs_glob`/`fs_grep` scoped to the resolved root (see the boundary block; the shell below is the pack's reference form, not a command you can run).
+
 ```bash
+SRC=$(jq -r '.srcDir // "."' aiux.json)
+
 # Pattern A: per-page files (now-sdk build / aiux build both hard-fail on these)
-find pages -name "headerConfig.js" -o -name "headerConfig.ts" | grep -v node_modules
+find "$SRC/pages" -name "headerConfig.js" -o -name "headerConfig.ts" | grep -v node_modules
 
 # Pattern B: the old named export (build hard-fails on it too) and the framework-injected context field
-grep -rn "computeCurrentHeaderConfig" application.* pages/
-grep -rn "ctx.headerConfig\|__LAYOUT_DATA__\['header-config'\]\|__runHeaderConfig" pages/ application.*
+grep -rn "computeCurrentHeaderConfig" "$SRC"/application.* "$SRC/pages/"
+grep -rn "ctx.headerConfig\|__LAYOUT_DATA__\['header-config'\]\|__runHeaderConfig" "$SRC/pages/" "$SRC"/application.*
 ```
 
 ### Step 2 — build the resolver in `header-config.js`
 
-- Create `header-config.js` (or `.ts`) at the app root.
+- Create `header-config.js` (or `.ts`) under `<srcDir>`, next to `application.js` (it's imported relatively via `./header-config.js`, so it lives alongside `application.js` wherever that is — project root when `srcDir` is unset).
 - Move the route → config logic into `getHeaderConfig(path)` — a function taking the route path string and returning a config object or `null`.
 - Collapse Pattern A's per-page `getHeaderConfig({params})` bodies and Pattern B's `computeCurrentHeaderConfig` branches into this one resolver.
 - Return a header-config object — shape in `references/header-config-contract.md`, loadable with
@@ -127,7 +138,7 @@ grep -rn "ctx.headerConfig\|__LAYOUT_DATA__\['header-config'\]\|__runHeaderConfi
 
 ### Step 4 — clean up consumers
 
-- Delete every `pages/<route>/headerConfig.js`.
+- Delete every `<srcDir>/pages/<route>/headerConfig.js`.
 - Remove loader reads of `ctx.headerConfig`. A loader that wants to enrich should `return {headerConfig: {...}}` as loaderData, or import `getHeaderConfig` from `header-config.js` directly.
 - Remove any direct reads of `__LAYOUT_DATA__['header-config']` — that key no longer exists.
 
@@ -175,8 +186,11 @@ For each branch in `getHeaderConfig`:
 A legacy `headerConfig.js` or `computeCurrentHeaderConfig` branch with no corresponding branch in `getHeaderConfig` → that page gets no header config in BOTH SSR and CSR.
 
 ```bash
-find pages -name "headerConfig.js" -o -name "headerConfig.ts" | grep -v node_modules  # must be empty
+SRC=$(jq -r '.srcDir // "."' aiux.json)
+find "$SRC/pages" -name "headerConfig.js" -o -name "headerConfig.ts" | grep -v node_modules  # must be empty
 ```
+
+Local: run this as `fs_glob` over the resolved `srcDir` **and** the project root, and remember the boundary rule — **an empty result is not proof.** Broaden the pattern once, then open the surviving files.
 
 ### 6. Tests
 

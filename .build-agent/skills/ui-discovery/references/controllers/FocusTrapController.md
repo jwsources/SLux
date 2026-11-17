@@ -1,4 +1,15 @@
-# @servicenow/aiux-controller-focus
+# FocusTrapController
+
+> Source: `@servicenow/aiux-controllers@1.3.20` · `controllers/docs/usage/FocusTrapController.md`
+
+`FocusTrapController` keeps keyboard focus inside a component while an overlay
+is open. The host calls `activate()` when the overlay opens and `deactivate()`
+when it closes. On activate it remembers the focused element and moves focus
+into the overlay; while active, Tab and Shift+Tab cycle through the overlay's
+focusable elements and focus that leaves (by click or script) is pulled back;
+on deactivate it restores focus to the remembered element. Shadow DOM is
+pierced in both directions, and nested traps cooperate. It does not handle
+Escape, set `aria-modal` or `inert`, or lock scrolling; the host does those.
 
 ## Import
 
@@ -6,204 +17,210 @@
 import {FocusTrapController} from '@servicenow/aiux-controllers';
 ```
 
-
-A standalone, Lit-compatible controller package for focus behaviour in elements with shadow roots, providing `FocusController` for auto-focus delegation and a lightweight trap toggle, and `FocusTrapController` for overlay-oriented focus trapping with container scoping, custom focus order, and an explicit activate/deactivate lifecycle.
-
-## Features
-
-- **Auto-focus delegation** (`FocusController`) — when `host.focus()` is called, focus is immediately re-delegated to the first focusable element inside the shadow root. Focus is never stolen on page load.
-- **Simple focus trapping** (`FocusController`) — when `trap` is `true`, Tab and Shift+Tab cycle through focusable shadow-root descendants rather than leaving the component.
-- **Screen-reader isolation** (`FocusController`) — when the trap is active, all direct children of `<body>` that are not the host are given `aria-hidden="true"`, mirroring the pattern used by native `<dialog>`.
-- **Overlay-oriented trapping** (`FocusTrapController`) — a separate class purpose-built for modals/drawers/popovers: scoped to explicit containers (not just the host's own shadow root), supports custom focus ordering, per-activation initial-focus overrides, previous-focus capture/restore, and correctly hands off between nested traps (e.g. a popover opened from inside a modal).
-
-## `FocusController` vs `FocusTrapController`
-
-Both live in this package, but they're not the same mechanism. Use `FocusController`'s `trap` option for the simple case — a component that only ever traps focus within its own shadow root. Reach for `FocusTrapController` directly when you need any of: scoping the trap to a specific container other than the whole host (`getContainers`), a custom focus order (`getFocusableElements`), an explicit `activate()`/`deactivate()` lifecycle (rather than a boolean property), or correct behavior when traps can nest (e.g. a popover opened from inside a modal). `FocusTrapController` is the one re-exported by the `@servicenow/aiux-controllers` umbrella; `FocusController` is not — see the umbrella package's own README for why.
-
-## Installation
-
-```bash
-pnpm add @servicenow/aiux-controller-focus
-```
-
 ## Usage
 
-### Auto-focus delegation
+### Minimal complete example
 
 ```js
-import {LitElement, html} from 'lit';
-import {FocusController} from '@servicenow/aiux-controller-focus';
+import {html} from 'lit';
+import {customElement, state} from 'lit/decorators.js';
+import {AIUXElement} from '@servicenow/aiux-components-core';
+import {FocusTrapController} from '@servicenow/aiux-controllers';
 
-class MyCard extends LitElement {
-  _focus = new FocusController(this);
+@customElement('acme-filter-panel')
+export class AcmeFilterPanel extends AIUXElement {
+  @state() _open = false;
 
-  render() {
-    return html`
-      <input type="text" placeholder="Name" />
-      <button>Save</button>
-    `;
-  }
-}
-```
-
-Calling `myCard.focus()` lands on the `<input>` inside the shadow root.
-
-### Focus trapping (modal pattern)
-
-```js
-import {LitElement, html} from 'lit';
-import {FocusController} from '@servicenow/aiux-controller-focus';
-
-class MyModal extends LitElement {
-  _focus = new FocusController(this, {trap: true});
-
-  render() {
-    return html`
-      <div role="dialog" aria-modal="true">
-        <button>Cancel</button>
-        <button>Confirm</button>
-      </div>
-    `;
-  }
-}
-```
-
-While the modal is visible, Tab/Shift+Tab stay within the component and sibling body children are hidden from screen readers.
-
-### Toggling the trap at runtime
-
-```js
-class MyDrawer extends LitElement {
-  _focus = new FocusController(this);
-
-  open() {
-    this._focus.trap = true;
-    this.focus();
-  }
-
-  close() {
-    this._focus.trap = false;
-  }
-}
-```
-
-### Standalone (no Lit host)
-
-```js
-import {FocusController} from '@servicenow/aiux-controller-focus';
-
-const ctrl = new FocusController(myElement, {trap: true});
-ctrl.hostConnected();
-
-// later:
-ctrl.destroy();
-```
-
-### `FocusTrapController` (overlay pattern)
-
-```js
-import {LitElement, html} from 'lit';
-import {FocusTrapController} from '@servicenow/aiux-controller-focus';
-
-class MyDialog extends LitElement {
-  _focusTrap = new FocusTrapController(this, {
+  _trap = new FocusTrapController(this, {
     getContainers: () => {
-      const dialog = this.renderRoot?.querySelector('dialog');
-      return dialog ? [dialog] : [this];
+      const panel = this.renderRoot?.querySelector('.panel');
+      return panel ? [panel] : [this.renderRoot];
     }
   });
 
-  open() {
-    this._focusTrap.activate();
+  updated(changed) {
+    super.updated(changed);
+    if (changed.has('_open')) {
+      if (this._open) this._trap.activate();
+      else this._trap.deactivate();
+    }
   }
 
-  close() {
-    this._focusTrap.deactivate();
+  _toggle() {
+    this._open = !this._open;
+  }
+
+  _onPanelKeydown(e) {
+    if (e.key === 'Escape') this._open = false;
   }
 
   render() {
     return html`
-      <dialog>
-        <button @click=${this.close}>Cancel</button>
-        <button @click=${this.close}>Confirm</button>
-      </dialog>
+      <button class="aiux-btn" aria-expanded=${String(this._open)} @click=${this._toggle}>
+        Filters
+      </button>
+      ${this._open
+        ? html`
+            <div
+              class="panel aiux-card p-4"
+              role="dialog"
+              aria-modal="true"
+              aria-label="Filters"
+              @keydown=${this._onPanelKeydown}
+            >
+              <input class="aiux-input" aria-label="Keyword" />
+              <button class="aiux-btn" @click=${this._toggle}>Apply</button>
+            </div>
+          `
+        : null}
     `;
   }
 }
 ```
 
-Unlike `FocusController`'s boolean `trap` property, `FocusTrapController` is activated/deactivated explicitly — call `activate()` when the overlay opens and `deactivate()` when it closes (`hostDisconnected` also calls `deactivate()` automatically, so an overlay removed from the DOM while open still restores focus correctly).
+**What happens:** clicking Filters renders the panel; after the render,
+`activate()` moves focus to the keyword input. Tab and Shift+Tab cycle between
+the input and Apply without leaving the panel. Escape or Apply sets `_open` to
+`false`, `deactivate()` runs, and focus returns to the Filters button.
+Removing the element while open also releases the trap.
+
+### Additional patterns
+
+Focus a specific element first, by default or for one activation. The target
+must itself be focusable (see Behavior), otherwise the first focusable element
+is used:
+
+```js
+_trap = new FocusTrapController(this, {
+  initialFocus: () => this.renderRoot?.querySelector('[autofocus]') ?? null
+});
+
+this._trap.activate({initialFocus: () => this.renderRoot?.querySelector('.confirm')});
+```
+
+Explicit focus order, for overlays whose Tab order differs from DOM order or
+that span several shadow roots:
+
+```js
+_trap = new FocusTrapController(this, {
+  getContainers: () => [this.renderRoot],
+  getFocusableElements: () =>
+    [this._closeButton, ...this._bodyFocusables(), this._primaryAction].filter(Boolean)
+});
+```
+
+Modeless overlay: move focus in and restore it on close, without trapping Tab:
+
+```js
+_trap = new FocusTrapController(this, {trapFocus: false});
+
+// Or decide at each activate():
+_trap = new FocusTrapController(this, {trapFocus: () => this.modal});
+```
+
+Overlay with nothing focusable (for example a loading state): focus goes to
+the fallback, which defaults to the host. Give it `tabindex="-1"` so it can
+receive programmatic focus:
+
+```js
+_trap = new FocusTrapController(this, {
+  fallbackFocus: () => this.renderRoot?.querySelector('.panel')
+});
+```
 
 ## API
 
-### `new FocusController(host, options?)`
+### Constructor
 
-| Parameter      | Type          | Description                                                             |
-| -------------- | ------------- | ----------------------------------------------------------------------- |
-| `host`         | `HTMLElement` | The host element. Pass a Lit `ReactiveControllerHost` to auto-register. |
-| `options.trap` | `boolean`     | Start with focus trapping active. Default: `false`.                     |
-
-### Properties
-
-| Property | Type      | Description                                                                                                                              |
-| -------- | --------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `trap`   | `boolean` | Get or set trap state at runtime. Setting `true` applies `aria-hidden` to sibling body children immediately; setting `false` removes it. |
-
-### Methods
-
-| Method               | Description                                                                        |
-| -------------------- | ---------------------------------------------------------------------------------- |
-| `hostConnected()`    | Attach listeners. Called automatically by Lit.                                     |
-| `hostDisconnected()` | Remove listeners and release `aria-hidden`. Called automatically by Lit.           |
-| `destroy()`          | Full teardown — calls `hostDisconnected` and removes the controller from the host. |
-
-### `new FocusTrapController(host, options?)`
-
-| Parameter                     | Type                                    | Description                                                                                                                                          |
-| ------------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `host`                          | `ReactiveControllerHost & HTMLElement`  | The host element. Auto-registers via `host.addController(this)` when present.                                                                       |
-| `options.getContainers`        | `() => Array<HTMLElement \| ShadowRoot>` | Elements the trap scopes to. Defaults to the host's `renderRoot`/`shadowRoot` (or the host itself if neither exists).                                |
-| `options.getFocusableElements` | `() => HTMLElement[]`                   | Custom focus order. When omitted, focusables are collected from `getContainers()` in DOM order, piercing shadow DOM.                                 |
-| `options.initialFocus`         | `() => HTMLElement \| null`             | Default focus target on `activate()`. Overridable per-call via `activate({initialFocus})`. Falls back to the first focusable element, then `fallbackFocus`. |
-| `options.trapFocus`            | `boolean \| (() => boolean)`            | When `false`, Tab cycling and the focus-redirect listener are not installed — autofocus and previous-focus restore still run. Evaluated per `activate()`. Default: `true`. |
-| `options.fallbackFocus`        | `() => HTMLElement \| null`             | Last-resort focus target when no focusable elements exist. Defaults to the host.                                                                     |
-
-### Properties
-
-| Property | Type      | Description                             |
-| -------- | --------- | ------------------------------------------ |
-| `active` | `boolean` | Read-only. Whether the trap is currently active. |
-
-### Methods
-
-| Method                            | Description                                                                                                                     |
-| ------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `activate(overrides?)`               | Captures the currently focused element, installs listeners (if `trapFocus` resolves truthy), and moves focus to the resolved initial target. No-op when already active. `overrides.initialFocus` takes priority over the constructor option for this call only. |
-| `deactivate()`                       | Removes listeners and restores focus to whatever was focused before `activate()`. No-op when not active. Called automatically by `hostDisconnected()`. |
-
-## Focusable element heuristic
-
-The controller targets elements matching:
-
-```
-a[href], area[href], button:not([disabled]),
-details > summary:first-of-type,
-input:not([disabled]), select:not([disabled]),
-textarea:not([disabled]),
-[contenteditable]:not([contenteditable="false"]),
-[tabindex]:not([tabindex="-1"])
+```ts
+new FocusTrapController(host: ReactiveControllerHost & HTMLElement, options?: FocusTrapOptions)
 ```
 
-Elements with a `[hidden]` ancestor or an `offsetParent` of `null` (not visible) are excluded.
+- `host`: the component (an `AIUXElement`). The controller calls
+  `host.addController(this)` when the host has that method. Create it as a
+  class field or in the constructor.
+- `options`: see Data shapes. Function options are called when needed, so
+  they can read the current render; `trapFocus` may also be a boolean.
 
-## Demo
+### Methods and fields
 
-```bash
-pnpm --filter @servicenow/aiux-controller-focus dev
+| Member | Signature | Effect |
+| --- | --- | --- |
+| `active` | `boolean` (getter) | `true` between `activate()` and `deactivate()`. |
+| `activate` | `(overrides?: {initialFocus?: () => HTMLElement \| null}) => void` | Starts the trap and moves focus in (see Behavior). `overrides.initialFocus` replaces `options.initialFocus` for this activation only. No-op when already active. |
+| `deactivate` | `() => void` | Stops the trap and restores focus to the element that was focused at `activate()`. No-op when not active. |
+| `hostConnected` | `() => void` | Called by Lit. Does nothing; the trap starts only on `activate()`. |
+| `hostDisconnected` | `() => void` | Called by Lit. Calls `deactivate()`. |
+
+### Behavior
+
+- **Focusable elements.** Collected in DOM order from every container
+  returned by `getContainers`, descending into shadow roots of nested
+  elements. An element counts when it matches `a[href]`, an enabled
+  `button`/`input`/`select`/`textarea`, `iframe`, or `[tabindex]` other than
+  `tabindex="-1"`, and is rendered (not `display: none`, not
+  `visibility: hidden`, and has a layout box). With `getFocusableElements`,
+  that list is used in the given order, filtered by the same test.
+- **Default containers.** Without `getContainers`, the host's render root
+  (shadow root), or the host itself when it has none.
+- **On `activate()`.** Records the deepest focused element (inside shadow
+  roots), then in a microtask (it does not wait for `updateComplete`), focuses the
+  first of: `overrides.initialFocus()`, `options.initialFocus()`, the first
+  focusable element, `fallbackFocus()` (default: the host). An
+  `initialFocus` result that is not focusable by the test above is skipped.
+  A `deactivate()` in the same tick cancels this.
+- **While active (`trapFocus` true).** Document-level capture listeners:
+  - Tab / Shift+Tab, when focus is inside the containers (or nowhere), moves
+    to the next / previous focusable element and wraps at the ends. With no
+    focusable elements, Tab does nothing.
+  - Focus landing outside the containers is moved to the first focusable
+    element (or the fallback).
+  - When any focusable element is an `iframe`, Tab is left to the browser.
+    If an `iframe` is focusable at activation, two invisible, focusable edge
+    elements are inserted before the first and after the last focusable
+    element; focusing one wraps to the other end. They are removed on
+    `deactivate()`.
+- **`trapFocus` false.** No listeners and no edge elements; initial focus and
+  restore still happen. Evaluated once per `activate()`.
+- **On `deactivate()`.** Removes the listeners and edge elements, then in a
+  microtask focuses the recorded element if it is still in the document.
+- **Nested traps.** Active traps form a stack. Focus moving into a trap
+  activated later is not pulled back by an earlier one, and each trap
+  handles Tab only when focus is inside its own containers. Deactivate inner
+  traps before outer ones so focus restores to the inner trigger.
+- Dispatches no events and does not render.
+
+### Lifecycle
+
+- Construct once per host. `activate()`/`deactivate()` can be called any
+  number of times.
+- Call `activate()` after the overlay's content is rendered or will render in
+  the current update: from `updated()`, or from an event handler that also
+  sets the open state (the focus move waits a microtask).
+- Removing the host from the document deactivates the trap and restores
+  focus. Reconnecting does not reactivate it.
+
+### Data shapes
+
+```ts
+interface FocusTrapOptions {
+  // Elements or shadow roots that make up the trap. Default: [host.renderRoot ?? host].
+  getContainers?: () => Array<HTMLElement | ShadowRoot>;
+  // Explicit ordered focusables; replaces container discovery for ordering.
+  getFocusableElements?: () => HTMLElement[];
+  // Default initial focus target for activate().
+  initialFocus?: () => HTMLElement | null;
+  // Install Tab cycling and focus redirect. Default true.
+  trapFocus?: boolean | (() => boolean);
+  // Focus target when nothing is focusable. Default: the host.
+  fallbackFocus?: () => HTMLElement | null;
+}
 ```
 
-## Tests
+## Integration details
 
-```bash
-pnpm --filter @servicenow/aiux-controller-focus test
-```
+### SSR
+
+Constructing the controller is safe on the server. `activate()` and
+`deactivate()` use `document`; call them only in the browser, from
+`updated()`, `firstUpdated()`, or event handlers.
