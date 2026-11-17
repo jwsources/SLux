@@ -80,11 +80,16 @@ The AIUX skills were written for offline agents **with** a shell. Every `pnpm`, 
 
 ## Order of authority
 
-1. **This file, then TOOLNOTES.md** — this repo, this IDE, this instance. Nothing outranks a fact
-   measured here.
+1. **This file, then SKILL-OVERRIDES.md, then TOOLNOTES.md** — this repo, this IDE, this instance.
+   Nothing outranks a fact measured here. **SKILL-OVERRIDES.md is the correction layer over the vendor
+   skills**: read it whenever you activate a pack skill, and where it contradicts that skill's text, the
+   overlay wins.
 2. **The AIUX skills.** This is an AIUX project, so they own the framework: `ui-discovery` first for
    any UI, then `aiux-build`, `accessibility`, `components`, `patterns`, `motion` and the rest.
    Strong on Lit, components, tokens and ARIA — and they know nothing about this instance.
+   ⚠ **Their files are now PRISTINE vendor content.** They were written for offline agents with a shell,
+   so they contain instructions that are void or wrong here. Those corrections are NOT in the skill files
+   any more — they are in SKILL-OVERRIDES.md. A pack skill read on its own is incomplete by design.
 3. **Equal footing, both general guidance:**
    - `explain_fluent_doc` / `search_fluent_docs` — anything under `src/fluent/`.
    - the **`hint-lookup`** skill — the curated hint library: facts missing from or disproven by the
@@ -146,17 +151,33 @@ The AIUX skills were written for offline agents **with** a shell. Every `pnpm`, 
 2. Evaluate reusable components and instance widgets together. If a candidate exists, use the best match
    and proceed without asking for confirmation.
 
-`.build-agent/skills/` holds **19 skill folders, committed and hand-edited** — version-controlled
-content, not generated. Twelve derive from the ServiceNow agent packs; the other seven
-(`hint-lookup`, `aiux-instance-ops`, `aiux-agents`, `aiux-widget`, `diag-playbook`,
+`.build-agent/skills/` holds **19 skill folders**. Twelve derive from the ServiceNow agent packs; the
+other seven (`hint-lookup`, `aiux-instance-ops`, `aiux-agents`, `aiux-widget`, `diag-playbook`,
 `servicenow-interactive-report-writer`, `aiux-tailwind-vision-spec`) are authored here. There is no
 `postinstall` hook, no `.claude/skills`, no `.agents/skills` symlink and no `pnpm agent:skills`. Do not
 try to regenerate them.
 
-⚠ **`pages-extensions-generator` no longer exists upstream.** The pack dropped it at v3.0.0 and absorbed
-its capability into `aiux-build/references/app/extensions.md`. The local folder is retained and retargeted
-at that reference, because it still holds the only documentation of `__parentScopeName__` /
-`__parentRouteId__` resolution plus the three `assets/` templates the pack does not ship.
+### 🔑 Never edit a vendor skill file
+
+The pack-derived skills are **byte-identical to `node_modules/@servicenow/agent-pack-*`** and must stay
+that way. Editing them is what turned the v2.6.0 → v3.0.0 pack bump into a full manual re-audit.
+
+- **Corrections go in `SKILL-OVERRIDES.md`**, keyed by skill name — never inline in the skill.
+- **Adding our own files alongside vendor content is fine** and survives an upgrade, because a
+  file-by-file vendor copy never touches them. They must stay inside the skill folder:
+  `load_skill_resource(skill_name, file_path)` only resolves paths within a skill directory, so moving
+  `validate-checks.md` or `header-config-contract.md` out would break every call site.
+- **Upgrading a pack** = copy the vendor files over, **one file per `fs_copy` call**. A directory copy is
+  destructive: it deletes destination-only files. The recipe and the don't-copy / must-survive /
+  exceptions lists are in `SKILL-OVERRIDES.md` → Upgrade recipe.
+- **Two deliberate exceptions**, both recorded in the overlay: `ui-discovery/SKILL.md` keeps a hand-
+  maintained union component index, and `pages-extensions-generator` has no upstream at all — the pack
+  dropped it at v3.0.0, so it is now an authored local skill.
+
+⚠ **`pages-extensions-generator`'s capability now lives upstream** in
+`aiux-build/references/app/extensions.md`, which is the authority for path conventions, templates and
+layout precedence. The local folder is retained only for its `__parentScopeName__` / `__parentRouteId__`
+resolution and its three `assets/` templates, which the pack does not ship.
 
 Two more skills — `atf-run-test` and `update-system-property` — are provided by the environment and are
 **not** on disk. TOOLNOTES.md → Skill inventory lists all of them, plus the two loader rules that make a
@@ -183,6 +204,14 @@ src/lux/extensions/<host-project-id>/<host-basename>/pages/<route>/page.js
   scope: the validator does `aiuxJson.projectId ?? scope`, and `??` only triggers on null/undefined, so
   `""` reaches the non-empty check and **fails the build**. Measured here.
 
+## Read SKILL-OVERRIDES.md when
+
+**You activate any pack skill** — `ui-discovery`, `aiux-build`, `accessibility`, `figma-to-widget`,
+`internationalization`, `localization`, `migrate-header-config-review`, `pages-extensions-generator`,
+`components`, `compositions`, `motion`, `patterns`. The skill files are pristine vendor content and
+carry shell commands and claims that are void or wrong here; the overlay is where those are corrected.
+Read its global section plus the section for the skill you activated.
+
 ## Read TOOLNOTES.md when
 
 | Trigger | Section |
@@ -193,8 +222,7 @@ src/lux/extensions/<host-project-id>/<host-basename>/pages/<route>/page.js
 | Writing a `css` or `html` tagged template | Measured facts → backtick trap |
 | Referencing an image | Measured facts → `db_image` URLs |
 | Touching `<srcDir>/extensions/` structure or `application.js` | Extension model · hooks |
-| Copying or merging skill files | Measured facts → `fs_copy` is destructive |
+| Copying or merging skill files, or taking a new pack version | Measured facts → `fs_copy` is destructive · Drift detection |
 | Something is blocked and you may need to ask the user | Genuinely unavailable |
 | A skill cites a path that does not exist | Dead links in the pack |
-| The pack version may have moved | Drift detection |
 | Choosing a skill | Skill inventory |

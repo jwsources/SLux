@@ -6,6 +6,16 @@ metadata:
   version: '1.0.0'
 ---
 
+<!-- DELIBERATELY-EDITED VENDOR FILE — DO NOT RESTORE FROM node_modules/.
+     Rule in this repo: vendor skill files are never edited; corrections live in the repo-root
+     SKILL-OVERRIDES.md. This file is the ONE documented exception, because its core content is the
+     Unified UI Index, maintained as a UNION of upstream's v3.0.0 rows and the ~39 v2.6.0 rows v3.0.0
+     dropped but whose reference files we still ship under references/. Copying the vendor copy over
+     this file deletes those rows and orphans references/**.
+     On a pack upgrade: MERGE new vendor rows into the table here — do not replace the file.
+     Rationale, the full list of local divergences, and the void/corrected vendor instructions:
+     SKILL-OVERRIDES.md § Per-skill overrides → ui-discovery (authority #1 — it wins over this text). -->
+
 # AIUX UI Discovery
 
 > ## ⚠️ WEB IDE BOUNDARY — read before following any step below

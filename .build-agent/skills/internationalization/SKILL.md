@@ -1,6 +1,6 @@
 ---
 name: internationalization
-description: Make a system globally ready WITHOUT translating it. Use when reviewing or building software for hardcoded strings, non-parameterized messages, hardwired date/time/number/currency formats, Gregorian-only calendars, non-Unicode handling, blocked non-ASCII input, or byte/codepoint sorting. Technology-agnostic; pair with a i18n-{technology} skill for concrete APIs.
+description: 'Make a system globally ready WITHOUT translating it. Use when reviewing or building software for hardcoded strings, non-parameterized messages, hardwired date/time/number/currency formats, Gregorian-only calendars, non-Unicode handling, blocked non-ASCII input, or byte/codepoint sorting. Technology-agnostic; pair with a i18n-{technology} skill for concrete APIs.'
 metadata:
   author: servicenow
   version: '2.1.0'
@@ -9,60 +9,6 @@ license: MIT
 ---
 
 # Internationalization (i18n)
-
-> ## ⚠️ WEB IDE BOUNDARY — local corrections to pack v3.0.0
->
-> **Everything outside this block is pack content (v3.0.0, unmodified). Everything inside this
-> block is a local correction.** Each item states *why* it is here, so a later merge does not
-> silently revert it.
->
-> **This skill is portable in full — it contains no commands.** Read **`AGENTS.md`** for the tool
-> boundary.
->
-> **The companion files now ship — read them, don't improvise.** v3.0.0 added both files the
-> dispatch table names, and both are present locally:
->
-> - **`i18n-litjs.md`** — Lit / AIUX widgets: `i18n.getMessage()`, `Intl` usage, `isServer` guards.
-> - **`i18n-intljs.md`** — framework-agnostic `Intl.*` surface (formatters, `Segmenter`, `Collator`).
->
-> *(Through v2.6.0 this block asserted that neither file shipped and told you to supply the APIs
-> from memory. That assertion is **false as of v3.0.0** and has been deleted — do not re-add it.)*
->
-> **🔴 LOCAL OVERRIDE — this skill's body is WRONG about plurals on AIUX/Lit.** §2 and the Output
-> Checklist tell you to "Use the message API's **plural** and **gender/select** support (ICU
-> MessageFormat style)". **The AIUX message API has no such support.** From `i18n-litjs.md`:
->
-> > "Plural/gender limitation. `i18n.getMessage` does plain placeholder substitution — it has **no**
-> > ICU plural/gender selection. `'{0} items'` renders "1 items" at count 1."
->
-> An agent that follows the parent instruction alone **ships broken plurals**. On AIUX/Lit instead:
-> write a structurally complete phrasing per case as separate literal messages, and where the
-> category matters resolve it with `Intl.PluralRules` (see `localization/l10n-intljs.md` §1) and
-> select among those literal messages. Never fake it with `if`/branch concatenation in the
-> component. Raise genuine ICU plural needs with the platform i18n owners.
->
-> **Also from `i18n-litjs.md` — the argument must be a literal:** "The AST extractor only writes
-> string/`{code, message, comment}` literals to `sys_ui_message`; a variable argument is never
-> extracted and falls back to the source string in every locale." So
-> `i18n.getMessage(someVariable)` is silently untranslatable in every locale.
->
-> **Tooling / environment — local wins, because the pack assumes a shell this IDE does not have:**
->
-> - String **extraction is a user action**, performed by the user's SDK build (`now-sdk`), not by
->   you. There is no terminal here: say so rather than inventing an extraction step or claiming you
->   ran one. *(This item previously named `pnpm localize:extract`; the pack's real command family is
->   `now-sdk run dev …` — see `localization/SKILL.md` for the pseudolocalization form.)*
-> - **`src/client/` is React** with its own conventions — do not assume the AIUX `i18n` service
->   exists there.
-> - **Confirm the import specifier against existing pages** before introducing a second mechanism.
->   The pack companions write `@servicenow/aiux-services`; this app's working import is under
->   `@servicenow/aiux/aiux-services/…` and the barrel itself is a measured build trap — see
->   `pages-extensions-generator/SKILL.md`.
->
-> **Verify the platform's non-standard locale codes against the instance** (`run_query` on
-> `sys_choice` or the language tables) rather than trusting a remembered list — and map them to
-> BCP 47 at every external boundary, or the lookup silently falls back to a default instead of
-> erroring.
 
 Internationalization makes a system **globally ready without translating it**. The product still ships in one source language, but every locale-dependent decision is externalized to a locale-driven API or resource instead of being hardcoded. Translation, RTL rendering, fonts, and per-locale CLDR data adaptation are **out of scope here** — those belong to the companion **localization** skill. The CLDR line: i18n _calls_ the locale-aware (CLDR-backed) formatter and passes it a locale; **verifying and adapting** that the correct, current per-locale data is applied is localization. Keep the two concerns separate: i18n is the locale-neutral enablement layer; localization is the per-locale adaptation on top of it.
 

@@ -10,52 +10,6 @@ license: MIT
 
 # Figma to AIUX Widget
 
-> ## ⚠️ WEB IDE BOUNDARY — read before following any step below
->
-> No shell exists in this IDE. Read **`AGENTS.md`** first.
->
-> **Every `node scripts/…` and `curl` invocation in this file is void**, along with the
-> `FIGMA_ACCESS_TOKEN` environment prerequisite (there is no environment to set it in) and
-> `node scripts/test-no-figma.js` — **that file does not exist in the package**, so the instruction is
-> broken even offline.
->
-> **Phase 1 (acquisition) — three paths. Choose one and say which before starting:**
->
-> | Path | Status |
-> | --- | --- |
-> | **Figma MCP server** configured in this IDE | ⬜ MCP *is* supported here but is **unconfigured and never exercised**. If a Figma MCP tool appears in your tool list, use it — then record what actually worked |
-> | **The user pastes the node JSON** | ✅ **works today.** The shape is exactly `scripts/fixtures/task-card.json` — read that fixture first so you can ask for precisely the right export |
-> | `web_fetch` against the Figma REST API | ✗ **ruled out** — it cannot send an `X-Figma-Token` header, and a token must never be placed in a URL |
->
-> 🛑 **PHASES 1 AND 2 PROSE BELOW ARE BOTH UNRELIABLE — load the two assets instead.** Verified by reading
-> `figma-extractor.js` and `design-translator.js` in full against this file.
-> `load_skill_resource(skill_name: "figma-to-widget", file_path: "scripts/figma-extraction.md")`
-> `load_skill_resource(skill_name: "figma-to-widget", file_path: "scripts/design-translation.md")`
->
-> **Phase 1 errors:** the slash-notation example `aiux-icon/chevron` **fails the real regex**
-> (`/^(icons?|glyph|sn-ai[ux]x?-icon)/`); the trigger/field/picker rules are claimed for "Any" node type but
-> are **unreachable for containers**, so an auto-layout `btn` frame is never a `trigger`; `COMPONENT_SET` and
-> `GROUP` are missing from the container list; and the `PACK` alignment map, the `^ic[-_]` icon prefix, the
-> `radii` plural field and the fact that `lineHeight` is a **ratio** are all undocumented.
->
-> **Phase 2 errors:** colours are mapped to **raw palette classes** (`bg-white`, `bg-gray-100`, `bg-red-50`,
-> `text-gray-600`) where the implementation uses **DaisyUI semantic classes** (`bg-base-100`, `bg-base-300`,
-> `bg-error/10`, `text-base-content/60`). **Palette classes do not theme — a widget built from the prose
-> tables is pinned to light mode.** The prose also `aiux-`-prefixes the DaisyUI pattern names and icon keys,
-> describes a `var(--color-*)` fallback set that does not exist, and omits opacity snapping, border mapping
-> and text transform/decoration.
->
-> **Phases 3–5 prose is sound.** Phase 5's checks are complete and in two places *stricter* than
-> `validator.js` was (`@ExplicitSysId` as a must-exist error; `aiux-loading` instead of a bare `/loading/`).
-> The only omitted check is `console.log(` as an info-level anti-pattern — apply it anyway. Score is
-> `100 − errors×15 − warnings×5 − info×1`; report it **with itemised findings**, and combine with
-> `run_diagnostics`.
-> `scripts/fixtures/task-card-widget.js` is the gold-standard output — read it to see what "done" looks like.
->
-> **Then hand off:** `ui-discovery` first (something may already do this), `aiux-build` for the component and
-> server-script contract, `accessibility` before calling it done — a pixel-faithful widget with no roles or
-> accessible names is not finished. `build`/`install` remain **user actions**.
-
 Convert Figma designs into production-ready AIUX widgets using a proven 4-phase pipeline. The key insight: **Phase 2 does 90% of the work deterministically** — by the time the LLM sees the blueprint, all design decisions (colors, spacing, icons, DaisyUI patterns) are already resolved. The LLM only generates the JavaScript component structure and lifecycle logic.
 
 ## When to use this skill

@@ -169,6 +169,39 @@ false zero before the parent-table cross-check disproved them. The experience's 
 at **`sys_aix_layout`**, not `sys_aix_widget` — checking it against the wrong table reports a real layout
 as missing.
 
+### A skill silently missing from available_skills is a frontmatter parse failure
+
+🔴 Measured Nov 2026. A `SKILL.md` whose YAML frontmatter will not parse is dropped **in total
+silence**: the skill is absent from `available_skills`, `activate_skill` answers "Skill not found", and
+**nothing logs a parse error**. It reads exactly like a registry or caching bug, which is what sent this
+investigation down two dead ends.
+
+**The field is `description`.** Both casualties (`internationalization`, `localization`) contain
+`{technology}` — `{` opens a YAML flow mapping — and `localization`'s also contains
+`Prerequisite: internationalization.`, where `: ` is a key separator. Either is illegal or ambiguous in
+a **plain** (unquoted) scalar. Quoting the value, or neutralising the indicator characters, fixes it.
+
+**Disproven on the way — do not re-run these theories.** The extra `compatibility:` / `license:`
+frontmatter keys are harmless (`accessibility`, `aiux-build`, `figma-to-widget` all carry both and
+load). A malformed quote *inside* `compatibility:` is also not the cause: the skill failed with that
+line correct and loaded with that line unquoted, the only difference being the `description`.
+
+**Diagnosing it:**
+
+| Symptom | Reading |
+| --- | --- |
+| Skill absent from `available_skills` **and** `activate_skill` says "not found" | genuinely unregistered — suspect frontmatter |
+| Absent from the list but `activate_skill` works | stale display only, not a parse failure |
+| Skills disappear one at a time across messages | staggered re-index, not progressive decay — each file is re-parsed at a different point |
+
+⚠ **The registry refreshes only BETWEEN messages.** A repaired skill does not reappear in the same turn
+you fix it, so never conclude a frontmatter repair failed without letting a message boundary pass. Same
+reason a newly added skill folder is invisible until the next message.
+
+⚠ **This is why a pristine vendor copy is not automatically safe.** Restoring these two files to
+byte-identical vendor content is precisely what un-registered them — see SKILL-OVERRIDES.md →
+*Frontmatter repair*, which is the one sanctioned exception to never editing a vendor file.
+
 ### fs_copy on a directory is DESTRUCTIVE, not additive
 
 🔴 Measured while merging pack v3.0.0. `fs_copy` with `overwrite: true` on a **directory** does not merge
@@ -315,7 +348,9 @@ loader rules:
   `migrate-header-config/` registers as `migrate-header-config-review`, so a folder name that
   differs from the skill name is normal and not a symptom.
 
-Boundary-reviewed, merged against `@servicenow/agent-pack-aiux` **v3.0.0**:
+**Pristine vendor content** from `@servicenow/agent-pack-aiux` **v3.0.0** — byte-identical to
+`node_modules`, never edited. Their IDE corrections live in **`SKILL-OVERRIDES.md`**, so read that
+alongside any skill below:
 
 | Skill (registered name) | Folder | Use for |
 | --- | --- | --- |
@@ -450,39 +485,51 @@ summaries above** — each row names the ground a record covers, not its current
 
 ## Drift detection
 
-The skills in `.build-agent/skills/` were **merged against `@servicenow/agent-pack-aiux` v3.0.0** (Nov
-2026); the pristine originals in `node_modules/` remain the diff baseline. All `@servicenow/*` deps are
-pinned to `"latest"`, so a reinstall performed outside this IDE can change the packs again — check
-`node_modules/@servicenow/agent-pack-aiux/package.json`.
+🔑 **The architecture changed in Nov 2026: vendor skill files are no longer edited.** The pack-derived
+skills in `.build-agent/skills/` are **byte-identical to `node_modules/@servicenow/agent-pack-*`**, and
+every IDE correction lives in **`SKILL-OVERRIDES.md`** at the repo root, keyed by skill name. See
+AGENTS.md → "Never edit a vendor skill file".
 
-**What the v2.6.0 → v3.0.0 merge established, so the next merge need not rediscover it:**
+**So drift is no longer something to audit — it is something to re-copy.** Taking a new pack version is:
 
-| Skill | How it merged |
-| --- | --- |
-| `aiux-build` | **merged.** Took 8 new reference files, `<srcDir>` indirection, `@acl()` over `@roles()`, the regions build rule and the provider/context base classes. Boundary block re-applied |
-| `ui-discovery` | **merged selectively.** Upstream's index is a different GENERATION, not a superset — it drops ~25 component refs, 7 of 8 directives and 4 controllers we hold. Index is now a union; upstream still re-ships the whole dead widget-sync apparatus, which must never be reinstated |
-| `internationalization` / `localization` | **merged.** The four companion files (`i18n-litjs`, `i18n-intljs`, `l10n-litjs`, `l10n-intljs`) now SHIP — the old "neither file ships" note was deleted as false |
-| `migrate-header-config` | **merged small.** Took the header-config data shape and `srcDir` discovery, folded into the authored contract file |
-| `accessibility` / `figma-to-widget` | **kept local.** v3.0.0 changed neither SKILL.md; both still cite the same dead paths |
-| `pages-extensions-generator` | **dropped upstream, retargeted locally.** Absorbed into `aiux-build/references/app/extensions.md`. Kept for its `__parentScopeName__` resolution and its three `assets/` templates, which the pack does not ship |
+1. Check the version: `node_modules/@servicenow/agent-pack-aiux/package.json`. All `@servicenow/*` deps
+   are pinned to `"latest"`, so a reinstall outside this IDE can move them without warning.
+2. Copy the vendor files over, **one file per `fs_copy` call** — a directory copy deletes
+   destination-only files (see Measured facts).
+3. Honour the three lists in `SKILL-OVERRIDES.md` → Upgrade recipe: vendor files we deliberately do NOT
+   copy, our added files that must survive, and the documented exceptions.
+4. Re-read the overlay against the new vendor text and update any correction the vendor has since fixed.
+   That is the only judgement step, and it is bounded.
+
+**Two deliberate exceptions**, both recorded in the overlay: `ui-discovery/SKILL.md` keeps a hand-
+maintained union component index (v3.0.0's index is a different generation that drops ~39 entries we
+still want), and `pages-extensions-generator` has no upstream at all — the pack dropped it at v3.0.0, so
+it is now an authored local skill.
+
+⚠ **Version strings inside a skill are not the pack version.** `aiux-build/SKILL.md` declares
+`version: '2.4.0'` and `migrate-header-config/SKILL.md` declares `'2.2.0'` inside the **v3.0.0** pack.
+Only `package.json` is authoritative.
 
 ⚠ **The pack's own README lists only 5 skills while shipping 7.** Trust the directory listing, never the
 pack README, when asking what a pack contains.
 
 ⚠ **v3.0.0 reversed two rules.** Mixed projects (own `pages/` + extension pages) are now stated as
 supported, conditional on the installed build — see AGENTS.md → Do not. And `@roles()` is retired for new
-gating. Anything written against the old rules is now wrong.
+gating in favour of `@acl()`. Anything written against the old rules is now wrong.
 
-**Re-copying a pack over `.build-agent/skills/` overwrites every boundary block** — and, because
-`fs_copy` on a directory is destructive (see Measured facts), it also **deletes local-only files**. Back
-up first, copy file by file, and verify.
+**What v2.6.0 → v3.0.0 actually brought**, recorded so nobody re-derives it: `aiux-build` gained 8
+reference files (`app/acl.md`, `app/page-collections.md`, `app/page-views.md`, `app/regions.md`,
+`config-framework/regions.md`, `widget/action-registry.md`, `widget/list-widgets.md`,
+`widget/record-widgets.md`) plus `<srcDir>` indirection; `ui-discovery` gained ~80 references including
+50 `aiux-control-*` form controls, the record stack, the app shells and a new `functions/` kind;
+`internationalization` / `localization` gained the four companion files that previously did not ship;
+`accessibility` and `figma-to-widget` changed **not at all**.
 
-For a whole-tree text sweep of `.build-agent/` (which grep cannot traverse): `fs_copy` it to a non-hidden
-path, grep the copy, `fs_delete` it, and confirm the file count returns to its pre-copy value. Do **not**
-rename `.build-agent` — that path is the skill load path, so dropping the dot de-registers all 19 skills,
-and the registry only refreshes between messages, so the breakage surfaces a message later.
+**Do not rename `.build-agent`** — that path is the skill load path, so dropping the dot de-registers all
+19 skills, and the registry only refreshes between messages, so the breakage surfaces a message later.
 
-**The sweep that found every hand edit** (reusable next time): copy the tree out, then
-`fs_grep` the copy for `WEB IDE`. That returned exactly 9 files — the 9 `SKILL.md` boundary blocks plus
-`aiux-build/references/app/backend-layer.md`, which is the one *reference* file carrying an edit and
-therefore the one a blanket `references/` overwrite would silently destroy.
+**Finding every hand edit** (the sweep that drove the extraction, reusable if drift is ever suspected):
+`fs_copy .build-agent/skills` to a non-hidden path, `fs_grep` the copy for `WEB IDE`, then `fs_delete` it
+and confirm the file count returns to its pre-copy value. That sweep returned exactly 9 files — and
+caught `aiux-build/references/app/backend-layer.md`, the one **reference** file carrying an edit, which a
+blanket `references/` overwrite would have destroyed silently.

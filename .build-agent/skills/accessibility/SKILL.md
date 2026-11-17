@@ -18,25 +18,6 @@ license: MIT
 
 # Accessibility Implementation Skill
 
-> ## ⚠️ WEB IDE BOUNDARY
->
-> No shell exists in this IDE; `build` and `install` are **user actions**. Read
-> **`AGENTS.md`** first.
->
-> **This skill is otherwise portable in full — it contains no commands.** Two corrections:
->
-> - **Dead links:** `.argus/rules/shared/daisyui.md` and `tools/eslint-plugin-aiux-style|a11y/` are vendor
->   monorepo paths, **not shipped in this package**. Ignore them. The a11y ESLint plugins *are* installed as
->   devDependencies, so the user's own `pnpm lint` does catch those rules — say that, rather than implying
->   you ran it.
-> - **Verification:** `ui_diagnostics` (after the user installs) proves roles, accessible names, landmarks
->   and `aria-*` wiring from the **rendered** DOM — the strongest automated evidence available here.
->   `inspect_component_dom` gives a web component's real rendered tag and role before you assert anything
->   about it; never infer that from authoring source. **Screen-reader announcement and 320px reflow cannot
->   be checked here — ask the user**, naming exactly what to listen for or look at. **Never report an audit
->   as passed on static evidence alone:** state which checks were automated, which were static, and which
->   are still open with the user.
-
 ## When to use this skill
 
 - When the user asks about accessibility, WCAG compliance, or ARIA patterns

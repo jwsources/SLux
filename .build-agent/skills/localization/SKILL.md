@@ -1,12 +1,6 @@
 ---
 name: localization
-description: >
-  Culturally adapt a well-internationalized system for specific locales — translation,
-  RTL orientation, font/script coverage, layout fitting (truncation/overlap), and CLDR
-  data adaptation. Use when adding or reviewing locale support, translation catalogs,
-  RTL layouts, script/font issues, text-expansion overflow, or locale data patterns.
-  Technology-agnostic; pair with a l10n-{technology} skill for concrete APIs.
-  Prerequisite: internationalization.
+description: 'Culturally adapt a well-internationalized system for specific locales — translation, RTL orientation, font/script coverage, layout fitting (truncation/overlap), and CLDR data adaptation. Use when adding or reviewing locale support, translation catalogs, RTL layouts, script/font issues, text-expansion overflow, or locale data patterns. Technology-agnostic; pair with a l10n-{technology} skill for concrete APIs. Prerequisite: internationalization.'
 metadata:
   author: servicenow
   version: '2.1.0'
@@ -15,64 +9,6 @@ license: MIT
 ---
 
 # Localization (l10n)
-
-> ## ⚠️ WEB IDE BOUNDARY — local corrections to pack v3.0.0
->
-> **Everything outside this block is pack content (v3.0.0, unmodified). Everything inside this
-> block is a local correction.** Each item says *why* it is here, so a later merge does not silently
-> revert it.
->
-> **This skill is portable in full — it contains no commands.** Read **`AGENTS.md`** for the tool
-> boundary. **Prerequisite: the `internationalization` skill** — localizing a non-internationalized
-> system means hardcoding workarounds you will have to undo.
->
-> **The companion files now ship — read them, don't improvise.** v3.0.0 added both files the
-> dispatch table names, and both are present locally:
->
-> - **`l10n-litjs.md`** — Lit / AIUX: translation delivery, logical CSS + Tailwind logical
->   utilities, bidi isolation, fonts/scripts, expansion.
-> - **`l10n-intljs.md`** — `Intl.PluralRules`, `Intl.DisplayNames`, direction/week data, fallback
->   chains, CLDR-coverage verification.
->
-> *(Through v2.6.0 this block asserted that neither file shipped. That assertion is **false as of
-> v3.0.0** and has been deleted — do not re-add it.)*
->
-> **Translation delivery contract (from `l10n-litjs.md` §1 — the local copy had this nowhere).**
-> Lit/AIUX widget strings are *not* shipped in per-widget catalog files: "the build-time extractor
-> writes each `i18n.getMessage()` literal to the platform `sys_ui_message` table … the server
-> fetches the page's translations (`fetchWidgetTranslationsForPage`), injects them as
-> `window.__WIDGET_MESSAGES__`, and `i18n.loadMessages()` loads them client-side." So the per-language
-> `sys_ui_message` rows are a **platform/instance** task, inspectable with `run_query` — not a file
-> you edit in this repo. Verify untranslated keys fall back to the **source string**, never to a
-> blank or a raw key.
->
-> **Direction comes from locale data, not an allowlist (from `l10n-intljs.md` §3 — this supersedes
-> the older practice of maintaining a list of RTL languages).** Drive RTL mirroring and date UIs
-> from the locale. These are **methods** on `Intl.Locale`; the older `textInfo` / `weekInfo`
-> accessor **properties** are deprecated and support varies, so feature-detect:
->
-> ```js
-> const dir = (loc.getTextInfo?.() ?? loc.textInfo)?.direction ?? 'ltr';
-> ```
->
-> Same shape for `getWeekInfo?.() ?? weekInfo` (first day / weekend) and `getCalendars?.()`.
->
-> **Verification limits — local, and still true.** Text-expansion fitting, tofu / font coverage and
-> RTL mirroring are *partly* visible in the `ui_diagnostics` DOM after the user installs, but that is
-> **partial evidence only**: the visual judgement is **the user's**. Ask them, naming the locale and
-> the screen to look at.
->
-> **Pseudolocalization is a user action** — it needs a build and a run, and there is no terminal in
-> this IDE. The command is **`now-sdk run dev --pseudo`** (pack v3.0.0, `l10n-litjs.md` §1). *The
-> earlier local text here named `pnpm localize:extract`; that was wrong — it is neither this pack's
-> command nor a pseudolocalization command. Either way you do not run it: name it and hand it to the
-> user.*
->
-> **Dead cross-reference — do not chase it.** Both litjs companions close by pointing at
-> `accessibility` and `responsive-design` as separate Horizon Design skills. **`accessibility` is
-> installed locally** and is a live pointer. **`responsive-design` ships in neither pack available
-> here** (verified by listing both skills roots) — treat every reference to it as dead and apply this
-> skill's own expansion/reflow guidance instead.
 
 Localization is the **cultural and linguistic adaptation of an already-internationalized system** for one or more target locales. It assumes the i18n layer is in place: strings externalized, formats locale-driven, Unicode-clean, collation-ready. If those preconditions are missing, **stop and apply the internationalization skill first** — localizing a non-internationalized system means hardcoding workarounds you will have to undo. Keep the separation: i18n makes the system _capable_ of any locale; localization _supplies and adapts_ the per-locale specifics.
 

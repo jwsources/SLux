@@ -8,43 +8,7 @@ metadata:
 
 # headerConfig Migration to the App-Owned Model
 
-> ## ⚠️ WEB IDE BOUNDARY — read before following any step below
->
-> No shell exists in this IDE. Read **`AGENTS.md`** first.
->
-> - **Discovery:** `find pages -name "headerConfig.js" …` → **`fs_glob`** with `**/headerConfig.{js,ts}`
->   (search `src/extensions/**` as well when the project extends a host). Both `grep -rn …` commands →
->   **`fs_grep`** with `-n`; the same regex alternation works. `grep -v node_modules` needs no analogue —
->   scope the glob to `src/**`. **There is no `jq` either:** pack v3.0.0 resolves the search root from
->   `aiux.json`'s `srcDir` (`jq -r '.srcDir // "."'`) — read `aiux.json` with **`fs_read_file`** instead.
->   v3.0.0 is authoritative here: `application.js` and `pages/` live under the configured `srcDir`
->   (scaffolded as `src/lux`), but **"most existing apps predate `srcDir` and keep it unset"**, in which
->   case it resolves to the project root. Glob both shapes rather than assuming one.
-> - **The Category 5 "must be empty" re-check: an empty result is not proof.** Broaden the pattern once
->   (drop the extension, widen the directory) and then **open the surviving files** — a grep can miss in a
->   file that really does contain the string.
-> - **The build hard-fails on these patterns, but `build` is a user action.** Never run a build to discover
->   whether the pattern is present — use the globs. Never claim the migration succeeded because a build
->   "would now pass": hand the build to the user and report their result.
-> - **Dead links resolved:** `docs/arch-header-config.md` and `../../../docs/arch-header-config.md` are
->   vendor monorepo paths, **not shipped in this package** (still true at v3.0.0). Do not hunt for them.
->   v3.0.0 *does* now inline a `### Header-config data shape` section in its own SKILL.md; that field list
->   (including `metadata` and `icon`, and the `l3` entry `id`) has been **merged into**
->   **`references/header-config-contract.md`** (load it with `load_skill_resource`), which stays the
->   authority because it adds what the pack section lacks: per-field evidence tiers — ✅ attested in
->   shipped code, 🟡 documented in pack prose, ⬜ unverified — the precedence ordering, the meaning of
->   `null`, and the scope-creep guard. Category 4's key list remains a *comparison checklist, not a shape
->   definition*.
-> - **`AGENTS.md` is authoritative on the project's shape**, and the shape decides where to search: an
->   experience-owning app keeps pages in `pages/<route>/page.js` with a root `application.js`, while an
->   extension app keeps them under `src/extensions/<host_scope>/<host_route_id>/pages/`. Header
->   contributions go through `navLayoutContext` in `setup()` — establish what that owns versus the nav
->   helpers from the instance, not from memory.
->
-> Note: this skill's registered name is **`migrate-header-config-review`** (its frontmatter `name`), which
-> differs from its folder name — activate it by the registered name.
-
-Use this skill to migrate an app off the **legacy** header-config patterns onto the **current** app-owned model (STRY64218924), and to review the result. There is no codemod — migration is manual. The vendor's `docs/arch-header-config.md` is still not shipped; pack v3.0.0's own inline data-shape section has been merged into **`references/header-config-contract.md`**, which is the contract — read it before writing a resolver.
+Use this skill to migrate an app off the **legacy** header-config patterns onto the **current** app-owned model, and to review the result. There is no codemod — migration is manual. The contract is in [The model you are migrating TO](#the-model-you-are-migrating-to) below.
 
 You may edit files when asked to migrate. When asked only to review, **read and report, do not modify.**
 
@@ -52,10 +16,10 @@ You may edit files when asked to migrate. When asked only to review, **read and 
 
 ## The two legacy patterns you are migrating FROM
 
-| Legacy pattern                                                                                                                                                                                | Era              | Signal                                                                                                                                                                 |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **A.** Per-page `pages/<route>/headerConfig.js` exporting `getHeaderConfig({params})`, run in the IVM isolate via `__runHeaderConfig`                                                         | pre-STRY64088112 | A `headerConfig.js`/`.ts` file under `pages/`; the build hard-fails on these                                                                                           |
-| **B.** A `computeCurrentHeaderConfig(ctx)` **named export** in `application.js`, called by the framework, injected as `ctx.headerConfig`, serialized under `__LAYOUT_DATA__['header-config']` | pre-STRY64218924 | `export ... computeCurrentHeaderConfig` in `application.js`; loaders reading `ctx.headerConfig` — the build hard-fails on this too (except the allowlisted `aict` app) |
+| Legacy pattern                                                                                                                                                                                | Signal                                                                                                                                                                 |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A.** Per-page `pages/<route>/headerConfig.js` exporting `getHeaderConfig({params})`, run in the IVM isolate via `__runHeaderConfig`                                                         | A `headerConfig.js`/`.ts` file under `pages/`; the build hard-fails on these                                                                                           |
+| **B.** A `computeCurrentHeaderConfig(ctx)` **named export** in `application.js`, called by the framework, injected as `ctx.headerConfig`, serialized under `__LAYOUT_DATA__['header-config']` | `export ... computeCurrentHeaderConfig` in `application.js`; loaders reading `ctx.headerConfig` — the build hard-fails on this too (except the allowlisted `aict` app) |
 
 Both are gone from the framework. The framework no longer computes, injects, or serializes header config, and does not call any app function for it.
 
@@ -101,13 +65,32 @@ export default {
 
 Per-page enrichment still works: a layout/page loader returning `{headerConfig: {...}}` as ordinary `loaderData` is scanned by nav-layout and ranks above `headerConfig`. `setHeaderConfig()` runtime updates are unchanged.
 
+### Header-config data shape
+
+`getHeaderConfig()` returns this object, or `null`. Every field is optional.
+
+```js
+{
+  header: boolean,          // show the toolbar; defaults to false, true when l3 has tabs
+  l3: [{label: string, path: string, id?: string}], // L3 tab definitions
+  pageTitle: string,        // breadcrumb title, overrides the L2 nav label
+  title: string,            // alias for pageTitle
+  hideToolbar: boolean,     // suppress the toolbar entirely (e.g. a home page)
+  transient: boolean,       // don't push onto the breadcrumb stack (e.g. modal flows)
+  actionsDropdown: boolean, // show the actions dropdown on the right
+  openInSidebar: boolean,   // open the page in the detail side panel
+  metadata: [{label, iconName, iconClass?, textClass?}], // tag chips above the tabs
+  icon: string              // icon override
+}
+```
+
 ---
 
 ## Migration steps
 
 ### Step 1 — find the legacy surface
 
-`application.js`/`pages/` live under the app's configured `srcDir` (`aiux.json`; scaffolded as `src/lux`, but **most existing apps predate `srcDir` and keep it unset**, resolving to the project root). Resolve it the same way the build does rather than hard-coding a path — in this IDE that means `fs_read_file` on `aiux.json`, then `fs_glob`/`fs_grep` scoped to the resolved root (see the boundary block; the shell below is the pack's reference form, not a command you can run).
+`application.js`/`pages/` live under the app's configured `srcDir` (`aiux.json`; scaffolded as `src/lux`, but most existing apps predate `srcDir` and keep it unset, resolving to the project root). Resolve it the same way the build does rather than hard-coding a path:
 
 ```bash
 SRC=$(jq -r '.srcDir // "."' aiux.json)
@@ -122,12 +105,10 @@ grep -rn "ctx.headerConfig\|__LAYOUT_DATA__\['header-config'\]\|__runHeaderConfi
 
 ### Step 2 — build the resolver in `header-config.js`
 
-- Create `header-config.js` (or `.ts`) under `<srcDir>`, next to `application.js` (it's imported relatively via `./header-config.js`, so it lives alongside `application.js` wherever that is — project root when `srcDir` is unset).
+- Create `header-config.js` (or `.ts`) under `<srcDir>`, next to `application.js` (it's imported relatively via `./header-config.js`, so it lives alongside `application.js` wherever that is).
 - Move the route → config logic into `getHeaderConfig(path)` — a function taking the route path string and returning a config object or `null`.
 - Collapse Pattern A's per-page `getHeaderConfig({params})` bodies and Pattern B's `computeCurrentHeaderConfig` branches into this one resolver.
-- Return a header-config object — shape in `references/header-config-contract.md`, loadable with
-  `load_skill_resource(skill_name: "migrate-header-config-review", file_path: "references/header-config-contract.md")`
-  — or `null` for routes whose toolbar a nav item or `setHeaderConfig()` owns. `null` is meaningful — it tells nav-layout "use the nav item" and clears any previous route's config.
+- Return a [header-config object](#header-config-data-shape), or `null` for routes whose toolbar a nav item or `setHeaderConfig()` owns. `null` is meaningful — it tells nav-layout "use the nav item" and clears any previous route's config.
 
 ### Step 3 — resolve in `setup()`, refresh in `navigate()`
 
@@ -178,7 +159,7 @@ The app must keep `navLayoutContext.headerConfig` (a resolved **object**, never 
 For each branch in `getHeaderConfig`:
 
 - Does the path condition correctly identify the page? (`[id]` → `:id`, `[table]` → `:table`)
-- Does the returned config match what the legacy `headerConfig.js` / `computeCurrentHeaderConfig` branch produced (same `l3` tabs, `header`, `hideToolbar`, `transient`, `actionsDropdown`, `openInSidebar`, `metadata` chips, `pageTitle`/`title`)? Full shape, with per-field evidence tiers: `references/header-config-contract.md`.
+- Does the returned config match what the legacy `headerConfig.js` / `computeCurrentHeaderConfig` branch produced (same `l3` tabs, `header`, `hideToolbar`, `transient`, `actionsDropdown`, `openInSidebar`, `pageTitle`/`title`)?
 - Returning `null` where a nav item owns the toolbar — correct.
 
 ### 5. Missing routes
@@ -189,8 +170,6 @@ A legacy `headerConfig.js` or `computeCurrentHeaderConfig` branch with no corres
 SRC=$(jq -r '.srcDir // "."' aiux.json)
 find "$SRC/pages" -name "headerConfig.js" -o -name "headerConfig.ts" | grep -v node_modules  # must be empty
 ```
-
-Local: run this as `fs_glob` over the resolved `srcDir` **and** the project root, and remember the boundary rule — **an empty result is not proof.** Broaden the pattern once, then open the surviving files.
 
 ### 6. Tests
 
