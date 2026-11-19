@@ -143,6 +143,103 @@ worse than a non-pristine one. Repair the frontmatter, keep the body pristine, a
 
 ### aiux-build
 
+#### 🔴 Four measured traps in an EXTENSION record page (Nov 2026)
+
+All four produced symptoms that looked like component bugs and were not. Each is
+a platform contract, read from the installed `@servicenow/aiux` source.
+
+**1. A `[param]` directory CANNOT appear in an import specifier.** The build
+rewrites `pages/case/[id]/` to `.../case/_id_/` on disk, so
+`import '../../case/[id]/framework/x.js'` resolves to nothing and the isolate
+bundle fails with `Could not resolve import`. Shared modules therefore cannot
+live inside a dynamic-route directory. Put them in a sibling of `pages/` —
+`<host-route>/framework/`, `<host-route>/shared/` — and import with
+`../../../framework/x.js`. Internal imports *within* the moved directory are
+unaffected.
+
+**2. The router's `.do` fallback route is `record/:table/:sys_id`.** From
+`aiux/client/src/route-map-navigation.js`, in the no-rewrite-rule branch: it
+derives the table from the path, reads `sys_id` from the query, builds a
+fallback path of `record` + table + sys_id and navigates to it. Its own comment
+reads `.do fallback -> record/:table/:sys_id`.
+→ Every intercepted `.do` anchor is rewritten to that route. With no page there,
+clicks are **silently swallowed** and land somewhere unrelated. Build
+`pages/record/[table]/[id]/page.js` and `.do` links resolve for free. This also
+proves a **two-parameter dynamic route works** — the platform depends on it.
+
+**3. The module-level `navigate()` is NOT the router.** From
+`aiux/client/src/router.js`:
+```
+export function navigate(path, options) {
+  if (globalRouter) return globalRouter.navigate(path, options);
+  return browserNavigate(path);   // → plain window.location.href
+}
+```
+A host that calls `createRouter()` without `setGlobalRouter()` leaves
+`globalRouter` null, so every programmatic navigation becomes a **full page
+load** with the experience basename dropped — producing a 404, a lost SPA state,
+and a re-render on every click.
+→ Render record links as real `<a href>` with an **absolute** path. The router
+binds a document-level click handler that intercepts anchors, and that handler
+is the only reachable path to the host's private router instance. Relative hrefs
+are wrong: the handler does `new URL(href, window.location.origin)`.
+
+**4. Forcing an agent form view drags the ENTIRE classic UI16 stack into the
+page.** Requesting a view whose sections carry classic formatters —
+`cxs_table_search.xml`, `sn_res_shaper_resolution_shaper.xml`, a `REL.`
+related-list formatter, `activity.xml` — loads jQuery, Angular, cabrillo and a
+**replacement `g_form`**. Measured console timeline on one case record:
+```
++0s   page scripts load
++30s  host sidebar init fails
++32s  Overwriting extension point: window, document, $, jQuery,
+      angular, cabrillo, g_form, g_scratchpad, g_user, NOW
++32s  classic client scripts run and throw
+```
+The record scripting environment did not initialise for **32 seconds**, and the
+AIUX `g_form` was replaced mid-flight. That is a slow load, render churn, and
+globals-dependent navigation being hijacked.
+→ Do not force a view to reach fields. See the Details rule below.
+
+#### 🔑 A FORM LAYOUT IS NOT A READ MODEL
+
+`FormAPI.fields` returns only what is on the **resolved form view**, so a
+read-only Details view built on it is silently gated by an agent editing
+surface. Measured: that one coupling caused five separate failures — a scoped
+flag invisible, `account` invisible (the view carries `company` instead), an AI
+narrative field unreachable, `state` absent from **all five** sections of the
+agent view, and finally trap 4 above when the view was forced to one that had
+the missing sections.
+
+→ Declare field groups in config, read values through the **Table API**, and
+take labels from the config or by humanising the field name (`state` → `State`
+matches the platform's own sentence case). `sys_dictionary` supplies label, type
+and reference target for **any** table, verified including inherited `task`
+fields and a scoped custom field.
+→ For a reference link, request `sysparm_exclude_reference_link=false`: the
+reference `link` is the **only** part of a Table API response that names the
+referenced table.
+
+#### Writes still work without a form
+
+`ActionsAPI.executeAction` branches
+`action.isClient ? executeClient() : _getGForm().submit(name || sysId)`, and
+`_getGForm()` depends on `formEnvironment.initialized` — which the **provider**
+sets up, not `aiux-record-form`. So UI actions and the activity composer write
+normally on a page that renders no form controls. There is no field-level inline
+write, and the Table API is used **read-only**.
+
+⚠ `g_form.getFormElement()` is a deliberately deprecated stub in AIUX
+(`_deprecate(instance, ['flash', 'getElement', 'getFormElement'])`), and
+`gsftSubmit` does not exist in the sandbox. A classic UI action using
+`gsftSubmit(null, g_form.getFormElement(), 'verb')` shows its `confirm()` and
+then writes **nothing**. Replace with `g_form.submit('verb')`.
+⚠ **Workspace is unaffected by editing `sys_ui_action.script`** — the
+Configurable Workspace runs the separate `client_script_v2` column (with
+`format_for_configurable_workspace` and `form_button_v2` set). Verify by
+reading both columns before touching either.
+
+
 **Void instructions**
 
 - `references/app/backend-layer.md` **§ Build & Deploy Pipeline and § Dev Server are superseded in
